@@ -1,6 +1,6 @@
 use std::{collections::HashMap, net::{IpAddr, Ipv4Addr}};
 use serde::{Deserialize, Serialize};
-use crate::address::Address;
+use crate::types::address::Address;
 
 pub fn default_network() -> String {
     String::from("orchestra")

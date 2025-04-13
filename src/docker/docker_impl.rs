@@ -1,5 +1,8 @@
 use std::net::{IpAddr, Ipv4Addr};
+use std::thread::sleep;
+use std::os::unix::thread;
 use std::process::{Command, Child, Stdio};
+use std::time::Duration;
 use log::{debug, error, info, warn};
 use crate::docker::docker_struct::Docker;
 use crate::command::command_func::{output_command, spawn_command};
@@ -61,19 +64,19 @@ impl Docker {
         }
                 
         self.address.ip = IpAddr::V4(Ipv4Addr::new(ip_vec_num[0], ip_vec_num[1], ip_vec_num[2], ip_vec_num[3]));
-        
         // Install ssh server
         info!("Installing shh server on {}", &self.name.as_ref().unwrap());
         if cfg!(target_os = "windows") {
             // Reformat sh script for linux distro
             spawn_command(&"dos2unix src/docker/docker_ssh_init.sh".to_string());
         }
-        spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.name.as_ref().unwrap())).wait();
-        spawn_command(&format!("docker exec -it {} sh ../docker_ssh_init.sh", &self.name.as_ref().unwrap())).wait();
+        let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.name.as_ref().unwrap())).wait();
+        let _ = spawn_command(&format!("docker exec -it {} sh ../docker_ssh_init.sh", &self.name.as_ref().unwrap())).wait();
         
         // Start ssh server
-        spawn_command(&format!("docker exec -d -it {} /usr/sbin/sshd -D", &self.name.as_ref().unwrap())).wait();
-
+        let _ = spawn_command(&format!("docker exec -d -it {} /usr/sbin/sshd -D", &self.name.as_ref().unwrap())).wait();
+        // Sleep to wait for ssh server to properly start
+        sleep(Duration::from_secs(1));
         Ok(())
     }
 

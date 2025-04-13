@@ -1,6 +1,0 @@
-- hosts: "{{ host }}"
-  tasks:
-  - name: Install Packages
-    apt: name={{ item }} state=latest update_cache=yes
-    with_items:
-      - openssh-server

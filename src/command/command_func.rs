@@ -4,7 +4,7 @@ use std::process::{Child, Command, Output, Stdio};
 use log::debug;
 
 pub fn spawn_command(arg: &String) -> Child {
-    debug!("{}", format!("Running command \"{}\"", arg));
+    debug!("{}", format!("Running command [{}]", arg));
     let spawn: Child;
     if cfg!(target_os = "windows") {
         spawn = Command::new("cmd")
@@ -26,7 +26,7 @@ pub fn spawn_command(arg: &String) -> Child {
 }
 
 pub fn output_command(arg: &str) -> String {
-    debug!("{}", format!("Running command \"{}\"", arg));
+    debug!("{}", format!("Running command [{}]", arg));
     let output;
     if cfg!(target_os = "windows") {
         output = Command::new("cmd")
@@ -46,24 +46,3 @@ pub fn output_command(arg: &str) -> String {
     String::from_utf8(output.stdout).unwrap()
 }
 
-pub fn spawn_commands(args: &[String]) -> Child {
-    //debug!("{}", format!("Running commands \"{}\"", args));
-    let spawn: Child;
-    if cfg!(target_os = "windows") {
-        spawn = Command::new("cmd")
-            .arg("/C")
-            .args(args)
-            .stdout(Stdio::piped())
-            .spawn()
-            .expect("Failed to spawn command")
-    } else {
-        spawn = Command::new("sh")
-            .arg("-c")
-            .args(args)
-            .stdout(Stdio::piped())
-            .spawn()
-            .expect("Failed to spawn command")
-    }
-
-    spawn
-}

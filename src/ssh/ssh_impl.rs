@@ -1,4 +1,4 @@
-use std::fmt::format;
+use std::env::current_dir;
 use std::fs::File;
 use std::io::Write;
 use std::net::TcpStream;
@@ -10,12 +10,12 @@ use std::{fs, io};
 
 use walkdir::WalkDir;
 
-use log::error;
+use log::{debug, error};
 
 
 impl ssh {
     pub fn new() -> ssh {
-        ssh { session: Session::new().unwrap()  } 
+        ssh { session: Session::new().unwrap()  }
     }
 
     /// Connect to ssh server
@@ -26,8 +26,21 @@ impl ssh {
     /// use DataOrchestra::ssh::ssh_struct::ssh;
     /// let ssh = ssh::new();
     /// ```
+    ///
+    /// # Note
+    /// 
+    /// See https://github.com/libssh2/libssh2/blob/master/include/libssh2.h for relevant error
+    /// codes
     pub fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) {
-        let tcp = TcpStream::connect(format!("{host}:{port}")).expect("Unable to setup tcp stream");
+        let address: String = format!("{}:{}", host, port);
+        debug!("Connecting to ssh client {} with {}@{}", &address, &username, &password);
+        let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
+    
+        if let Err(ref error) = tcp {
+            error!("Unable to setup tcp stream {}", error);
+        } 
+
+        let tcp = tcp.unwrap();
         self.session.set_tcp_stream(tcp);
         
         let handshake: Result<(), ssh2::Error> = self.session.handshake();
@@ -58,6 +71,7 @@ impl ssh {
     ///
     /// ```
     pub fn exec(&self, command: &str) -> String {
+        debug!("Executing command [{}]", command);
         let channel: Result<Channel, ssh2::Error> = self.session.channel_session();
 
         if let Err(ref error) = channel {
@@ -86,8 +100,15 @@ impl ssh {
         result
     }
 
-
+    
+    /// Upload file to remote server via ssh
+    ///
+    /// # Example
+    ///
     pub fn upload_file(&self, file: &Path, location: &Path) -> Result<(), ssh2::Error>{
+        assert!(file.is_file());
+        debug!("Uploading file {}", file.display());
+
         let mut local_file = File::open(file).unwrap();
         let remote_file: Result<Channel, ssh2::Error> = self.session.scp_send(location, 0o644, fs::metadata(file).unwrap().len(), None);
 
@@ -98,28 +119,39 @@ impl ssh {
         let mut remote_file = remote_file.unwrap();
         
         let mut buffer = Vec::new();
-        local_file.read_to_end(&mut buffer);
+        let _ = local_file.read_to_end(&mut buffer);
         remote_file.write_all(&buffer).unwrap();
 
         remote_file.send_eof().unwrap();
         remote_file.wait_eof().unwrap();
         remote_file.close().unwrap();
         remote_file.wait_close().unwrap();  
+
         return Ok(());
     }
 
-    pub fn upload_directory(&self, dir: &Path, location: &Path) -> Result<(), ssh2::Error> {
+    /// Upload directory to remote server via ssh
+    ///
+    /// # Example
+    pub fn upload_directory(&self, dir: &Path, location: &Path) -> Result<(), String> {
+        //assert!(dir.is_dir());
+        debug!("current dir : {:?}", current_dir());
+        
         for entry in WalkDir::new(dir) {
             if let Ok(ref entry) = entry {
-                let remote_path: String = format!("{}/{}", location.display(), entry.path().display()); 
+                let remote_path: String = format!("{}{}", location.display(), entry.path().display()); 
+                debug!("remote path : {} {}", &remote_path, &entry.file_type().is_dir());
                 if entry.file_type().is_dir() {
-                    self.exec(remote_path.as_str());
+                    self.exec(format!("mkdir {}", remote_path).as_str());
                 }
                 else {
-                    self.upload_file(entry.path(), remote_path);
+                    let result = self.upload_file(entry.path(), &Path::new(&remote_path));
+                    if let Err(ref error) = result {
+                        error!("Unable to upload file from directory {}", error);
+                        return Err(format!("Unable to upload file from directory {}", error));
+                    }
                 }
             }
-            println!("{}", entry.unwrap().path().display());
         }
 
         Ok(())

@@ -6,8 +6,7 @@ pub mod common;
 pub mod docker;
 pub mod command;
 
-pub mod address;
-pub mod script;
+pub mod types;
 
 pub mod ssh;
 

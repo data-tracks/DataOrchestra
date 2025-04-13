@@ -15,7 +15,7 @@ use DataOrchester::generate::generate_struct::Generate;
 use DataOrchester::process::process_struct::Process;
 use DataOrchester::store::store_struct::Store;
 
-use DataOrchester::address::{self, Address};
+use DataOrchester::types::address::Address;
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -105,7 +105,7 @@ fn main() {
         }
     }
     for thread in thread_pool {
-        thread.join();
+        let _ = thread.join();
     }
 }
 

@@ -1,9 +1,10 @@
 {
   "process":
-    [
+  [
       {
+        "script": "process",  
         "docker": {
-          "image": "rust",
+          "image": "python",
           "name": "process",
           "network": "orchestra"
         }
@@ -12,8 +13,9 @@
   "generate":
     [
       {
+        "script": "generate",  
         "docker": {
-          "image": "ppythonn",
+          "image": "python",
           "name": "generate",
           "network": "orchestra"
         }
@@ -21,13 +23,5 @@
     ],
   "store":
     [
-      {
-        "initialisation_script": "E:/Files/UniBasel/Project/DataOrchestra/config.json",
-        "docker": {
-          "image": "redis",
-          "name": "store",
-          "network": "orchestra"
-        }
-      }
     ]
 }

@@ -1,9 +1,7 @@
-use crate::ssh::ssh_struct::ssh;
+use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh};
 
-use std::path::Path;
 use super::{super::common::common_trait::Start, generate_struct::Generate};
-use core::panic;
-use std::thread::{self, JoinHandle};
+use std::{path::Path, thread::{self, JoinHandle}};
 use log::info;
 
 impl Start<()> for Generate {
@@ -19,16 +17,25 @@ impl Start<()> for Generate {
             let mut ssh: Option<ssh> = None;
 
             if let Some(ref mut docker) = self.docker {
-                docker.init();
+                let _ = docker.init();
                 ssh = Some(docker.get_ssh());
+                self.remote = Some(docker.address.clone());
             }
+          
+            if self.remote.is_none() {
+                panic!("No remote connection");
+            }
+
+            if ssh.is_none() {
+                panic!("No ssh connection available");
+            }
+
+            let ssh = ssh.unwrap();
+            let remote = self.remote.unwrap();
             
-            if let Some(ref mut ssh) = ssh {
-                ssh.upload_directory(&Path::new("external"), &Path::new("/"));
-            }
-            else {
-                panic!("Unable to get ssh client");
-            }
+            let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
+            let _ = ssh.upload_directory(&Path::new(&self.script), &Path::new("/"));
+            ssh.exec("sh ../generate/setup.sh");
         }).unwrap()
     }
 }
