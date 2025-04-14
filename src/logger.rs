@@ -7,7 +7,6 @@ use ansi_term::Colour;
 use std::thread;
 
 pub fn init_logger(level: LevelFilter) {
-
     env_logger::builder()
         .filter_level(level)
         .format(|buf, record| {

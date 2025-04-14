@@ -26,5 +26,6 @@ pub struct Docker {
     // Additional options
     pub options: Option<HashMap<String, String>>,
     #[serde(default = "default_address")]
-    pub address: Address
+    pub address: Address,
+    pub schema: Option<String>
 }

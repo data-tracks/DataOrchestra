@@ -1,0 +1,39 @@
+{
+  "process":
+    [
+      {
+        "script": "examples/word_count/process",
+        "docker": {
+          "image": "python",
+          "name": "process"
+        }
+      }
+    ],
+  "generate":
+    [
+      {
+        "script": "examples/word_count/generate",
+        "docker": {
+          "image": "python",
+          "name": "generate"
+        }
+      }
+    ],
+  "store":
+    [
+      {
+        "script": "examples/word_count/store",
+        "docker": {
+          "image": "postgres",
+          "name": "store",
+          "mount": "/home/mathieu/Documents/Unibasel/Project/DataOrchestra/examples/word_count/store/schema.sql",
+          "target": "/docker-entrypoint-initdb.d/schema.sql",
+          "options": {
+            "POSTGRES_PASSWORD": "postgres",
+            "POSTGRES_DB": "store",
+            "POSTGRES_USER": "postgres"
+          }
+        }
+      }
+    ]
+}

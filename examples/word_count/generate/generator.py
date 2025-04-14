@@ -6,7 +6,8 @@ from faker import Faker
 fake = Faker()
 
 while True:
-    data = {"name": fake.name(), "email": fake.email()}
-    print(data)
+    data = fake.text()
     time.sleep(0.5)
     requests.post("http://process:5000", json=data)
+
+

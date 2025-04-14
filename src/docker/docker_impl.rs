@@ -1,3 +1,4 @@
+use std::fmt::format;
 use std::net::{IpAddr, Ipv4Addr};
 use std::thread::sleep;
 use std::os::unix::thread;
@@ -89,6 +90,10 @@ impl Docker {
         command = format!("{command} --name={}", &self.name.as_ref().unwrap());
 
         command = format!("{command} -p {}:{}", &self.address.port, &self.address.internal_port);
+        
+        if &self.image == "postgres" {
+            command = format!("{command} -p 5432:5432");
+        }
 
         if let Some(options) = &self.options {
             for (key, value) in options {
@@ -96,16 +101,16 @@ impl Docker {
             }
         }
 
-        command = format!("{command} -it {}", &self.image);
-
         if let Some(source) = &self.mount {
             if let Some(target) = &self.target {
-                command = format!("{command} --mount source={source}, target={target}");
+                command = format!("{command} --mount type=bind,source={source},target={target}");
             }
             else {
                 warn!("Mount was specified but no target");
             }
         }
+
+        command = format!("{command} -it {}", &self.image);
 
         // Install ssh on docker 
         //

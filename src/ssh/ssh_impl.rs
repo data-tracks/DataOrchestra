@@ -1,4 +1,5 @@
 use std::env::current_dir;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::net::TcpStream;
@@ -134,15 +135,19 @@ impl ssh {
     ///
     /// # Example
     pub fn upload_directory(&self, dir: &Path, location: &Path) -> Result<(), String> {
-        //assert!(dir.is_dir());
-        debug!("current dir : {:?}", current_dir());
-        
+        assert!(dir.is_dir());
+        let parent = format!("/{}/", dir.parent().unwrap().to_str().unwrap());
         for entry in WalkDir::new(dir) {
             if let Ok(ref entry) = entry {
-                let remote_path: String = format!("{}{}", location.display(), entry.path().display()); 
-                debug!("remote path : {} {}", &remote_path, &entry.file_type().is_dir());
+                println!("{:?}", entry);
+                let remote_path = format!("{}{}", location.display(), entry.path().display()); 
+                let stripped_remote_path = remote_path.strip_prefix(&parent);
+                let remote_path = stripped_remote_path.unwrap_or(remote_path.as_str());
+                // Copy to / directory
+                let remote_path = format!("/{}", remote_path);
+                debug!("Remote path {}", remote_path);
                 if entry.file_type().is_dir() {
-                    self.exec(format!("mkdir {}", remote_path).as_str());
+                    self.exec(format!("mkdir /{}", remote_path).as_str());
                 }
                 else {
                     let result = self.upload_file(entry.path(), &Path::new(&remote_path));

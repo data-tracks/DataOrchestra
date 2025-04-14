@@ -1,9 +1,9 @@
-use std::env;
+use std::env::{self, current_dir};
 use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::thread::JoinHandle;
-use log::{debug, info, LevelFilter};
+use log::{debug, info, warn, LevelFilter};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
@@ -42,10 +42,21 @@ fn main() {
     // Read starting arguments
     let args: Vec<String> = env::args().collect();
     
-    initialise_logger(&args);
-    
+    parse_args(&args);
+    let idx = args.iter().position(|x| x == "-f");
+    if idx == None {
+        panic!("No config file was specified. Please specify config file with -f <path>");    
+    };
+
+    let idx = idx.unwrap();    
+    let file = args.get(idx + 1);
+    if file == None {
+        panic!("No config file was specified. Please specify config file with -f <path>");
+    }
+
     // Read config.json
-    let config_path = Path::new("config.json");
+    debug!("Loading config file {}", &file.unwrap());
+    let config_path = Path::new(file.unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
     let mut config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
@@ -109,13 +120,8 @@ fn main() {
     }
 }
 
-pub fn initialise_logger(args: &Vec<String>) {
+pub fn initialise_logger(level: &String) {
     let mut log_level: LevelFilter = LevelFilter::Error;
-
-    let mut iter = args.iter();
-    while let Some(arg) = iter.next() {
-        if arg == "-l" {
-            if let Some(level) = iter.next() {
                 log_level = match level.as_str() {
                     "info" => LevelFilter::Info,
                     "warn" => LevelFilter::Warn,
@@ -125,12 +131,25 @@ pub fn initialise_logger(args: &Vec<String>) {
                     "off" => LevelFilter::Off,
                     _ => log_level,
                 };
-            }
-        }
-    }
-
     init_logger(log_level);
 }
+
+pub fn parse_args(args: &Vec<String>) {
+    let mut iter = args.iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "-l" => {
+                if let Some(level) = iter.next(){
+                    initialise_logger(level);
+                }
+                else {
+                    warn!("Logging parameter expected but non was specified. \n Available levels are [info, warn, error, debug, trace, off]");
+                }
+            }
+            _ => ()
+        }
+    }
+} 
 
 pub fn gen_unique_address(amount: usize) -> Vec<Address> {
     let mut addresses: Vec<Address> = Vec::<Address>::new();
