@@ -5,6 +5,5 @@ use std::net::IpAddr;
 #[serde(rename_all="camelCase")]
 pub struct Address {
     pub ip: IpAddr,
-    pub port: u16,
-    pub internal_port: u8
+    pub port: u16
 }

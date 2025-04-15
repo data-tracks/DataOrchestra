@@ -1,8 +1,8 @@
-use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh};
+use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh, store::store_types::{MySQL, PostGres, Redis, StoreData, StoreType, StoreTypeConfig}};
 
 use super::{super::common::common_trait::Start, store_struct::Store};
 use std::{path::Path, thread::{self, JoinHandle}};
-use log::info;
+use log::{info, warn};
 
 impl Start<()> for Store {
     /// Start initialisation process for store components
@@ -14,13 +14,41 @@ impl Start<()> for Store {
         info!("Spawning storing thread");
         thread::Builder::new().name("store".to_string()).spawn(move || {
             let mut ssh: Option<ssh> = None;
-
-            if let Some(ref mut docker) = self.docker {
-                let _ = docker.init();
-                ssh = Some(docker.get_ssh());
-                self.remote = Some(docker.address.clone());
+            
+            if self.config.is_none() {
+               match self.db_type {
+                    StoreType::PostGres => self.config = Some(StoreTypeConfig::PostGres(PostGres::new())),
+                    StoreType::Redis => self.config = Some(StoreTypeConfig::Redis(Redis::new())),
+                    StoreType::MySQL => self.config = Some(StoreTypeConfig::MySQL(MySQL::new())),
+                    _ => warn!("Unrecoginesed store type provided")
+               } 
             }
-          
+                
+            if let None = self.config {
+                warn!("No config available for the store type");
+            }
+
+            let config = self.config.as_ref().unwrap();
+            
+            self.docker = self.docker
+                .set_image(config.get_image());
+
+            match config {
+                StoreTypeConfig::PostGres(postgres) => {
+                    self.docker = self.docker
+                        .add_env_var(String::from("POSTGRES_DB"), postgres.postgres_db.clone())
+                        .add_env_var(String::from("POSTGRES_USER"), postgres.postgres_user.clone())
+                        .add_env_var(String::from("POSTGRES_PASSWORD"), postgres.postgres_password.clone());
+                }
+                _ => ()
+            }
+
+
+            let _ = self.docker.init();
+
+            ssh = Some(self.docker.get_ssh());
+            self.remote = Some(self.docker.address.clone());
+            
             if self.remote.is_none() {
                 panic!("No remote connection");
             }

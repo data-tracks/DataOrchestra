@@ -1,6 +1,4 @@
-use std::f32::consts::E;
-use std::io::Error;
-use std::process::{Child, Command, Output, Stdio};
+use std::process::{Child, Command, ExitStatus, Stdio};
 use log::debug;
 
 pub fn spawn_command(arg: &String) -> Child {
@@ -11,6 +9,7 @@ pub fn spawn_command(arg: &String) -> Child {
             .arg("/C")
             .arg(arg)
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .expect("Failed to spawn command")
     } else {
@@ -18,6 +17,7 @@ pub fn spawn_command(arg: &String) -> Child {
             .arg("-c")
             .arg(arg)
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .expect("Failed to spawn command")
     }
@@ -33,6 +33,7 @@ pub fn output_command(arg: &str) -> String {
             .arg("/C")
             .arg(arg)
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .output()
             .expect("Unable to output command")
     } else {
@@ -40,9 +41,34 @@ pub fn output_command(arg: &str) -> String {
             .arg("-c")
             .arg(arg)
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .output()
             .expect("Unable to output command")
     }
     String::from_utf8(output.stdout).unwrap()
+}
+
+pub fn status_command(arg: &str) -> ExitStatus {
+    debug!("{}", format!("Running command [{}]", arg));
+    let status;
+    if cfg!(target_os = "windows") {
+        status = Command::new("cmd")
+            .arg("/C")
+            .arg(arg)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .status()
+            .expect("Unable to output command")
+    } else {
+        status = Command::new("sh")
+            .arg("-c")
+            .arg(arg)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .status()
+            .expect("Unable to output command")
+    }
+
+    status
 }
 

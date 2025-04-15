@@ -1,12 +1,12 @@
 use serde::Deserialize;
 
-use crate::{docker::docker_struct::Docker, types::address::Address};
+use crate::{docker::docker_struct::Container, types::address::Address};
 
 #[derive(Debug, Deserialize)]
 pub struct Process {
     #[serde(default = "default_amount")]
     pub amount: usize,
-    pub docker: Option<Docker>,
+    pub docker: Option<Container>,
     pub remote: Option<Address>,
     pub script: String
 }

@@ -2,13 +2,13 @@ use serde::{Serialize, Deserialize};
 use crate::types::{node::Node, address::Address};
 
 
-use crate::docker::docker_struct::Docker;
+use crate::docker::docker_struct::Container;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Generate {
     #[serde(default = "default_amount")]
     pub amount: usize,
-    pub docker: Option<Docker>,
+    pub docker: Option<Container>,
     pub node: Option<Node>,
     pub remote: Option<Address>,
     pub script: String

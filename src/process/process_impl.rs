@@ -21,7 +21,7 @@ impl Start<()> for Process {
                 ssh = Some(docker.get_ssh());
                 self.remote = Some(docker.address.clone());
             }
-          
+            
             if self.remote.is_none() {
                 panic!("No remote connection");
             }

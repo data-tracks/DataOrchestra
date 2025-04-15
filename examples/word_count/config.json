@@ -23,16 +23,13 @@
     [
       {
         "script": "examples/word_count/store",
+        "type": "postgres",
+        "name": "store",
         "docker": {
-          "image": "postgres",
-          "name": "store",
-          "mount": "/home/mathieu/Documents/Unibasel/Project/DataOrchestra/examples/word_count/store/schema.sql",
-          "target": "/docker-entrypoint-initdb.d/schema.sql",
-          "options": {
-            "POSTGRES_PASSWORD": "postgres",
-            "POSTGRES_DB": "store",
-            "POSTGRES_USER": "postgres"
-          }
+          "name": "store"
+        },
+        "config": {
+          "postgres_db": "store"
         }
       }
     ]
