@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
+use crate::docker::docker_struct::Container;
+
 
 pub trait StoreData {
     fn get_image(&self) -> String;
+    fn setup_container(&self, docker: &mut Container) -> Container;
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -9,7 +12,10 @@ pub trait StoreData {
 pub enum StoreType {
     PostGres,
     Redis,
-    MySQL
+    MySQL,
+    MongoDB,
+    Polypheny
+    // clustering?
 }
 
 /// Represents the available storing types
@@ -18,7 +24,9 @@ pub enum StoreType {
 pub enum StoreTypeConfig {
     PostGres(PostGres),
     Redis(Redis),
-    MySQL(MySQL)
+    MySQL(MySQL),
+    MongoDB(MongoDB),
+    Polypheny(Polypheny)
 }
 
 impl StoreData for StoreTypeConfig {
@@ -26,7 +34,9 @@ impl StoreData for StoreTypeConfig {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.get_image(),
             StoreTypeConfig::Redis(redis) => redis.get_image(),
-            StoreTypeConfig::MySQL(mysql) => mysql.get_image()
+            StoreTypeConfig::MySQL(mysql) => mysql.get_image(),
+            StoreTypeConfig::MongoDB(mongodb) => mongodb.get_image(),
+            StoreTypeConfig::Polypheny(polypheny) => polypheny.get_image()
         }
     }
 }
@@ -97,5 +107,37 @@ impl MySQL {
 impl StoreData for MySQL {
     fn get_image(&self) -> String {
         String::from("mysql")
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename = "mongodb")]
+pub struct MongoDB {}
+
+impl MongoDB {
+    pub fn new() -> MongoDB {
+        MongoDB {  }
+    }
+}
+
+impl StoreData for MongoDB {
+    fn get_image(&self) -> String {
+        String::from("mongo")
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename = "polypheny")]
+pub struct Polypheny {}
+
+impl Polypheny {
+    pub fn new() -> Polypheny {
+        Polypheny {  }
+    }
+}
+
+impl StoreData for Polypheny {
+    fn get_image(&self) -> String {
+        String::from("polypheny")
     }
 }

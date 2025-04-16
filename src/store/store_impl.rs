@@ -33,6 +33,9 @@ impl Start<()> for Store {
             self.docker = self.docker
                 .set_image(config.get_image());
 
+            self.docker = self.config.setup_container(self.docker);
+
+
             if let StoreTypeConfig::PostGres(postgres) = config {
                 self.docker = self.docker
                     .add_env_var(String::from("POSTGRES_DB"), postgres.postgres_db.clone())
@@ -70,7 +73,10 @@ impl Start<()> for Store {
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
             let _ = ssh.upload_directory(&Path::new(&self.script), &Path::new("/"));
-            ssh.exec("sh ../store/setup.sh");
+
+            if self.script.contains("sh") {
+                ssh.exec(format!("sh {}", self.script).as_str());
+            }
         }).unwrap()
     }
 }
