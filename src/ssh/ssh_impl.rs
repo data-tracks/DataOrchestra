@@ -1,3 +1,4 @@
+use std::env::current_dir;
 use std::fs::File;
 use std::io::Write;
 use std::net::TcpStream;
@@ -67,7 +68,6 @@ impl ssh {
     /// let ssh = ssh::new();
     /// let result = ssh.exec("pwd");
     /// println!("{}", result);
-    ///
     /// ```
     pub fn exec(&self, command: &str) -> String {
         debug!("Executing command [{}]", command);
@@ -129,12 +129,16 @@ impl ssh {
         return Ok(());
     }
 
-    /// Upload directory to remote server via ssh
+    /// Upload directory to remote server via ssh. 
     ///
-    /// # Example
-    pub fn upload_directory(&self, dir: &Path, location: &Path) -> Result<(), String> {
+    /// # Return
+    ///
+    /// [`Result`] type with the parent directory of the files on success or error message.
+    pub fn upload_directory(&self, dir: &Path, location: &Path) -> Result<String, String> {
         assert!(dir.is_dir());
+        //TODO: Reformat to make more safe
         let parent = format!("/{}/", dir.parent().unwrap().to_str().unwrap());
+        let current_dir = dir.strip_prefix(&dir.parent().unwrap()).unwrap_or(Path::new("")).to_str().unwrap().to_string();
         for entry in WalkDir::new(dir) {
             if let Ok(ref entry) = entry {
                 let remote_path = format!("{}{}", location.display(), entry.path().display()); 
@@ -155,6 +159,6 @@ impl ssh {
             }
         }
 
-        Ok(())
+        Ok(current_dir)
     }
 }

@@ -22,7 +22,9 @@
   "store":
     [
       {
-        "script": "examples/word_count/store",
+        "data": "examples/word_count/store",
+        "start_script": "examples/word_count/store/setup.sh",
+        "schema": "examples/word_count/store/schema.sql",
         "type": "postgres",
         "name": "store",
         "docker": {

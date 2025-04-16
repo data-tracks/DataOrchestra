@@ -38,3 +38,5 @@ The available config parameters for a store nodes are given as
     "docker": {}
 }
 ```
+
+The configuration officially supports the databases [PostGres, Redis, MongoDB, Polypheny] through docker images.

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, net::{IpAddr, Ipv4Addr}};
 use serde::{Deserialize, Serialize};
-use crate::types::address::Address;
+use crate::types::{address::Address, amount::Amount};
 
 pub fn default_network() -> String {
     String::from("orchestra")
@@ -13,11 +13,7 @@ pub fn default_address() -> Address {
     }
 }
 
-pub fn default_mount() -> Option<String> {
-    None
-}
-
-pub fn default_target() -> Option<String> {
+pub fn default_mount() -> Option<Amount<String>> {
     None
 }
 
@@ -42,12 +38,10 @@ pub struct Container {
     pub image: Option<String>,
     #[serde(default = "default_network")]
     pub network: String,
-    #[serde(default = "default_mount")]
-    pub mount: Option<String>,
-    #[serde(default = "default_target")]
-    pub target: Option<String>,
     // Additional options
     pub options: Option<HashMap<String, String>>,
     #[serde(default = "default_address")]
-    pub address: Address
+    pub address: Address,
+    #[serde(default = "default_mount")]
+    pub mount: Option<Amount<String>>
 }

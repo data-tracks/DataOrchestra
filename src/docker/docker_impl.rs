@@ -7,37 +7,38 @@ use log::{debug, error, info, warn};
 use crate::docker::docker_struct::Container;
 use crate::command::command_func::{output_command, spawn_command, status_command};
 use crate::ssh::ssh_struct::ssh;
+use crate::types::amount::Amount;
 
-use super::docker_struct::{default_address, default_image, default_mount, default_name, default_network, default_options, default_target};
+use super::docker_struct::{default_address, default_image, default_mount, default_name, default_network, default_options};
 
 /// Factory for the creation of a docker container 
 impl Container {
     /// Set name of docker container
-    pub fn set_name(mut self, name: String) -> Self {
-        self.name = Some(name);
+    pub fn set_name<T: Into<String>>(mut self, name: T) -> Self {
+        self.name = Some(name.into());
         self
     }
 
     /// Add network to docker container
-    pub fn set_network(mut self, network: String) -> Self {
-        self.network = network;
+    pub fn set_network<T: Into<String>>(mut self, network: T) -> Self {
+        self.network = network.into();
         self
     }
 
     /// Add image to docker container
-    pub fn set_image(mut self, image: String) -> Self {
-        self.image = Some(image);
+    pub fn set_image<T: Into<String>>(mut self, image: T) -> Self {
+        self.image = Some(image.into());
         self
     }
 
     /// Add enviroment variables to docker container
-    pub fn add_env_var(mut self, key: String, value: String) -> Self {
+    pub fn add_env_var<T: Into<String>, S: Into<String>>(mut self, key: T, value: S) -> Self {
         if let Some(ref mut map) = self.options {
-            map.insert(key, value);
+            map.insert(key.into(), value.into());
         }
         else {
             let mut map = HashMap::<String,String>::new();
-            map.insert(key, value);
+            map.insert(key.into(), value.into());
             self.options = Some(map);
         }
 
@@ -45,8 +46,20 @@ impl Container {
     }
 
     /// Add a directory mount to docker container
-    pub fn add_mount(mut self, mount: &String, target: &String) -> Self {
-        let _ = format!("-v {}:{}", mount, target);
+    pub fn add_mount<T: Into<String>, S: Into<String>>(mut self, mount: T, target: S) -> Self {
+        let mount_value = format!("{}:{}", mount.into(), target.into());
+        if let Some(ref mut amount) = self.mount {
+            if let Amount::Single(value) = amount {
+                let array = vec![value.clone(), mount_value];
+                self.mount = Some(Amount::Multiple(array));
+            }
+            else if let Amount::Multiple(ref mut values) = amount {
+                values.push(mount_value);
+            } 
+        }
+        else {
+            self.mount = Some(Amount::Single(mount_value));
+        }
         self
     }
 
@@ -62,7 +75,6 @@ impl Container {
             image: default_image(),
             network: default_network(),
             mount: default_mount(),
-            target: default_target(),
             options: default_options()
         }
     }
@@ -162,11 +174,13 @@ impl Container {
         }
 
         if let Some(source) = &self.mount {
-            if let Some(target) = &self.target {
-                command = format!("{command} --mount type=bind,source={source},target={target}");
-            }
-            else {
-                warn!("Mount was specified but no target");
+            match source {
+                Amount::Single(value ) => command = format!("{command} -v {}", value),
+                Amount::Multiple(values) => {
+                    for value in values {
+                        command = format!("{command} -v {}", value);
+                    }
+                }
             }
         }
 

@@ -5,25 +5,12 @@ use std::path::Path;
 use std::thread::JoinHandle;
 use log::{debug, info, warn, LevelFilter};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
 
 use DataOrchester::logger::init_logger;
-
 use DataOrchester::common::common_trait::Start;
-use DataOrchester::generate::generate_struct::Generate;
-use DataOrchester::process::process_struct::Process;
-use DataOrchester::store::store_struct::Store;
-
 use DataOrchester::types::address::Address;
 use DataOrchester::types::amount::Amount;
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all="camelCase")]
-struct Config {
-    process: Amount<Process>,
-    generate: Amount<Generate>,
-    store: Amount<Store>
-}
+use DataOrchester::types::config::Config;
 
 fn main() {
     // Read starting arguments
