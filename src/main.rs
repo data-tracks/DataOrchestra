@@ -2,7 +2,6 @@ use std::env;
 use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
-use std::process::exit;
 use std::thread::JoinHandle;
 use log::{debug, info, warn, LevelFilter};
 use rand::Rng;
@@ -16,21 +15,9 @@ use DataOrchester::process::process_struct::Process;
 use DataOrchester::store::store_struct::Store;
 
 use DataOrchester::types::address::Address;
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum Amount<T> {
-    Single(T),
-    Multiple(Vec<T>)
-}
+use DataOrchester::types::amount::Amount;
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all="camelCase")]
-pub struct Node {
-    address: Address
-}
-
-#[derive(Debug, Deserialize)]
 #[serde(rename_all="camelCase")]
 struct Config {
     process: Amount<Process>,
@@ -58,11 +45,11 @@ fn main() {
     debug!("Loading config file {}", &file.unwrap());
     let config_path = Path::new(file.unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
-    let mut config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
+    let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
 
     // Get amount of docker containers to assign ports
-    let mut docker_amount: usize = 3;
+    let docker_amount: usize = config.store.get_count() + config.process.get_count() + config.generate.get_count();
 
     let addresses: Vec<Address> = gen_unique_address(docker_amount);
     let mut current_address: usize = 0;
@@ -115,6 +102,7 @@ fn main() {
             }
         }
     }
+
     for thread in thread_pool {
         let _ = thread.join();
     }

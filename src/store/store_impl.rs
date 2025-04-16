@@ -1,4 +1,4 @@
-use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh, store::store_types::{MySQL, PostGres, Redis, StoreData, StoreType, StoreTypeConfig}};
+use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh, store::store_types::{MySQL, PostGres, Redis, StoreData, StoreType, StoreTypeConfig}, types::amount::Amount};
 
 use super::{super::common::common_trait::Start, store_struct::Store};
 use std::{path::Path, thread::{self, JoinHandle}};
@@ -33,14 +33,22 @@ impl Start<()> for Store {
             self.docker = self.docker
                 .set_image(config.get_image());
 
-            match config {
-                StoreTypeConfig::PostGres(postgres) => {
-                    self.docker = self.docker
-                        .add_env_var(String::from("POSTGRES_DB"), postgres.postgres_db.clone())
-                        .add_env_var(String::from("POSTGRES_USER"), postgres.postgres_user.clone())
-                        .add_env_var(String::from("POSTGRES_PASSWORD"), postgres.postgres_password.clone());
+            if let StoreTypeConfig::PostGres(postgres) = config {
+                self.docker = self.docker
+                    .add_env_var(String::from("POSTGRES_DB"), postgres.postgres_db.clone())
+                    .add_env_var(String::from("POSTGRES_USER"), postgres.postgres_user.clone())
+                    .add_env_var(String::from("POSTGRES_PASSWORD"), postgres.postgres_password.clone());
+
+                if let Some(ref schema) = self.schema {
+                    match schema {
+                        Amount::Single(value) => self.docker = self.docker.add_mount(value, &String::from("/docker-entrypoint-initdb.d/")),
+                        Amount::Multiple(values) => {
+                            for value in values {
+                                self.docker = self.docker.add_mount(value, &String::from("/docker-entrypoint-initdb.d/"));
+                            }
+                        }
+                    }
                 }
-                _ => ()
             }
 
 

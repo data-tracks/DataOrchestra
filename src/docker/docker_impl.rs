@@ -44,7 +44,8 @@ impl Container {
         self
     }
 
-    pub fn add_mount(mut self, mount: String, target: String) -> Self {
+    /// Add a directory mount to docker container
+    pub fn add_mount(mut self, mount: &String, target: &String) -> Self {
         let _ = format!("-v {}:{}", mount, target);
         self
     }
@@ -53,7 +54,7 @@ impl Container {
 }
 
 impl Container {
-    /// Get [`Docker`] with filled with default values
+    /// Get [`Container`] with filled with default values
     pub fn new() -> Self {
         Container {
             name: default_name(),
@@ -66,7 +67,7 @@ impl Container {
         }
     }
 
-    /// Initialise docker container based on specified data in `Docker` struct.
+    /// Initialise docker container based on specified data in [`Container`] struct.
     pub fn init(&mut self) -> Result<(), String>{
         info!("Initializing docker container");
        
@@ -128,7 +129,6 @@ impl Container {
 
         let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.name.as_ref().unwrap())).wait();
         let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", &self.name.as_ref().unwrap()));
-
         // Start ssh server
         let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", &self.name.as_ref().unwrap())).wait();
         
@@ -172,20 +172,6 @@ impl Container {
 
         command = format!("{command} -it {}", self.image.as_ref().unwrap());
 
-        // Install ssh on docker 
-        //
-        // -p port:22
-        //
-        // apt-get update
-        // apt-get install openssh-server
-        // mkdir /var/run/sshd
-        // echo "root:password" | chpasswd
-        // echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-        // /usr/sbin/sshd -D
-        //
-        // ssh root@localhost -p [port]
-        // password: password
-
         command
     }
 
@@ -200,15 +186,15 @@ impl Container {
     /// # Examples
     /// 
     /// ```
-    /// use DataOrchestra::command::Docker;
-    /// let docker: Docker = Docker { image: "ubuntu" };
-    /// docker.execute(&["pwd"])
+    /// use DataOrchestra::docker::docker_struct::Container;
+    /// let docker: Container =  { image: "ubuntu" };
+    /// docker.execute("pwd");
     /// ```
     fn execute(&self, arg: &str) -> Child {
-        debug!("{}", format!("Running command: docker exec -it {} {}", &self.name.as_ref().unwrap(), arg));
+        debug!("{}", format!("Running command: docker exec {} {}", &self.name.as_ref().unwrap(), arg));
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
-                .arg(format!("/C docker exec -it {} {}", &self.name.as_ref().unwrap(), arg))
+                .arg(format!("/C docker exec {} {}", &self.name.as_ref().unwrap(), arg))
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
@@ -216,7 +202,7 @@ impl Container {
         } else {
             Command::new("sh")
                 .arg("-c")
-                .arg(format!("docker exec -it {} {}", &self.name.as_ref().unwrap(), arg))
+                .arg(format!("docker exec {} {}", &self.name.as_ref().unwrap(), arg))
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
