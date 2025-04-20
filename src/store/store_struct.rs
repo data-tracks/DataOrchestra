@@ -15,7 +15,7 @@ pub struct Store {
     pub object: Object,
 
     /*
-     * Store specific parameters
+     * Store specific information
      */
 
     /// Relation structure

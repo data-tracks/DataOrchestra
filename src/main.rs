@@ -20,7 +20,8 @@ fn main() {
     parse_args(&args);
     let idx = args.iter().position(|x| x == "-f");
     if idx == None {
-        panic!("No config file was specified. Please specify config file with -f <path>");    
+        warn!("No config file was specified. Please specify config file with -f <path>");    
+        info!("Loading default config.json");
     };
 
     let idx = idx.unwrap();    
@@ -28,7 +29,6 @@ fn main() {
     if file == None {
         panic!("No config file was specified. Please specify config file with -f <path>");
     }
-
     // Read config.json
     debug!("Loading config file {}", &file.unwrap());
     let config_path = Path::new(file.unwrap());
@@ -36,7 +36,6 @@ fn main() {
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
     dbg!("{:?}", &config);
-    exit(-1);
 
     // Get amount of docker containers to assign ports
     let docker_amount: usize = config.store.get_count() + config.process.get_count() + config.generate.get_count();
@@ -49,6 +48,7 @@ fn main() {
     // Start different tasks
     // Note: Task reference not referencable anymore
     match config.store {
+        Amount::None => (),
         Amount::Single(mut task) => {
             if let Some(ref mut docker) = task.object.docker {
                 docker.address = addresses[current_address]; 
@@ -68,21 +68,27 @@ fn main() {
     }
     
     match config.process {
+        Amount::None => (),
         Amount::Single(mut task) => {
-            task.docker.as_mut().unwrap().address = addresses[current_address];
-            current_address += 1;
+            if let Some(ref mut docker) = task.object.docker {
+                docker.address = addresses[current_address];
+                current_address += 1
+            }
             thread_pool.push(task.start());
         }
         Amount::Multiple(tasks) => {
             for mut task in tasks {
-                task.docker.as_mut().unwrap().address = addresses[current_address];
-                current_address += 1;
+                if let Some(ref mut docker) = task.object.docker {
+                    docker.address = addresses[current_address];
+                    current_address += 1;
+                }
                 thread_pool.push(task.start());
             }
         }
     }
      
     match config.generate {
+        Amount::None => (),
         Amount::Single(mut task) => {
             task.docker.as_mut().unwrap().address = addresses[current_address];
             current_address += 1;

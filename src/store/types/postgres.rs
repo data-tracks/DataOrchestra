@@ -42,6 +42,7 @@ impl PostGres {
 
     pub fn mount_data(&self, schema: Amount<String>, mut docker: Container) -> Container {
         match schema {
+            Amount::None => (),
             Amount::Single(value) => docker = docker.add_mount(absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap())),
             Amount::Multiple(values) => {
                 for value in values {

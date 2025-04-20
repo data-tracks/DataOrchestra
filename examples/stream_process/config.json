@@ -1,0 +1,8 @@
+{
+  "process":
+    [
+      {
+        "type": "kafka"
+      }
+    ]
+}

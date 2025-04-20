@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Amount<T> {
+    None,
     Single(T),
     Multiple(Vec<T>)
 }
@@ -22,8 +23,15 @@ impl<T> Amount<T> {
     /// Get the amount of items in the amount enum
     pub fn get_count(&self) -> usize {
         match self {
+            Self::None => 0,
             Self::Single(_) => 1,
             Self::Multiple(values) => values.len()
         }
+    }
+}
+
+impl<T> Default for Amount<T> {
+    fn default() -> Self {
+        Amount::None
     }
 }

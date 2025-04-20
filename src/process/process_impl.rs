@@ -1,4 +1,4 @@
-use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh};
+use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh};
 
 use super::{super::common::common_trait::Start, process_struct::Process};
 use std::{path::Path, thread::{self, JoinHandle}};
@@ -16,13 +16,14 @@ impl Start<()> for Process {
         thread::Builder::new().name("process".to_string()).spawn(move || {
             let mut ssh: Option<ssh> = None;
 
-            if let Some(ref mut docker) = self.docker {
+            let _ = self.object.docker.get_or_insert(Container::new());
+            if let Some(ref mut docker) = self.object.docker {
                 let _ = docker.init();
                 ssh = Some(docker.get_ssh());
-                self.remote = Some(docker.address.clone());
+                self.object.remote = Some(docker.address.clone());
             }
             
-            if self.remote.is_none() {
+            if self.object.remote.is_none() {
                 panic!("No remote connection");
             }
 
@@ -31,14 +32,24 @@ impl Start<()> for Process {
             }
 
             let ssh = ssh.unwrap();
-            let remote = self.remote.unwrap();
+            let remote = self.object.remote.unwrap();
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
-            let upload_directory = ssh.upload_directory(&Path::new(&self.data), &Path::new("/"));
+
+            let mut upload_directory = String::from("/");
+            if let Some(ref data) = self.object.data {
+                let upload = ssh.upload_directory(&Path::new(data), &Path::new("/"));
+                if let Ok(dir) = upload {
+                    upload_directory = dir
+                }
+            }
+
             debug!("upload dir : {:?}", upload_directory);
+            if let Some(ref mut start) = self.object.start {
             // Run start script
-            if self.start_script.contains("sh") {
-                ssh.exec(format!("sh /{}", self.start_script.strip_prefix(Path::new(&self.start_script).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+                if start.contains("sh") {
+                    ssh.exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+                }
             }
  
 

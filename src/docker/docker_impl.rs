@@ -62,8 +62,11 @@ impl Container {
         }
         self
     }
-
-
+    
+    pub fn set_compose<T: Into<String>>(mut self, compose: T) -> Self {
+        self.compose = Some(compose.into());
+        self
+    }
 }
 
 impl Container {
@@ -179,6 +182,7 @@ impl Container {
 
         if let Some(source) = &self.mount {
             match source {
+                Amount::None => (),
                 Amount::Single(value ) => command = format!("{command} -v {}", value),
                 Amount::Multiple(values) => {
                     for value in values {
