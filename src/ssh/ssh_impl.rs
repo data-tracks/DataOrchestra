@@ -1,4 +1,3 @@
-use std::env::current_dir;
 use std::fs::File;
 use std::io::Write;
 use std::net::TcpStream;

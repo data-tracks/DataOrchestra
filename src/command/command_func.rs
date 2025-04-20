@@ -1,13 +1,14 @@
 use std::process::{Child, Command, ExitStatus, Stdio};
 use log::debug;
 
-pub fn spawn_command(arg: &String) -> Child {
-    debug!("{}", format!("Running command [{}]", arg));
+pub fn spawn_command<T: Into<String>>(arg: T) -> Child {
+    let command = arg.into();
+    debug!("{}", format!("Running command [{}]", &command));
     let spawn: Child;
     if cfg!(target_os = "windows") {
         spawn = Command::new("cmd")
             .arg("/C")
-            .arg(arg)
+            .arg(command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -15,7 +16,7 @@ pub fn spawn_command(arg: &String) -> Child {
     } else {
         spawn = Command::new("sh")
             .arg("-c")
-            .arg(arg)
+            .arg(command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()

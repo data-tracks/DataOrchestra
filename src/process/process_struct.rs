@@ -8,9 +8,15 @@ pub struct Process {
     pub amount: usize,
     pub docker: Option<Container>,
     pub remote: Option<Address>,
-    pub script: String
+    pub script: String,
+    pub start_script: String,
+    pub data: String,
 }
 
 pub fn default_amount() -> usize {
     1
+}
+
+pub fn default_docker() -> Container {
+    Container::new()
 }

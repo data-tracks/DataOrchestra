@@ -2,6 +2,7 @@ use std::env;
 use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
+use std::process::exit;
 use std::thread::JoinHandle;
 use log::{debug, info, warn, LevelFilter};
 use rand::Rng;
@@ -34,6 +35,8 @@ fn main() {
     let config_file = File::open(config_path).expect("Unable to open config file");
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
+    dbg!("{:?}", &config);
+    exit(-1);
 
     // Get amount of docker containers to assign ports
     let docker_amount: usize = config.store.get_count() + config.process.get_count() + config.generate.get_count();
@@ -47,14 +50,18 @@ fn main() {
     // Note: Task reference not referencable anymore
     match config.store {
         Amount::Single(mut task) => {
-            task.docker.address = addresses[current_address]; 
-            current_address += 1;
+            if let Some(ref mut docker) = task.object.docker {
+                docker.address = addresses[current_address]; 
+                current_address += 1;
+            }
             thread_pool.push(task.start());
         }
         Amount::Multiple(tasks) => {
             for mut task in tasks {
-                task.docker.address = addresses[current_address]; 
-                current_address += 1;
+                if let Some(ref mut docker) = task.object.docker {
+                    docker.address = addresses[current_address]; 
+                    current_address += 1;
+                }
                 thread_pool.push(task.start());
             }
         }

@@ -29,6 +29,10 @@ pub fn default_image() -> Option<String> {
     None
 }
 
+pub fn default_compose() -> Option<String> {
+    None
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all="camelCase")]
 pub struct Container {
@@ -43,5 +47,7 @@ pub struct Container {
     #[serde(default = "default_address")]
     pub address: Address,
     #[serde(default = "default_mount")]
-    pub mount: Option<Amount<String>>
+    pub mount: Option<Amount<String>>,
+    #[serde(default = "default_compose")]
+    pub compose: Option<String>
 }

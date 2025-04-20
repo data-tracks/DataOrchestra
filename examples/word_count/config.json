@@ -1,8 +1,16 @@
 {
+  "nodes":
+    [
+      {
+        "name": "node-1"
+      }
+    ],
   "process":
     [
       {
         "script": "examples/word_count/process",
+        "data": "examples/word_count/store",
+        "start_script": "examples/word_count/store/setup.sh",
         "docker": {
           "image": "python",
           "name": "process"
@@ -27,6 +35,7 @@
         "schema": "examples/word_count/store/schema.sql",
         "type": "postgres",
         "name": "store",
+        "test": "TEST",
         "docker": {
           "name": "store"
         },

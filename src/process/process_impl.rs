@@ -2,7 +2,7 @@ use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh};
 
 use super::{super::common::common_trait::Start, process_struct::Process};
 use std::{path::Path, thread::{self, JoinHandle}};
-use log::info;
+use log::{info, debug};
 
 impl Start<()> for Process {
     /// Start initialisation process for store components
@@ -34,8 +34,14 @@ impl Start<()> for Process {
             let remote = self.remote.unwrap();
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
-            let _ = ssh.upload_directory(&Path::new(&self.script), &Path::new("/"));
-            ssh.exec("sh ../process/setup.sh");
+            let upload_directory = ssh.upload_directory(&Path::new(&self.data), &Path::new("/"));
+            debug!("upload dir : {:?}", upload_directory);
+            // Run start script
+            if self.start_script.contains("sh") {
+                ssh.exec(format!("sh /{}", self.start_script.strip_prefix(Path::new(&self.start_script).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+            }
+ 
+
         }).unwrap()
     }
 }

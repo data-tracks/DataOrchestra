@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
-use std::thread::sleep;
 use std::process::{Child, Command, Stdio};
+use std::thread::sleep;
 use std::time::Duration;
 use log::{debug, error, info, warn};
 use crate::docker::docker_struct::Container;
@@ -9,7 +9,7 @@ use crate::command::command_func::{output_command, spawn_command, status_command
 use crate::ssh::ssh_struct::ssh;
 use crate::types::amount::Amount;
 
-use super::docker_struct::{default_address, default_image, default_mount, default_name, default_network, default_options};
+use super::docker_struct::{default_address, default_compose, default_image, default_mount, default_name, default_network, default_options};
 
 /// Factory for the creation of a docker container 
 impl Container {
@@ -75,78 +75,82 @@ impl Container {
             image: default_image(),
             network: default_network(),
             mount: default_mount(),
-            options: default_options()
+            options: default_options(),
+            compose: default_compose()
         }
     }
 
     /// Initialise docker container based on specified data in [`Container`] struct.
     pub fn init(&mut self) -> Result<(), String>{
-        info!("Initializing docker container");
-       
-        if self.name == None {
-            self.name = Some(self.image.as_ref().unwrap().clone());
-        }
-        
-        // Create network
-        let networks: String = output_command("docker network ls");
-        if !networks.contains(&self.network) {
-            info!("{}", format!("Creating network bridge {}", &self.network));
-            let create_bridge = spawn_command(&format!("docker network create -d bridge {}", &self.network))
-                .wait();
-
-            if create_bridge.is_err() || (create_bridge.is_ok() && !&create_bridge.as_ref().unwrap().success()) {
-                warn!("Unable to create bridge {} | Code : {}", &self.network, &create_bridge.unwrap().code().unwrap());
-            }
-            else {
-                info!("Successfully created bridge [{}]", &self.network)
-            }
-        }
-
-        // Create image
-        let containers: String = output_command("docker ps");
-        if containers.contains(&self.name.as_ref().unwrap().clone()){
-            warn!("Re initiating container {}", &self.name.as_ref().unwrap());
-            let _container_stop = status_command(&format!("docker stop {}", &self.name.as_ref().unwrap()));
-            let _container_rm = status_command(&format!("docker rm {}", &self.name.as_ref().unwrap()));
-
-        }
-        let docker = spawn_command(&format!("docker run {}", self.get_options()))
-            .wait();
-        if docker.is_err() || (docker.is_ok() && !&docker.as_ref().unwrap().success()) {
-            error!("Unable to create docker container [{}] | Code : {}", &self.name.as_ref().unwrap(), &docker.unwrap().code().unwrap());
-            return Err("Unable to create docker container".to_string());
+        // Load only the docker-compose file if given else start container manually
+        if let Some(ref compose) = self.compose {
+            info!("Initializing docker container from docker compose");
+            let _ = spawn_command(format!("docker compose -f {} up -d --build", compose));
         }
         else {
-            info!("Successfully created docker container [{}]", &self.name.as_ref().unwrap())
+            let _ = self.name.get_or_insert(self.image.as_ref().unwrap().clone());
+            info!("Initializing docker container");
+
+            // Create network
+            let networks: String = output_command("docker network ls");
+            if !networks.contains(&self.network) {
+                info!("{}", format!("Creating network bridge {}", &self.network));
+                let create_bridge = spawn_command(&format!("docker network create -d bridge {}", &self.network))
+                    .wait();
+
+                if create_bridge.is_err() || (create_bridge.is_ok() && !&create_bridge.as_ref().unwrap().success()) {
+                    warn!("Unable to create bridge {} | Code : {}", &self.network, &create_bridge.unwrap().code().unwrap());
+                }
+                else {
+                    info!("Successfully created bridge [{}]", &self.network)
+                }
+            }
+
+            // Create image
+            let containers: String = output_command("docker ps");
+            if containers.contains(&self.name.as_ref().unwrap().clone()){
+                warn!("Re initiating container {}", &self.name.as_ref().unwrap());
+                let _container_stop = status_command(&format!("docker stop {}", &self.name.as_ref().unwrap()));
+                let _container_rm = status_command(&format!("docker rm {}", &self.name.as_ref().unwrap()));
+
+            }
+            let docker = spawn_command(&format!("docker run {}", self.get_options()))
+                .wait();
+            if docker.is_err() || (docker.is_ok() && !&docker.as_ref().unwrap().success()) {
+                error!("Unable to create docker container [{}] | Code : {}", &self.name.as_ref().unwrap(), &docker.unwrap().code().unwrap());
+                return Err("Unable to create docker container".to_string());
+            }
+            else {
+                info!("Successfully created docker container [{}]", &self.name.as_ref().unwrap())
+            }
+
+            // get ip
+            let ip_output = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", &self.name.as_ref().unwrap()).as_str());
+
+            let ip_output = ip_output.replace("\n", "");
+            let ip_vec = ip_output.split(".").collect::<Vec<&str>>();
+            let mut ip_vec_num = Vec::<u8>::new();
+            for s in ip_vec {
+                ip_vec_num.push(s.parse().unwrap());
+            }
+
+            self.address.ip = IpAddr::V4(Ipv4Addr::new(ip_vec_num[0], ip_vec_num[1], ip_vec_num[2], ip_vec_num[3]));
+
+            // Install ssh server
+            info!("Installing shh server on {}", &self.name.as_ref().unwrap());
+            if cfg!(target_os = "windows") {
+                // Reformat sh script for linux distro
+                spawn_command(&"dos2unix src/docker/docker_ssh_init.sh".to_string());
+            }
+
+            let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.name.as_ref().unwrap())).wait();
+            let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", &self.name.as_ref().unwrap()));
+            // Start ssh server
+            let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", &self.name.as_ref().unwrap())).wait();
+
+            // Sleep to wait for ssh server to properly start
+            sleep(Duration::from_secs(1));
         }
-
-        // get ip
-        let ip_output = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", &self.name.as_ref().unwrap()).as_str());
-
-        let ip_output = ip_output.replace("\n", "");
-        let ip_vec = ip_output.split(".").collect::<Vec<&str>>();
-        let mut ip_vec_num = Vec::<u8>::new();
-        for s in ip_vec {
-            ip_vec_num.push(s.parse().unwrap());
-        }
-                
-        self.address.ip = IpAddr::V4(Ipv4Addr::new(ip_vec_num[0], ip_vec_num[1], ip_vec_num[2], ip_vec_num[3]));
-
-        // Install ssh server
-        info!("Installing shh server on {}", &self.name.as_ref().unwrap());
-        if cfg!(target_os = "windows") {
-            // Reformat sh script for linux distro
-            spawn_command(&"dos2unix src/docker/docker_ssh_init.sh".to_string());
-        }
-
-        let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.name.as_ref().unwrap())).wait();
-        let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", &self.name.as_ref().unwrap()));
-        // Start ssh server
-        let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", &self.name.as_ref().unwrap())).wait();
-        
-        // Sleep to wait for ssh server to properly start
-        sleep(Duration::from_secs(1));
-
 
         Ok(())
     }
@@ -189,6 +193,7 @@ impl Container {
         command
     }
 
+    /// Get ssh connection to docker container
     pub fn get_ssh(&mut self) -> ssh {
         let mut ssh = ssh::new();
         ssh.connect(&"127.0.0.1".to_string(), self.address.port, &"root".to_string(), &"password".to_string());
@@ -204,11 +209,13 @@ impl Container {
     /// let docker: Container =  { image: "ubuntu" };
     /// docker.execute("pwd");
     /// ```
-    fn execute(&self, arg: &str) -> Child {
-        debug!("{}", format!("Running command: docker exec {} {}", &self.name.as_ref().unwrap(), arg));
+    fn execute<T: Into<String>>(&self, arg: T) -> Child {
+        let command = format!("docker exec {} {}", &self.name.as_ref().unwrap(), &arg.into());
+        debug!("{}", format!("Running command: {}", command));
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
-                .arg(format!("/C docker exec {} {}", &self.name.as_ref().unwrap(), arg))
+                .arg("/C")
+                .arg(command)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
@@ -216,7 +223,7 @@ impl Container {
         } else {
             Command::new("sh")
                 .arg("-c")
-                .arg(format!("docker exec {} {}", &self.name.as_ref().unwrap(), arg))
+                .arg(command)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()

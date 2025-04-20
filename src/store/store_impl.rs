@@ -1,8 +1,8 @@
-use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh};
+use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh, types::amount::Amount};
 
 use super::{super::common::common_trait::Start, store_struct::Store};
-use std::{path::Path, thread::{self, JoinHandle}};
-use log::{debug, info, warn};
+use std::{fs, path::Path, thread::{self, JoinHandle}};
+use log::{debug, info};
 
 impl Start<()> for Store {
     /// Start initialisation process for store components
@@ -18,27 +18,48 @@ impl Start<()> for Store {
             // Create default config of specified database type ([`StoreType`]) if none was
             // specified
             if self.config.is_none() {
+                info!("No config given for database type. Loading default config");
                 self.config = Some(self.db_type.new());
             }
                 
-            if let None = self.config {
-                warn!("No config available for the store type");
+            // Check if node was specified for store
+            if let Some(node) = self.object.node {
+                self.object.remote = Some(node.address.unwrap().clone());
+            }
+           
+            // Set docker container for store
+            let _ = self.object.docker.get_or_insert(Container::new());
+            if let Some(mut docker) = self.object.docker {
+                let config = self.config.as_mut().unwrap();
+                // Setup the container with needed default parameters for specific [`StoreType`]
+                docker = config.setup_container(docker);
+                if let Some(schema) = self.schema {
+                    docker = config.mount_data(schema, docker);
+                }
+                // Upload all sql files of non was specified
+                else {
+                    let path = fs::read_dir(self.object.data.as_ref().unwrap()).unwrap();
+                    let mut sql_files = Vec::<String>::new();
+                    for file in path {
+                        if let Ok(file) = file {
+                            let file = file.path();
+                            let is_sql_file = file.ends_with(".sql");
+                            if is_sql_file {
+                                sql_files.push(file.display().to_string());
+                            }
+                        }
+                    }
+                    docker = config.mount_data(Amount::Multiple(sql_files), docker)
+                }
+            
+                // Start docker container
+                let _ = docker.init();
+
+                ssh = Some(docker.get_ssh());
+                self.object.remote = Some(docker.address.clone());
             }
 
-            // Setup the container with needed default parameters for specific [`StoreType`]
-            let config = self.config.as_mut().unwrap();
-            self.docker = config.setup_container(self.docker);
-            if let Some(schema) = self.schema {
-                self.docker = config.mount_data(schema, self.docker);
-            }
-            
-            // Start docker container
-            let _ = self.docker.init();
-
-            ssh = Some(self.docker.get_ssh());
-            self.remote = Some(self.docker.address.clone());
-            
-            if self.remote.is_none() {
+            if self.object.remote.is_none() {
                 panic!("No remote connection");
             }
 
@@ -47,14 +68,25 @@ impl Start<()> for Store {
             }
 
             let ssh = ssh.unwrap();
-            let remote = self.remote.unwrap();
+            let remote = self.object.remote.unwrap(); //self.object.get_remote_connection();
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
-            let upload_directory = ssh.upload_directory(&Path::new(&self.data), &Path::new("/"));
+           
+            // Upload data directory
+            let mut upload_directory = String::from("/");
+            if let Some(ref data) = self.object.data {
+                let upload = ssh.upload_directory(&Path::new(&data), &Path::new("/"));
+                if let Ok(dir) = upload {
+                    upload_directory = dir
+                }
+            }
+
             debug!("upload dir : {:?}", upload_directory);
             // Run start script
-            if self.start_script.contains("sh") {
-                ssh.exec(format!("sh /{}", self.start_script.strip_prefix(Path::new(&self.start_script).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+            if let Some(ref mut start) = self.object.start {
+                if start.contains("sh") {
+                    ssh.exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+                }
             }
         }).unwrap()
     }
