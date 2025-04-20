@@ -12,7 +12,7 @@ impl Kafka {
     }
 
     pub fn setup_container(&self, docker: Container) -> Container {
-        docker.set_compose("/lib/compose-kafka.yaml")
+        docker.set_compose("lib/TrackBench.rs/compose-kafka.yaml")
     }
 }
 

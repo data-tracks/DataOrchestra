@@ -12,7 +12,7 @@ impl Storm {
     }
 
     pub fn setup_container(&self, docker: Container) -> Container {
-        docker.set_compose("/lib/compose-storm.yaml")
+        docker.set_compose("lib/TrackBench.rs/compose-storm.yaml")
     }
 }
 

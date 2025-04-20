@@ -12,7 +12,7 @@ impl Spark {
     }
 
     pub fn setup_container(&self, docker: Container) -> Container {
-        docker.set_compose("/lib/compose-spark.yaml")
+        docker.set_compose("lib/TrackBench.rs/compose-spark.yaml")
     }
 }
 

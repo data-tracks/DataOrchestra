@@ -16,8 +16,18 @@ impl Start<()> for Process {
         thread::Builder::new().name("process".to_string()).spawn(move || {
             let mut ssh: Option<ssh> = None;
 
+            if self.config.is_none() {
+                info!("No config given for database type. Loading default config");
+                self.config = Some(self.process_type.unwrap().new());
+            }
+ 
+
             let _ = self.object.docker.get_or_insert(Container::new());
-            if let Some(ref mut docker) = self.object.docker {
+            if let Some(mut docker) = self.object.docker {
+                let config = self.config.as_mut().unwrap();
+                // Setup the container with needed default parameters for specific [`StoreType`]
+                docker = config.setup_container(docker);
+ 
                 let _ = docker.init();
                 ssh = Some(docker.get_ssh());
                 self.object.remote = Some(docker.address.clone());
@@ -51,8 +61,6 @@ impl Start<()> for Process {
                     ssh.exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
                 }
             }
- 
-
         }).unwrap()
     }
 }
