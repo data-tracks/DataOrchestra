@@ -37,8 +37,8 @@ impl Start<()> for Store {
                     docker = config.mount_data(schema, docker);
                 }
                 // Upload all sql files of non was specified
-                else {
-                    let path = fs::read_dir(self.object.data.as_ref().unwrap()).unwrap();
+                else if let Some(ref data) = self.object.data {
+                    let path = fs::read_dir(data).unwrap();
                     let mut sql_files = Vec::<String>::new();
                     for file in path {
                         if let Ok(file) = file {

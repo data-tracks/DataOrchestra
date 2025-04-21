@@ -33,21 +33,51 @@ pub fn default_compose() -> Option<String> {
     None
 }
 
+pub fn default_file() -> Option<String> {
+    None
+}
+
+
+/// The docker `Container` type. Represents the general information tied to the creation of a
+/// docker container
+///
+/// # Creation
+///
+/// The creation of the container is dictated by the fields [`image`], [`compose`] and [`file`]. 
+/// They are in the order hierarchy: [`compose`] > [`file`] > [`image`], meaning that if both a
+/// compose and image are passed, the compose is preferred over the image.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all="camelCase")]
 pub struct Container {
     #[serde(default = "default_name")]
     pub name: Option<String>,
-    #[serde(default = "default_image")]
-    pub image: Option<String>,
     #[serde(default = "default_network")]
     pub network: String,
-    // Additional options
     pub options: Option<HashMap<String, String>>,
     #[serde(default = "default_address")]
     pub address: Address,
     #[serde(default = "default_mount")]
     pub mount: Option<Amount<String>>,
+
+    /*
+     * Creation options
+     */
+
+    #[serde(default = "default_image")]
+    pub image: Option<String>,
     #[serde(default = "default_compose")]
-    pub compose: Option<String>
+    pub compose: Option<String>,
+    #[serde(default = "default_file")]
+    pub file: Option<String>,
+
+    /*
+     * Container values
+     */
+
+    // Container id
+    #[serde(skip)]
+    pub id: Option<String>,
+
+    #[serde(skip)]
+    pub ssh_port: Option<u16>
 }

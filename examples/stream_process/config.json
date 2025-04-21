@@ -1,8 +1,14 @@
 {
-  "process":
-    [
-      {
-        "type": "kafka"
-      }
-    ]
+  "store":
+  [
+    {
+      "type": "postgres"
+    },
+    {
+      "type": "mongodb"
+    },
+    {
+      "type": "redis"
+    }
+  ]
 }

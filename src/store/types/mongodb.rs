@@ -43,6 +43,7 @@ impl MongoDB {
     
     pub fn setup_container(&self, docker: Container) -> Container {
         docker
+            .set_image("mongo")
             .add_env_var("ME_CONFIG_MONGODB_ADMINUSERNAME", self.me_config_mongodb_adminusername.clone())
             .add_env_var("ME_CONFIG_MONGODB_ADMINPASSWORD", self.me_config_mongodb_adminpassword.clone())
             .add_env_var("ME_CONFIG_MONGODB_URL", self.me_config_mongodb_url.clone())

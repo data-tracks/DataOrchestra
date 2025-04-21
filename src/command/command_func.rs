@@ -26,13 +26,14 @@ pub fn spawn_command<T: Into<String>>(arg: T) -> Child {
     spawn
 }
 
-pub fn output_command(arg: &str) -> String {
-    debug!("{}", format!("Running command [{}]", arg));
+pub fn output_command<T: Into<String>>(arg: T) -> String {
+    let command = arg.into();
+    debug!("{}", format!("Running command [{}]", &command));
     let output;
     if cfg!(target_os = "windows") {
         output = Command::new("cmd")
             .arg("/C")
-            .arg(arg)
+            .arg(command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output()
@@ -40,7 +41,7 @@ pub fn output_command(arg: &str) -> String {
     } else {
         output = Command::new("sh")
             .arg("-c")
-            .arg(arg)
+            .arg(command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output()

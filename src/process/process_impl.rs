@@ -21,7 +21,6 @@ impl Start<()> for Process {
                 self.config = Some(self.process_type.unwrap().new());
             }
  
-
             let _ = self.object.docker.get_or_insert(Container::new());
             if let Some(mut docker) = self.object.docker {
                 let config = self.config.as_mut().unwrap();
