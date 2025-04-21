@@ -34,8 +34,36 @@ The available config parameters for a store nodes are given as
 
 ```json
 {
-    
-    "docker": {}
+    "start": "",
+    "data": "",
+    "node": {
+      "name": "",
+      "address": {
+        "ip": "",
+        "port": ""
+      }
+    },
+    "schema": " | []",
+    "type": "",
+    "config": {
+      ...
+    },
+    "docker": 
+    {
+      "name": "",
+      "network": "",
+      "options": {
+        ...
+      },
+      "address": {
+        "ip": "",
+        "port": ""
+      },
+      "mount": "",
+      "image": "",
+      "compose": "",
+      "file": ""
+    }
 }
 ```
 

@@ -24,7 +24,7 @@ pub struct Store {
     /// Store type
     /// Refers to the database type, as available in [`StoreType`].
     #[serde(alias = "type")]
-    pub db_type: StoreType,
+    pub db_type: Option<StoreType>,
 
     /// Refers to the additional parameters of the structs in [`StoreType`], like for example [`PostGres`]
     pub config: Option<StoreTypeConfig>,

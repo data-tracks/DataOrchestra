@@ -2,13 +2,12 @@
   "store":
   [
     {
-      "type": "postgres"
-    },
-    {
-      "type": "mongodb"
-    },
-    {
-      "type": "redis"
+      "docker": {
+        "image": "postgres",
+        "options": {
+          "POSTGRES_PASSWORD": "postgres"
+        }
+      }
     }
   ]
 }

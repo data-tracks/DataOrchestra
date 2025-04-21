@@ -37,30 +37,17 @@ fn main() {
     info!("Finished parsing config.json");
 
     // Get amount of docker containers to assign ports
-    let docker_amount: usize = config.store.get_count() + config.process.get_count() + config.generate.get_count();
-
-    let addresses: Vec<Address> = gen_unique_address(docker_amount);
-    let mut current_address: usize = 0;
-    
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
     // Start different tasks
     // Note: Task reference not referencable anymore
     match config.store {
         Amount::None => (),
-        Amount::Single(mut task) => {
-            if let Some(ref mut docker) = task.object.docker {
-                docker.address = addresses[current_address]; 
-                current_address += 1;
-            }
+        Amount::Single(task) => {
             thread_pool.push(task.start());
         }
         Amount::Multiple(tasks) => {
-            for mut task in tasks {
-                if let Some(ref mut docker) = task.object.docker {
-                    docker.address = addresses[current_address]; 
-                    current_address += 1;
-                }
+            for task in tasks {
                 thread_pool.push(task.start());
             }
         }
@@ -68,19 +55,11 @@ fn main() {
     
     match config.process {
         Amount::None => (),
-        Amount::Single(mut task) => {
-            if let Some(ref mut docker) = task.object.docker {
-                docker.address = addresses[current_address];
-                current_address += 1
-            }
+        Amount::Single(task) => {
             thread_pool.push(task.start());
         }
         Amount::Multiple(tasks) => {
-            for mut task in tasks {
-                if let Some(ref mut docker) = task.object.docker {
-                    docker.address = addresses[current_address];
-                    current_address += 1;
-                }
+            for task in tasks {
                 thread_pool.push(task.start());
             }
         }
@@ -88,15 +67,11 @@ fn main() {
      
     match config.generate {
         Amount::None => (),
-        Amount::Single(mut task) => {
-            task.docker.as_mut().unwrap().address = addresses[current_address];
-            current_address += 1;
+        Amount::Single(task) => {
             thread_pool.push(task.start());
         }
         Amount::Multiple(tasks) => {
-            for mut task in tasks {
-                task.docker.as_mut().unwrap().address = addresses[current_address];
-                current_address += 1;
+            for task in tasks {
                 thread_pool.push(task.start());
             }
         }
