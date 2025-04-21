@@ -6,7 +6,9 @@ use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
 use std::u16;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
+use serde::de::value;
+use crate::docker::create_network;
 use crate::docker::docker_struct::Container;
 use crate::command::command_func::{output_command, spawn_command, status_command};
 use crate::ssh::ssh_struct::ssh;
@@ -33,7 +35,12 @@ impl Container {
         self.image = Some(image.into());
         self
     }
-
+    
+    pub fn set_compose<T: Into<String>>(mut self, compose: T) -> Self {
+        self.compose = Some(compose.into());
+        self
+    }
+    
     /// Add enviroment variables to docker container
     pub fn add_env_var<T: Into<String>, S: Into<String>>(mut self, key: T, value: S) -> Self {
         if let Some(ref mut map) = self.options {
@@ -65,9 +72,20 @@ impl Container {
         }
         self
     }
-    
-    pub fn set_compose<T: Into<String>>(mut self, compose: T) -> Self {
-        self.compose = Some(compose.into());
+
+    pub fn add_command_arg<T: Into<String>>(mut self, arg: T) -> Self {
+        let arg = arg.into();
+        if let Amount::Multiple(ref mut values) = self.extra {
+            values.push(arg); 
+        } 
+        else if let Amount::Single(ref mut value) = self.extra {
+            let values = vec![value.clone(), arg];
+            self.extra = Amount::Multiple(values);
+        }
+        else if let Amount::None = self.extra {
+            self.extra = Amount::Single(arg); 
+        }
+
         self
     }
 }
@@ -85,12 +103,13 @@ impl Container {
             compose: default_compose(),
             file: default_file(),
             id: None, 
-            ssh_port: None
+            ssh_port: None,
+            extra: Amount::None
         }
     }
 
     /// Initialise docker container based on specified data in [`Container`] struct.
-    pub fn init(&mut self) -> Result<(), String>{
+    pub fn build(&mut self) -> Result<(), String>{
         // Hierarchy creation. compose > file > image
         if let Some(ref compose) = self.compose {
             info!("Initializing docker container from docker compose");
@@ -100,35 +119,23 @@ impl Container {
             info!("Initializing docker container from docker image");
 
             // Create network
-            let networks: String = output_command("docker network ls");
-            if !networks.contains(&self.network) {
-                debug!("{}", format!("Creating network bridge {}", &self.network));
-                let create_bridge = spawn_command(&format!("docker network create -d bridge {}", &self.network))
-                    .wait();
-
-                if create_bridge.is_err() || (create_bridge.is_ok() && !&create_bridge.as_ref().unwrap().success()) {
-                    warn!("Unable to create bridge {} | Code : {}", &self.network, &create_bridge.unwrap().code().unwrap());
-                }
-                else {
-                    debug!("Successfully created bridge [{}]", &self.network)
-                }
+            let network = create_network(&self.network);
+            match network {
+                Ok(_) => info!("Successfully created network"),
+                Err(value) => error!("{}", value),
             }
-            
+
             // Create image
             let id = output_command(&format!("docker run {}", self.get_options()));
             debug!("id : {}", &id);
             self.id = Some(id.trim().to_string());
         }
+
         // get ip
-        let ip_output = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
-        let ip_output = ip_output.replace("\n", "");
-        let ip = Ipv4Addr::from_str(ip_output.as_str());
-        if let Ok(ip) = ip {
-            self.address.ip = IpAddr::V4(ip);
-            debug!("ip: {}", self.address.ip);
-        }
-        else {
-            panic!("Couldn't get ip from docker container {}", self.address.ip);
+        let ip = self.get_ip();
+        match ip {
+            Ok(ip) => self.address.ip = ip,
+            Err(error) => error!("{}", error)
         }
 
         // Get ssh port
@@ -237,5 +244,17 @@ impl Container {
         };
 
         output    
+    }
+
+
+    pub fn get_ip(&self) -> Result<IpAddr, String>  {
+        let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
+        let ip = ip.replace("\n", "").trim().to_string();
+        let ip = Ipv4Addr::from_str(ip.as_str());
+        if let Err(err) = ip {
+            return Err(err.to_string());
+        }
+        
+        Ok(IpAddr::V4(ip.unwrap()))
     }
 }

@@ -58,7 +58,7 @@ pub struct Container {
     pub address: Address,
     #[serde(default = "default_mount")]
     pub mount: Option<Amount<String>>,
-
+    pub extra: Amount<String>,
     /*
      * Creation options
      */

@@ -1,6 +1,6 @@
 use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh};
 
-use super::{super::common::common_trait::Start, process_struct::Process};
+use super::{super::super::common::common_trait::Start, process_struct::Process};
 use std::{path::Path, thread::{self, JoinHandle}};
 use log::{info, debug};
 
@@ -27,7 +27,7 @@ impl Start<()> for Process {
                 // Setup the container with needed default parameters for specific [`StoreType`]
                 docker = config.setup_container(docker);
  
-                let _ = docker.init();
+                let _ = docker.build();
                 ssh = Some(docker.get_ssh());
                 self.object.remote = Some(docker.address.clone());
             }

@@ -1,9 +1,9 @@
 use serde::{Serialize, Deserialize};
 
 use crate::object::object_struct::Object;
-use crate::store::store_struct::Store;
-use crate::process::process_struct::Process;
-use crate::generate::generate_struct::Generate;
+use crate::object::store::store_struct::Store;
+use crate::object::process::process_struct::Process;
+use crate::object::generate::generate_struct::Generate;
 
 use super::amount::Amount;
 use super::node::Node;

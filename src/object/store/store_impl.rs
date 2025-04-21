@@ -1,9 +1,8 @@
 use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh, types::amount::Amount};
 
-use super::{super::common::common_trait::Start, store_struct::Store};
-use core::error;
+use super::{super::super::common::common_trait::Start, store_struct::Store};
 use std::{fs, path::Path, thread::{self, JoinHandle}};
-use log::{debug, error, info};
+use log::{debug, info};
 
 impl Start<()> for Store {
     /// Start initialisation process for store components
@@ -56,7 +55,7 @@ impl Start<()> for Store {
                 }
                             
                 // Start docker container
-                let _ = docker.init();
+                let _ = docker.build();
 
                 ssh = Some(docker.get_ssh());
                 self.object.remote = Some(docker.address.clone());

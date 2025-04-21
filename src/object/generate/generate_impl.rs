@@ -1,6 +1,6 @@
 use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh};
 
-use super::{super::common::common_trait::Start, generate_struct::Generate};
+use super::{super::super::common::common_trait::Start, generate_struct::Generate};
 use std::{path::Path, thread::{self, JoinHandle}};
 use log::info;
 
@@ -17,7 +17,7 @@ impl Start<()> for Generate {
             let mut ssh: Option<ssh> = None;
 
             if let Some(ref mut docker) = self.docker {
-                let _ = docker.init();
+                let _ = docker.build();
                 ssh = Some(docker.get_ssh());
                 self.remote = Some(docker.address.clone());
             }

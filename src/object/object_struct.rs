@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{docker::docker_struct::Container, types::{address::Address, node::Node}};
+use crate::{docker::docker_struct::Container, types::{address::Address, amount::Amount, node::Node}};
 
+use super::attach::attach_types::AttachType;
+
+/// The `Object` type. Acts as a generic component. Implements basic fields that every object
+/// should possess.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Object {
     #[serde(rename = "docker")]
@@ -16,4 +20,9 @@ pub struct Object {
     #[serde(rename = "remote")]
     #[serde(skip)]
     pub remote: Option<Address>,
+
+    #[serde(rename = "attach_type")]
+    pub attach_type: Option<AttachType>,
+    #[serde(rename = "attach")]
+    pub attach: Amount<Box<Object>>
 }
