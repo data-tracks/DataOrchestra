@@ -35,11 +35,10 @@ fn main() {
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
 
-    // Get amount of docker containers to assign ports
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
     // Start different tasks
-    // Note: Task reference not referencable anymore
+    // Note: Task not referencable anymore as it is moved into `start`
     match config.store {
         Amount::None => (),
         Amount::Single(task) => {
@@ -76,6 +75,7 @@ fn main() {
         }
     }
 
+    // Wait for threads to finish
     for thread in thread_pool {
         let _ = thread.join();
     }

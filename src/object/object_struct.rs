@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{docker::docker_struct::Container, types::{address::Address, amount::Amount, node::Node}};
+use crate::{docker::docker_struct::Container, ssh::ssh_struct::ssh, types::{address::Address, amount::Amount, node::Node}};
 
 use super::attach::attach_types::AttachType;
 
@@ -23,6 +23,11 @@ pub struct Object {
 
     #[serde(rename = "attach_type")]
     pub attach_type: Option<AttachType>,
+
     #[serde(rename = "attach")]
-    pub attach: Amount<Box<Object>>
+    #[serde(default)]
+    pub attach: Amount<Box<Object>>,
+
+    #[serde(skip)]
+    pub ssh: Option<ssh>
 }

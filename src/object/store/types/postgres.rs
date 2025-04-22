@@ -52,7 +52,7 @@ impl PostGres {
             .add_env_var("POSTGRES_PASSWORD", self.postgres_password.clone());
        
         if let Some(ref initdb_args) = self.postgres_initdb_args {
-            docker.add_command_arg(format!("-e POSTGRES_INITDB_ARGS=\"{}\"", initdb_args));
+            docker.add_env_var("POSTGRES_INITDB_ARGS", format!("\"{}\"", initdb_args));
         }
     }
 

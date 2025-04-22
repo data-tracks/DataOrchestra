@@ -151,7 +151,6 @@ impl ssh {
                 else {
                     let result = self.upload_file(entry.path(), &Path::new(&remote_path));
                     if let Err(ref error) = result {
-                        error!("Unable to upload file from directory {}", error);
                         return Err(format!("Unable to upload file from directory {}", error));
                     }
                 }

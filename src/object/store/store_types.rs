@@ -49,7 +49,7 @@ impl StoreTypeConfig {
     pub fn mount_data(&self, data: Amount<String>, docker: &mut Container) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.mount_data(data, docker),
-            StoreTypeConfig::Redis(redis) => redis.mount_data(data ,docker),
+            StoreTypeConfig::Redis(_redis) => (),
             StoreTypeConfig::MongoDB(mongodb) => mongodb.mount_data(data, docker),
             StoreTypeConfig::Polypheny(polypheny) => polypheny.mount_data(data, docker)
         };

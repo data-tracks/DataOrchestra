@@ -19,7 +19,8 @@ pub struct Store {
      */
 
     /// Relation structure
-    pub schema: Option<Amount<String>>,
+    #[serde(default)]
+    pub schema: Amount<String>,
     
     /// Store type
     /// Refers to the database type, as available in [`StoreType`].

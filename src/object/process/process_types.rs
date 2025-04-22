@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::docker::docker_struct::Container;
 
-use super::types::{flink::Flink, kafka::{self, Kafka}, spark::Spark, storm::Storm};
+use super::types::{flink::Flink, kafka::Kafka, spark::Spark, storm::Storm};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]

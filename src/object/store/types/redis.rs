@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{docker::docker_struct::Container, types::amount::Amount};
+use crate::docker::docker_struct::Container;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "redis")]
@@ -14,8 +14,5 @@ impl Redis {
 
     pub fn setup_container(&self, docker: &mut Container) {
         docker.set_image("redis");
-    }
-
-    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Container) {
     }
 }

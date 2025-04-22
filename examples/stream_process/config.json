@@ -2,12 +2,7 @@
   "store":
   [
     {
-      "docker": {
-        "image": "postgres",
-        "options": {
-          "POSTGRES_PASSWORD": "postgres"
-        }
-      }
+      "type": "postgres"
     }
   ]
 }

@@ -50,13 +50,14 @@ pub fn output_command<T: Into<String>>(arg: T) -> String {
     String::from_utf8(output.stdout).unwrap()
 }
 
-pub fn status_command(arg: &str) -> ExitStatus {
-    debug!("{}", format!("Running command [{}]", arg));
+pub fn status_command<T: Into<String>>(arg: T) -> ExitStatus {
+    let command = arg.into();
+    debug!("{}", format!("Running command [{}]", &command));
     let status;
     if cfg!(target_os = "windows") {
         status = Command::new("cmd")
             .arg("/C")
-            .arg(arg)
+            .arg(command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .status()
@@ -64,7 +65,7 @@ pub fn status_command(arg: &str) -> ExitStatus {
     } else {
         status = Command::new("sh")
             .arg("-c")
-            .arg(arg)
+            .arg(command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .status()

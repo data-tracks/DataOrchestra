@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::Write;
 use log::LevelFilter;
 use ansi_term::Colour;
 
@@ -29,9 +29,8 @@ pub fn init_logger(level: LevelFilter) {
 
             let file = record.file().unwrap().split('\\').last().unwrap_or("unknown");
 
-            let mut stdout = io::stdout();
             writeln!(
-                stdout,
+                buf,
                 "[{:<5}] [{}] [{}:{}] {}",
                 colored_level,
                 thread_name,

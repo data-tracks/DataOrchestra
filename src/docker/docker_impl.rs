@@ -5,14 +5,14 @@ use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
 use std::u16;
-use log::{debug, info};
+use log::{debug, error, info};
 use crate::docker::create_network;
 use crate::docker::docker_struct::Container;
 use crate::command::command_func::{output_command, spawn_command, status_command};
 use crate::ssh::ssh_struct::ssh;
 use crate::types::amount::Amount;
 
-use super::docker_struct::{default_address, default_compose, default_file, default_image, default_mount, default_name, default_network, default_options};
+use super::docker_struct::{default_address, default_build_args, default_compose, default_file, default_image, default_mount, default_name, default_network, default_options, default_publish_all};
 
 /// Factory for the creation of a docker container 
 impl Container {
@@ -38,6 +38,11 @@ impl Container {
         self.compose = Some(compose.into());
         self
     }
+
+    pub fn set_publish_all(&mut self, value: bool) -> &mut Self {
+        self.publish_all = value;
+        self
+    }
     
     /// Add enviroment variables to docker container
     pub fn add_env_var<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
@@ -51,6 +56,20 @@ impl Container {
         }
 
         self
+    }
+
+    pub fn add_build_arg<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+        if let Some(ref mut map) = self.build_args {
+            map.insert(key.into(), value.into());
+        }
+        else {
+            let mut map = HashMap::<String,String>::new();
+            map.insert(key.into(), value.into());
+            self.build_args = Some(map);
+        }
+
+        self
+ 
     }
 
     /// Add a directory mount to docker container
@@ -70,22 +89,6 @@ impl Container {
         }
         self
     }
-
-    pub fn add_command_arg<T: Into<String>>(&mut self, arg: T) -> &mut Self {
-        let arg = arg.into();
-        if let Amount::Multiple(ref mut values) = self.extra {
-            values.push(arg); 
-        } 
-        else if let Amount::Single(ref mut value) = self.extra {
-            let values = vec![value.clone(), arg];
-            self.extra = Amount::Multiple(values);
-        }
-        else if let Amount::None = self.extra {
-            self.extra = Amount::Single(arg); 
-        }
-
-        self
-    }
 }
 
 impl Container {
@@ -97,12 +100,13 @@ impl Container {
             image: default_image(),
             network: default_network(),
             mount: default_mount(),
+            build_args: default_build_args(),
+            publish_all: default_publish_all(),
             options: default_options(),
             compose: default_compose(),
             file: default_file(),
             id: None, 
             ssh_port: None,
-            extra: Amount::None
         }
     }
 
@@ -123,8 +127,30 @@ impl Container {
                 Err(value) => error!("{}", value),
             }
 
+            // Build dockerfile 
+            if let Some(ref file) = self.file {
+                if let Some(ref image) = self.image {
+                    let mut build_args = String::new();
+                    if let Some(ref args) = self.build_args {
+                        for (key, value) in args.iter() {
+                            build_args = format!(" {}={}", key, value);
+                        }
+                    }
+
+                    if build_args.is_empty() {
+                        let _ = output_command(format!("docker build -t {} {}", image, file));
+                    }
+                    else {
+                        let _ = output_command(format!("docker build --build-arg {} -t {} {}", build_args, image, file));
+                    }
+                }
+                else {
+                    panic!("Please provide image along with the dockerfile such that the dockerfile can be properly build");
+                }
+            }
+
             // Create image
-            let id = output_command(&format!("docker run {}", self.get_options()));
+            let id = output_command(format!("docker run {}", self.get_options()));
             debug!("id : {}", &id);
             self.id = Some(id.trim().to_string());
         }
@@ -168,25 +194,35 @@ impl Container {
     pub fn get_options(&self) -> String {
         let mut command: String = String::from("-d -q");
 
+        // Parse network variable
         command = format!("{command} --network={}", &self.network);
 
+        // Parse name variable
         if let Some(ref name) = self.name {
             command = format!("{command} --name={}", name);
         }
-        // Publish ssh port
-        command = format!("{command} -p 22");
-       
-        // Publish postgres port
-        if self.image.as_ref().unwrap() == "postgres" {
-            command = format!("{command} -p 5432:5432");
+    
+        if self.publish_all {
+            command = format!("{command} -P");
+        }
+        else {
+            // Publish ssh port
+            command = format!("{command} -p 22");
+           
+            // Publish postgres port
+            if self.image.as_ref().unwrap() == "postgres" {
+                command = format!("{command} -p 5432");
+            }
         }
 
+        // Parse enviroment variables
         if let Some(options) = &self.options {
             for (key, value) in options {
                 command = format!("{command} -e {key}={value}")
             }
         }
 
+        // Parse mount 
         if let Some(source) = &self.mount {
             match source {
                 Amount::None => (),
@@ -199,6 +235,7 @@ impl Container {
             }
         }
 
+        // Parse image variable
         command = format!("{command} -it {}", self.image.as_ref().unwrap());
 
         command
@@ -211,13 +248,14 @@ impl Container {
 
         ssh
     }
+
     /// Execute command remotely in docker container
     ///
     /// # Examples
     /// 
     /// ```
     /// use DataOrchestra::docker::docker_struct::Container;
-    /// let docker: Container =  { image: "ubuntu" };
+    /// let docker: Container = Container::new().set_image("ubuntu");
     /// docker.execute("pwd");
     /// ```
     fn execute<T: Into<String>>(&self, arg: T) -> Child {
@@ -245,6 +283,17 @@ impl Container {
     }
 
 
+    /// Get ip of docker container
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use DataOrchestra::docker::docker_struct::Container;
+    ///
+    /// let docker: Container = Container::new().set_image("ubuntu");
+    /// let ip = docker.get_ip();
+    /// println!("{}", ip);
+    /// ```
     pub fn get_ip(&self) -> Result<IpAddr, String>  {
         let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
         let ip = ip.replace("\n", "").trim().to_string();

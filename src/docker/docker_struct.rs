@@ -37,6 +37,14 @@ pub fn default_file() -> Option<String> {
     None
 }
 
+pub fn default_build_args() -> Option<HashMap<String, String>> {
+    None
+}
+
+pub fn default_publish_all() -> bool {
+    false
+}
+
 
 /// The docker `Container` type. Represents the general information tied to the creation of a
 /// docker container
@@ -58,7 +66,10 @@ pub struct Container {
     pub address: Address,
     #[serde(default = "default_mount")]
     pub mount: Option<Amount<String>>,
-    pub extra: Amount<String>,
+    #[serde(default = "default_build_args")]
+    pub build_args: Option<HashMap<String, String>>,
+    #[serde(default = "default_publish_all")]
+    pub publish_all: bool,
     /*
      * Creation options
      */

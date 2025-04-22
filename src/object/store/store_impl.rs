@@ -24,7 +24,7 @@ impl Start<()> for Store {
             }
                 
             // Check if node was specified for store
-            if let Some(node) = self.object.node {
+            if let Some(ref node) = self.object.node {
                 self.object.remote = Some(node.address.unwrap().clone());
             }
             // Set docker container for store
@@ -33,9 +33,9 @@ impl Start<()> for Store {
                 if let Some(config) = self.config {
                     // Setup the container with needed default parameters for specific [`StoreType`]
                     config.setup_container(docker);
-
-                    if let Some(schema) = self.schema {
-                            config.mount_data(schema, docker);
+                    
+                    if self.schema.has_something() {
+                        config.mount_data(self.schema, docker);
                     }
                     // Upload all sql files of non was specified
                     else if let Some(ref data) = self.object.data {
@@ -70,18 +70,12 @@ impl Start<()> for Store {
             }
 
             let ssh = ssh.unwrap();
-            let remote = self.object.remote.unwrap(); //self.object.get_remote_connection();
+            let remote = self.object.get_remote_connection();
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
            
             // Upload data directory
-            let mut upload_directory = String::from("/");
-            if let Some(ref data) = self.object.data {
-                let upload = ssh.upload_directory(&Path::new(&data), &Path::new("/"));
-                if let Ok(dir) = upload {
-                    upload_directory = dir
-                }
-            }
+            let upload_directory = self.object.upload_data();
 
             debug!("upload dir : {:?}", upload_directory);
             // Run start script
