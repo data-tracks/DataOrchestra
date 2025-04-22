@@ -11,8 +11,8 @@ impl Storm {
         Storm { }
     }
 
-    pub fn setup_container(&self, docker: Container) -> Container {
-        docker.set_compose("lib/TrackBench.rs/compose-storm.yaml")
+    pub fn setup_container(&self, docker: &mut Container) {
+        docker.set_compose("lib/TrackBench.rs/compose-storm.yaml");
     }
 }
 

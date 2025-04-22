@@ -29,13 +29,13 @@ impl Start<()> for Store {
             }
             // Set docker container for store
             let _ = self.object.docker.get_or_insert(Container::new());
-            if let Some(mut docker) = self.object.docker {
+            if let Some(ref mut docker) = self.object.docker {
                 if let Some(config) = self.config {
                     // Setup the container with needed default parameters for specific [`StoreType`]
-                    docker = config.setup_container(docker);
+                    config.setup_container(docker);
 
                     if let Some(schema) = self.schema {
-                            docker = config.mount_data(schema, docker);
+                            config.mount_data(schema, docker);
                     }
                     // Upload all sql files of non was specified
                     else if let Some(ref data) = self.object.data {
@@ -50,7 +50,7 @@ impl Start<()> for Store {
                                 }
                             }
                         }
-                        docker = config.mount_data(Amount::Multiple(sql_files), docker);
+                        config.mount_data(Amount::Multiple(sql_files), docker);
                     }
                 }
                             

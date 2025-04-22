@@ -2,7 +2,6 @@ use std::env;
 use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
-use std::process::exit;
 use std::thread::JoinHandle;
 use log::{debug, info, warn, LevelFilter};
 use rand::Rng;

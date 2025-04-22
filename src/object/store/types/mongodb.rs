@@ -41,16 +41,15 @@ impl MongoDB {
         }
     }
     
-    pub fn setup_container(&self, docker: Container) -> Container {
+    pub fn setup_container(&self, docker: &mut Container) {
         docker
             .set_image("mongo")
             .add_env_var("ME_CONFIG_MONGODB_ADMINUSERNAME", self.me_config_mongodb_adminusername.clone())
             .add_env_var("ME_CONFIG_MONGODB_ADMINPASSWORD", self.me_config_mongodb_adminpassword.clone())
             .add_env_var("ME_CONFIG_MONGODB_URL", self.me_config_mongodb_url.clone())
-            .add_env_var("ME_CONFIG_MONGODB_BASICAUTH", self.me_config_basicauth.to_string())
+            .add_env_var("ME_CONFIG_MONGODB_BASICAUTH", self.me_config_basicauth.to_string());
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, mut docker: Container) -> Container {
-        docker
+    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Container) {
     }
 }

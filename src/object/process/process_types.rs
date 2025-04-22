@@ -37,7 +37,7 @@ pub enum ProcessTypeConfig {
 impl ProcessTypeConfig {
     /// Setup the given docker container with config of specified [`ProcessType`]
     /// Consumes the docker container object and returns the modified container
-    pub fn setup_container(&self, docker: Container) -> Container {
+    pub fn setup_container(&self, docker: &mut Container) {
         match self {
             ProcessTypeConfig::Flink(flink) => flink.setup_container(docker),
             ProcessTypeConfig::Kafka(kafka) => kafka.setup_container(docker),

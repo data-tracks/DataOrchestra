@@ -11,11 +11,9 @@ impl Polypheny {
         Polypheny {  }
     }
 
-    pub fn setup_container(&self, docker: Container) -> Container {
-        docker
+    pub fn setup_container(&self, docker: &mut Container) {
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, mut docker: Container) -> Container {
-        docker
+    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Container) {
     }
 }

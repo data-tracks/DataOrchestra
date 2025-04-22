@@ -1,13 +1,11 @@
 use std::collections::HashMap;
-use std::fmt::format;
 use std::net::{IpAddr, Ipv4Addr};
 use std::process::{Child, Command, Stdio};
 use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
 use std::u16;
-use log::{debug, error, info, warn};
-use serde::de::value;
+use log::{debug, info};
 use crate::docker::create_network;
 use crate::docker::docker_struct::Container;
 use crate::command::command_func::{output_command, spawn_command, status_command};
@@ -19,30 +17,30 @@ use super::docker_struct::{default_address, default_compose, default_file, defau
 /// Factory for the creation of a docker container 
 impl Container {
     /// Set name of docker container
-    pub fn set_name<T: Into<String>>(mut self, name: T) -> Self {
+    pub fn set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
         self.name = Some(name.into());
         self
     }
 
     /// Add network to docker container
-    pub fn set_network<T: Into<String>>(mut self, network: T) -> Self {
+    pub fn set_network<T: Into<String>>(&mut self, network: T) -> &mut Self {
         self.network = network.into();
         self
     }
 
     /// Add image to docker container
-    pub fn set_image<T: Into<String>>(mut self, image: T) -> Self {
+    pub fn set_image<T: Into<String>>(&mut self, image: T) -> &mut Self {
         self.image = Some(image.into());
         self
     }
     
-    pub fn set_compose<T: Into<String>>(mut self, compose: T) -> Self {
+    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
         self.compose = Some(compose.into());
         self
     }
     
     /// Add enviroment variables to docker container
-    pub fn add_env_var<T: Into<String>, S: Into<String>>(mut self, key: T, value: S) -> Self {
+    pub fn add_env_var<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
         if let Some(ref mut map) = self.options {
             map.insert(key.into(), value.into());
         }
@@ -56,7 +54,7 @@ impl Container {
     }
 
     /// Add a directory mount to docker container
-    pub fn add_mount<T: Into<String>, S: Into<String>>(mut self, mount: T, target: S) -> Self {
+    pub fn add_mount<T: Into<String>, S: Into<String>>(&mut self, mount: T, target: S) -> &mut Self {
         let mount_value = format!("{}:{}", mount.into(), target.into());
         if let Some(ref mut amount) = self.mount {
             if let Amount::Single(value) = amount {
@@ -73,7 +71,7 @@ impl Container {
         self
     }
 
-    pub fn add_command_arg<T: Into<String>>(mut self, arg: T) -> Self {
+    pub fn add_command_arg<T: Into<String>>(&mut self, arg: T) -> &mut Self {
         let arg = arg.into();
         if let Amount::Multiple(ref mut values) = self.extra {
             values.push(arg); 

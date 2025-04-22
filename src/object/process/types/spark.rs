@@ -11,8 +11,8 @@ impl Spark {
         Spark { }
     }
 
-    pub fn setup_container(&self, docker: Container) -> Container {
-        docker.set_compose("lib/TrackBench.rs/compose-spark.yaml")
+    pub fn setup_container(&self, docker: &mut Container) {
+        docker.set_compose("lib/TrackBench.rs/compose-spark.yaml");
     }
 }
 

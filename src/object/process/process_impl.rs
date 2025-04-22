@@ -22,10 +22,10 @@ impl Start<()> for Process {
             }
  
             let _ = self.object.docker.get_or_insert(Container::new());
-            if let Some(mut docker) = self.object.docker {
+            if let Some(ref mut docker) = self.object.docker {
                 let config = self.config.as_mut().unwrap();
                 // Setup the container with needed default parameters for specific [`StoreType`]
-                docker = config.setup_container(docker);
+                config.setup_container(docker);
  
                 let _ = docker.build();
                 ssh = Some(docker.get_ssh());

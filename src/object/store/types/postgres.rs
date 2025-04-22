@@ -44,30 +44,29 @@ impl PostGres {
         }
     }
 
-    pub fn setup_container(&self, mut docker: Container) -> Container {
+    pub fn setup_container(&self, mut docker: &mut Container)  {
         docker = docker
             .set_image("postgres")
             .add_env_var("POSTGRES_DB", self.postgres_db.clone())
             .add_env_var("POSTGRES_USER", self.postgres_user.clone())
             .add_env_var("POSTGRES_PASSWORD", self.postgres_password.clone());
        
-        if let Some(initdb_args) = self.postgres_initdb_args {
-            docker = docker.add_command_arg(format!("-e POSTGRES_INITDB_ARGS=\"{}\"", initdb_args));
+        if let Some(ref initdb_args) = self.postgres_initdb_args {
+            docker.add_command_arg(format!("-e POSTGRES_INITDB_ARGS=\"{}\"", initdb_args));
         }
-        docker
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, mut docker: Container) -> Container {
+    pub fn mount_data(&self, schema: Amount<String>, mut docker: &mut Container) {
         match schema {
             Amount::None => (),
-            Amount::Single(value) => docker = docker.add_mount(absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap())),
+            Amount::Single(value) => { 
+                let _ = docker.add_mount(absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap()));
+            },
             Amount::Multiple(values) => {
                 for value in values {
                     docker = docker.add_mount(absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap()));
                 }
             }
         };
-
-        docker
     }
 }

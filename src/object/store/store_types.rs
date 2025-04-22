@@ -37,22 +37,22 @@ impl StoreType {
 impl StoreTypeConfig {
     /// Setup the given docker container with config of specified [`StoreType`]
     /// Consumes the docker container object and returns the modified container
-    pub fn setup_container(&self, docker: Container) -> Container {
+    pub fn setup_container(&self, docker: &mut Container) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.setup_container(docker),
             StoreTypeConfig::Redis(redis) => redis.setup_container(docker),
             StoreTypeConfig::MongoDB(mongodb) => mongodb.setup_container(docker),
-            StoreTypeConfig::Polypheny(polypheny) => polypheny.setup_container(docker)
-        }
+            StoreTypeConfig::Polypheny(polypheny) => polypheny.setup_container(docker),
+        };
     }
 
-    pub fn mount_data(&self, data: Amount<String>, docker: Container) -> Container {
+    pub fn mount_data(&self, data: Amount<String>, docker: &mut Container) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.mount_data(data, docker),
             StoreTypeConfig::Redis(redis) => redis.mount_data(data ,docker),
             StoreTypeConfig::MongoDB(mongodb) => mongodb.mount_data(data, docker),
             StoreTypeConfig::Polypheny(polypheny) => polypheny.mount_data(data, docker)
-        }
+        };
     }
 }
 

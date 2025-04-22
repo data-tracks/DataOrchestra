@@ -1,5 +1,3 @@
-use log::{debug, warn};
-
 use crate::command::command_func::{output_command, spawn_command};
 
 pub mod docker_struct;

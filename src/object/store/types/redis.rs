@@ -12,11 +12,10 @@ impl Redis {
         Redis {  }
     }
 
-    pub fn setup_container(&self, docker: Container) -> Container {
-        docker.set_image("redis")
+    pub fn setup_container(&self, docker: &mut Container) {
+        docker.set_image("redis");
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, mut docker: Container) -> Container {
-        docker
+    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Container) {
     }
 }
