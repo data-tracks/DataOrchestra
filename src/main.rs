@@ -14,13 +14,16 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
+    /// Config file location
     #[arg(short, long)]
     file: Option<String>,
 
+    /// Logging level
     #[arg(short, long, default_value_t = LevelFilter::Info)]
     level: LevelFilter,
 
-    #[arg(long = "remove_all", default_value_t = true)]
+    /// Remove all running and stopped docker containers
+    #[arg(long = "remove_all", default_value_t = false)]
     remove_all: bool
 }
 

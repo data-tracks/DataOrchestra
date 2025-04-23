@@ -68,8 +68,9 @@ impl ssh {
     /// let result = ssh.exec("pwd");
     /// println!("{}", result);
     /// ```
-    pub fn exec(&self, command: &str) -> String {
-        debug!("Executing command [{}]", command);
+    pub fn exec<T: Into<String>>(&self, command: T) -> String {
+        let command = command.into();
+        debug!("Executing command [{}]", &command);
         let channel: Result<Channel, ssh2::Error> = self.session.channel_session();
 
         if let Err(ref error) = channel {
@@ -77,7 +78,7 @@ impl ssh {
         }
 
         let mut channel = channel.unwrap();
-        let exec: Result<(), ssh2::Error> = channel.exec(command);
+        let exec: Result<(), ssh2::Error> = channel.exec(&command);
         
         if let Err(ref error) = exec {
             error!("Unable to execute command {}", error);

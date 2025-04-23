@@ -1,16 +1,9 @@
 use std::{collections::HashMap, net::{IpAddr, Ipv4Addr}};
 use serde::{Deserialize, Serialize};
-use crate::types::{address::Address, amount::Amount};
+use crate::types::amount::Amount;
 
 pub fn default_network() -> String {
     String::from("orchestra")
-}
-
-pub fn default_address() -> Address {
-    Address {
-        ip: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-        port: 5000
-    }
 }
 
 pub fn default_mount() -> Option<Amount<String>> {
@@ -62,8 +55,6 @@ pub struct Container {
     #[serde(default = "default_network")]
     pub network: String,
     pub options: Option<HashMap<String, String>>,
-    #[serde(default = "default_address")]
-    pub address: Address,
     #[serde(default = "default_mount")]
     pub mount: Option<Amount<String>>,
     #[serde(default = "default_build_args")]
@@ -85,10 +76,41 @@ pub struct Container {
      * Container values
      */
 
-    // Container id
     #[serde(skip)]
-    pub id: Option<String>,
+    #[serde(default)]
+    pub meta: Meta,
+}
 
-    #[serde(skip)]
-    pub ssh_port: Option<u16>
+
+#[derive(Debug)]
+pub struct Meta {
+    pub id: Option<String>,
+    pub ip: Option<IpAddr>,
+    pub publish_ports: Option<Vec<PortMap>>
+}
+
+impl Default for Meta {
+    fn default() -> Self {
+        Meta { id: None, ip: None, publish_ports: None }
+    }
+}
+
+#[derive(Debug)]
+pub struct PortMap {
+    host: u16,
+    internal: u16
+}
+
+impl PortMap {
+    pub fn new(host: u16, internal: u16) -> Self {
+        PortMap { host, internal }
+    }
+
+    pub fn get_host(&self) -> u16 {
+        self.host.clone()
+    }
+
+    pub fn get_internal(&self) -> u16 {
+        self.internal.clone()
+    }
 }

@@ -15,19 +15,6 @@ impl Start<()> for Object {
 } 
 
 impl Object {
-    pub fn get_remote_connection(&self) -> Address {
-        if let Some(ref docker) = self.docker {
-            return docker.address.clone()
-        }
-        else if let Some(ref node) = self.node {
-            if let Some(ref address) = node.address {
-                return address.clone();            
-            }
-        }
-    
-        panic!("No available remote connection. Please specify a remote node connection if needed.");
-    }
-
     pub fn upload_data(&self) -> String {
         let mut upload_directory = String::from("/");
         if let Some(ref data) = self.data {

@@ -1,7 +1,7 @@
-use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh, types::amount::Amount};
+use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh, types::{address::Address, amount::Amount}};
 
 use super::{super::super::common::common_trait::Start, store_struct::Store};
-use std::{fs, path::Path, thread::{self, JoinHandle}};
+use std::{fs, net::{IpAddr, Ipv4Addr}, path::Path, thread::{self, JoinHandle}};
 use log::{debug, info};
 
 impl Start<()> for Store {
@@ -15,7 +15,6 @@ impl Start<()> for Store {
         thread::Builder::new().name("store".to_string()).spawn(move || {
             let mut ssh: Option<ssh> = None;
 
-            dbg!("{:?}", &self);
             // Create default config of specified database type ([`StoreType`]) if none was
             // specified
             if self.config.is_none() && self.db_type.is_some(){
@@ -58,10 +57,10 @@ impl Start<()> for Store {
                 let _ = docker.build();
 
                 self.object.ssh = Some(docker.get_ssh());
-                self.object.remote = Some(docker.address.clone());
+                self.object.remote = Some(Address { ip: IpAddr::V4(Ipv4Addr::LOCALHOST), port: docker.get_ssh_port().unwrap().clone() } );
             }
 
-            let remote = self.object.get_remote_connection();
+            let remote = self.object.remote.unwrap();
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
            
@@ -72,9 +71,14 @@ impl Start<()> for Store {
             // Run start script
             if let Some(ref mut start) = self.object.start {
                 if start.contains("sh") {
-                    self.object.ssh.unwrap().exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+                    self.object.ssh.unwrap().exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()));
                 }
             }
+            else {
+                self.object.ssh.unwrap().exec(format!("sh /{}/setup.sh", upload_directory));
+            }
+
+            info!("Finished");
         }).unwrap()
     }
 }

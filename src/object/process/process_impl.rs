@@ -1,7 +1,7 @@
-use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh};
+use crate::{command::command_func::spawn_command, docker::docker_struct::Container, ssh::ssh_struct::ssh, types::address::Address};
 
 use super::{super::super::common::common_trait::Start, process_struct::Process};
-use std::{path::Path, thread::{self, JoinHandle}};
+use std::{net::{IpAddr, Ipv4Addr}, path::Path, thread::{self, JoinHandle}};
 use log::{info, debug};
 
 impl Start<()> for Process {
@@ -30,7 +30,7 @@ impl Start<()> for Process {
  
                 let _ = docker.build();
                 ssh = Some(docker.get_ssh());
-                self.object.remote = Some(docker.address.clone());
+                self.object.remote = Some( Address { ip: IpAddr::V4(Ipv4Addr::LOCALHOST), port: docker.get_ssh_port().unwrap().clone() } );
             }
             
             if self.object.remote.is_none() {
@@ -61,6 +61,12 @@ impl Start<()> for Process {
                     ssh.exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
                 }
             }
+            else {
+                self.object.ssh.unwrap().exec(format!("sh /{}/setup.sh", upload_directory));
+            }
+
+
+            info!("Finished");
         }).unwrap()
     }
 }

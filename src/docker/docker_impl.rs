@@ -4,17 +4,17 @@ use std::process::{Child, Command, Stdio};
 use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
-use std::u16;
+use std::{default, u16};
 use log::{debug, error, info};
 use crate::docker::create_network;
-use crate::docker::docker_struct::Container;
+use crate::docker::docker_struct::{Container, PortMap};
 use crate::command::command_func::{output_command, spawn_command, status_command};
 use crate::ssh::ssh_struct::ssh;
 use crate::types::amount::Amount;
 
-use super::docker_struct::{default_address, default_build_args, default_compose, default_file, default_image, default_mount, default_name, default_network, default_options, default_publish_all};
+use super::docker_struct::{default_build_args, default_compose, default_file, default_image, default_mount, default_name, default_network, default_options, default_publish_all, Meta};
 
-/// Factory for the creation of a docker container 
+// Public methods for docker container 
 impl Container {
     /// Set name of docker container
     pub fn set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
@@ -89,6 +89,25 @@ impl Container {
         }
         self
     }
+
+    pub fn set_id(&mut self, id: String) {
+        self.meta.id = Some(id);
+    }
+
+    pub fn get_id(&self) -> Option<&String> {
+        self.meta.id.as_ref()
+    }
+
+    pub fn add_port_map(&mut self, host: u16, internal: u16) {
+        let map = PortMap::new(host, internal);
+        if let Some(ref mut ports) = self.meta.publish_ports {
+            ports.push(map);
+        }
+        else {
+            self.meta.publish_ports = Some(vec![map]);
+        }
+    }
+
 }
 
 impl Container {
@@ -96,7 +115,6 @@ impl Container {
     pub fn new() -> Self {
         Container {
             name: default_name(),
-            address: default_address(),
             image: default_image(),
             network: default_network(),
             mount: default_mount(),
@@ -105,8 +123,7 @@ impl Container {
             options: default_options(),
             compose: default_compose(),
             file: default_file(),
-            id: None, 
-            ssh_port: None,
+            meta: Meta::default(),
         }
     }
 
@@ -151,41 +168,39 @@ impl Container {
 
             // Create image
             let id = output_command(format!("docker run {}", self.get_options()));
-            debug!("id : {}", &id);
-            self.id = Some(id.trim().to_string());
+            self.set_id(id.trim().to_string());
         }
 
         // get ip
         let ip = self.get_ip();
         match ip {
-            Ok(ip) => self.address.ip = ip,
+            Ok(ip) => self.meta.ip = Some(ip),
             Err(error) => error!("{}", error)
         }
 
         // Get ssh port
-        let ports = output_command(format!("docker port {}", self.id.as_ref().unwrap()));
-        for port in ports.split("\n") {
-            if port.contains("22") {
-                self.ssh_port = Some(port.split(":").last().unwrap().parse::<u16>().unwrap());
-                break;
-            }
+        let ports = output_command(format!("docker port {}", self.meta.id.as_ref().unwrap()));
+        for port in ports.split("\n").filter(|x| !x.is_empty()) {
+            let (int, ext) = port.split_once("/").unwrap();
+            let int = int.parse::<u16>().unwrap();
+            let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
+            self.add_port_map(ext, int);
         }
-        debug!("ssh port : {}", self.ssh_port.unwrap());
 
         // Install ssh server
-        info!("Installing shh server on {}", &self.id.as_ref().unwrap());
+        info!("Installing shh server on {}", self.get_id().unwrap());
         // Reformat sh script for linux distro
         if cfg!(target_os = "windows") {
             spawn_command(&"dos2unix src/docker/docker_ssh_init.sh".to_string());
         }
 
-        let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.id.as_ref().unwrap())).wait();
-        let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", &self.id.as_ref().unwrap()));
+        let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", &self.meta.id.as_ref().unwrap())).wait();
+        let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", &self.meta.id.as_ref().unwrap()));
         // Start ssh server
-        let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", &self.id.as_ref().unwrap())).wait();
+        let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", &self.meta.id.as_ref().unwrap())).wait();
 
         // Sleep to wait for ssh server to properly start
-    sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(1));
     
         Ok(())
     }
@@ -244,7 +259,7 @@ impl Container {
     /// Get ssh connection to docker container
     pub fn get_ssh(&mut self) -> ssh {
         let mut ssh = ssh::new();
-        ssh.connect(&"127.0.0.1".to_string(), self.ssh_port.unwrap(), &"root".to_string(), &"password".to_string());
+        ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
 
         ssh
     }
@@ -295,7 +310,7 @@ impl Container {
     /// println!("{}", ip);
     /// ```
     pub fn get_ip(&self) -> Result<IpAddr, String>  {
-        let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
+        let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.meta.id.as_ref().unwrap()));
         let ip = ip.replace("\n", "").trim().to_string();
         let ip = Ipv4Addr::from_str(ip.as_str());
         if let Err(err) = ip {
@@ -304,4 +319,46 @@ impl Container {
         
         Ok(IpAddr::V4(ip.unwrap()))
     }
+
+    /// Get host ssh port mapping from docker container
+    pub fn get_ssh_port(&self) -> Result<u16, String> {
+        self.get_external_port(22)     
+    }
+
+    /// Get the internal port mapped to the `host` port
+    pub fn get_internal_port(&self, host: u16) -> Result<u16, String> {
+        if let Some(ref ports) = self.meta.publish_ports {
+            for portmap in ports {
+                if portmap.get_host() == host {
+                    return Ok(portmap.get_internal());
+                }
+            };
+        }
+        else {
+            return Err(String::from("No published ports available"));
+        }
+
+        return Err(String::from("Unable to find given host port"));
+    }
+   
+    /// Get the host port mapped to the `internal` port
+    pub fn get_external_port(&self, internal: u16) -> Result<u16, String> {
+        if let Some(ref ports) = self.meta.publish_ports {
+            for portmap in ports {
+                if portmap.get_internal() == internal {
+                    return Ok(portmap.get_host());
+                }
+            };
+        }
+        else {
+            return Err(String::from("No published ports available"));
+        }
+
+        return Err(String::from("Unable to find given internal port"));
+    }
 }
+
+
+// Private methods docker container 
+impl Container {
+    }

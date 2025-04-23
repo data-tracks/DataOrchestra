@@ -2,9 +2,8 @@
   "process":
     [
       {
-        "script": "examples/word_count/process",
-        "data": "examples/word_count/store",
-        "start_script": "examples/word_count/store/setup.sh",
+        "data": "examples/word_count/process",
+        "start": "examples/word_count/process/setup.sh",
         "docker": {
           "image": "python",
           "name": "process"
@@ -14,7 +13,8 @@
   "generate":
     [
       {
-        "script": "examples/word_count/generate",
+        "data": "examples/word_count/generate",
+        "start": "examples/word_count/generate/setup.sh",
         "docker": {
           "image": "python",
           "name": "generate"
@@ -25,8 +25,8 @@
     [
       {
         "data": "examples/word_count/store",
-        "start_script": "examples/word_count/store/setup.sh",
         "schema": "examples/word_count/store/schema.sql",
+        "start": "examples/word_count/store/setup.sh",
         "type": "postgres",
         "name": "store",
         "docker": {
