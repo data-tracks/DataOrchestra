@@ -15,7 +15,7 @@ pub enum StoreType {
 
 /// Represents the available storing types
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum StoreTypeConfig {
     PostGres(PostGres),
     Redis(Redis),

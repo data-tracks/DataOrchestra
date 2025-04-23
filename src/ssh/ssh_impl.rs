@@ -22,8 +22,6 @@ impl ssh {
     /// # Example 
     ///
     /// ```
-    /// use DataOrchestra::ssh::ssh_struct::ssh;
-    /// let ssh = ssh::new();
     /// ```
     ///
     /// # Note
@@ -63,10 +61,6 @@ impl ssh {
     /// # Example
     ///
     /// ```
-    /// use DataOrchestra::ssh::ssh_struct::ssh;
-    /// let ssh = ssh::new();
-    /// let result = ssh.exec("pwd");
-    /// println!("{}", result);
     /// ```
     pub fn exec<T: Into<String>>(&self, command: T) -> String {
         let command = command.into();

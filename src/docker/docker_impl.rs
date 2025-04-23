@@ -269,9 +269,6 @@ impl Container {
     /// # Examples
     /// 
     /// ```
-    /// use DataOrchestra::docker::docker_struct::Container;
-    /// let docker: Container = Container::new().set_image("ubuntu");
-    /// docker.execute("pwd");
     /// ```
     fn execute<T: Into<String>>(&self, arg: T) -> Child {
         let command = format!("docker exec {} {}", &self.name.as_ref().unwrap(), &arg.into());
@@ -303,11 +300,6 @@ impl Container {
     /// # Examples
     ///
     /// ```
-    /// use DataOrchestra::docker::docker_struct::Container;
-    ///
-    /// let docker: Container = Container::new().set_image("ubuntu");
-    /// let ip = docker.get_ip();
-    /// println!("{}", ip);
     /// ```
     pub fn get_ip(&self) -> Result<IpAddr, String>  {
         let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.meta.id.as_ref().unwrap()));

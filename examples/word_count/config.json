@@ -2,11 +2,9 @@
   "process":
     [
       {
-        "data": "examples/word_count/process",
-        "start": "examples/word_count/process/setup.sh",
-        "docker": {
-          "image": "python",
-          "name": "process"
+        "type": "kafka",
+        "config": {
+          "topics": "words"
         }
       }
     ],
@@ -15,8 +13,8 @@
       {
         "data": "examples/word_count/generate",
         "start": "examples/word_count/generate/setup.sh",
-        "docker": {
-          "image": "python",
+        "image": "python",
+        "config": {
           "name": "generate"
         }
       }

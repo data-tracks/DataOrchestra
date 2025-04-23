@@ -26,7 +26,7 @@ impl ProcessType {
 
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(tag = "type")]
 pub enum ProcessTypeConfig {
     Flink(Flink),
     Kafka(Kafka),

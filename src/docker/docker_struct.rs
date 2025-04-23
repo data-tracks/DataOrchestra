@@ -64,13 +64,11 @@ pub struct Container {
     /*
      * Creation options
      */
-
-    #[serde(default = "default_image")]
-    pub image: Option<String>,
-    #[serde(default = "default_compose")]
-    pub compose: Option<String>,
-    #[serde(default = "default_file")]
     pub file: Option<String>,
+    pub image: Option<String>,
+    pub compose: Option<String>,
+    
+    
 
     /*
      * Container values
@@ -79,6 +77,29 @@ pub struct Container {
     #[serde(skip)]
     #[serde(default)]
     pub meta: Meta,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Docker {
+    #[serde(flatten)]
+    pub docker_type: DockerType,
+    pub config: Option<DockerTypeContainer>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DockerType {
+    Image { image: String },
+    Dockerfile { dockerfile: String },
+    Compose { compose: String }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DockerTypeContainer {
+    Default(Container), 
+    Compose(Vec<Container>)
 }
 
 
