@@ -28,7 +28,7 @@ impl ssh {
     ///
     /// # Note
     /// 
-    /// See https://github.com/libssh2/libssh2/blob/master/include/libssh2.h for relevant error
+    /// See <https://github.com/libssh2/libssh2/blob/master/include/libssh2.h> for relevant error
     /// codes
     pub fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) {
         let address: String = format!("{}:{}", host, port);
@@ -103,6 +103,12 @@ impl ssh {
     ///
     /// # Example
     ///
+    /// ```
+    ///
+    /// ```
+    ///
+    /// # Return 
+    ///
     pub fn upload_file(&self, file: &Path, location: &Path) -> Result<(), ssh2::Error>{
         assert!(file.is_file());
         debug!("Uploading file {}", file.display());
@@ -129,6 +135,12 @@ impl ssh {
     }
 
     /// Upload directory to remote server via ssh. 
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// ```
     ///
     /// # Return
     ///

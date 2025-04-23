@@ -57,19 +57,10 @@ impl Start<()> for Store {
                 // Start docker container
                 let _ = docker.build();
 
-                ssh = Some(docker.get_ssh());
+                self.object.ssh = Some(docker.get_ssh());
                 self.object.remote = Some(docker.address.clone());
             }
 
-            if self.object.remote.is_none() {
-                panic!("No remote connection");
-            }
-
-            if ssh.is_none() {
-                panic!("No ssh connection available");
-            }
-
-            let ssh = ssh.unwrap();
             let remote = self.object.get_remote_connection();
             
             let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
@@ -81,7 +72,7 @@ impl Start<()> for Store {
             // Run start script
             if let Some(ref mut start) = self.object.start {
                 if start.contains("sh") {
-                    ssh.exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+                    self.object.ssh.unwrap().exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
                 }
             }
         }).unwrap()

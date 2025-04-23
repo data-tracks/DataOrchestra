@@ -16,16 +16,17 @@ impl Start<()> for Process {
         thread::Builder::new().name("process".to_string()).spawn(move || {
             let mut ssh: Option<ssh> = None;
 
-            if self.config.is_none() {
+            if self.config.is_none() && self.process_type.is_some() {
                 info!("No config given for database type. Loading default config");
                 self.config = Some(self.process_type.unwrap().new());
             }
  
             let _ = self.object.docker.get_or_insert(Container::new());
             if let Some(ref mut docker) = self.object.docker {
-                let config = self.config.as_mut().unwrap();
                 // Setup the container with needed default parameters for specific [`StoreType`]
-                config.setup_container(docker);
+                if let Some(ref config) = self.config {
+                    config.setup_container(docker);
+                }
  
                 let _ = docker.build();
                 ssh = Some(docker.get_ssh());

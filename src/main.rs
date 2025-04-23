@@ -1,36 +1,47 @@
-use std::env;
 use std::fs::File;
-use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::thread::JoinHandle;
-use log::{debug, info, warn, LevelFilter};
-use rand::Rng;
+use log::{debug, info, LevelFilter};
 
+use DataOrchester::docker;
 use DataOrchester::logger::init_logger;
 use DataOrchester::common::common_trait::Start;
-use DataOrchester::types::address::Address;
 use DataOrchester::types::amount::Amount;
 use DataOrchester::types::config::Config;
 
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Args {
+    #[arg(short, long)]
+    file: Option<String>,
+
+    #[arg(short, long, default_value_t = LevelFilter::Info)]
+    level: LevelFilter,
+
+    #[arg(long = "remove_all", default_value_t = true)]
+    remove_all: bool
+}
+
 fn main() {
     // Read starting arguments
-    let args: Vec<String> = env::args().collect();
-    
-    parse_args(&args);
-    let idx = args.iter().position(|x| x == "-f");
-    if idx == None {
-        warn!("No config file was specified. Please specify config file with -f <path>");    
-        info!("Loading default config.json");
-    };
+    let args: Args = Args::parse();
+   
+    init_logger(args.level);
 
-    let idx = idx.unwrap();    
-    let file = args.get(idx + 1);
-    if file == None {
-        panic!("No config file was specified. Please specify config file with -f <path>");
+    if args.file == None {
+        panic!("No config file specified. Please specify config with -f <path> argument");
     }
+
+    if args.remove_all {
+        docker::stop_all();
+        docker::remove_all();
+    }
+
     // Read config.json
-    debug!("Loading config file {}", &file.unwrap());
-    let config_path = Path::new(file.unwrap());
+    debug!("Loading config file {}", args.file.as_ref().unwrap());
+    let config_path = Path::new(args.file.as_ref().unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
@@ -80,48 +91,3 @@ fn main() {
         let _ = thread.join();
     }
 }
-
-pub fn initialise_logger(level: &String) {
-    let mut log_level: LevelFilter = LevelFilter::Error;
-    log_level = match level.as_str() {
-        "info" => LevelFilter::Info,
-        "warn" => LevelFilter::Warn,
-        "error" => LevelFilter::Error,
-        "debug" => LevelFilter::Debug,
-        "trace" => LevelFilter::Trace,
-        "off" => LevelFilter::Off,
-        _ => log_level,
-    };
-    init_logger(log_level);
-}
-
-pub fn parse_args(args: &Vec<String>) {
-    let mut iter = args.iter();
-    while let Some(arg) = iter.next() {
-        match arg.as_str() {
-            "-l" => {
-                if let Some(level) = iter.next(){
-                    initialise_logger(level);
-                }
-                else {
-                    warn!("Logging parameter expected but non was specified. \n Available levels are [info, warn, error, debug, trace, off]");
-                }
-            }
-            _ => ()
-        }
-    }
-} 
-
-pub fn gen_unique_address(amount: usize) -> Vec<Address> {
-    let mut addresses: Vec<Address> = Vec::<Address>::new();
-    for _ in 0..amount {
-        let port = rand::thread_rng().gen_range(100..10000);
-        addresses.push(Address {
-            ip: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-            port
-        }); 
-    }
-
-    addresses
-}
-

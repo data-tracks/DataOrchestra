@@ -25,3 +25,19 @@ pub fn get_networks() -> Vec<String> {
    let output = output_command("docker network ls");
    networks
 }
+
+/// Deletes all docker containers
+pub fn remove_all() {
+    let containers = output_command("docker container ls -a -q");
+    for container in containers.split("\n") {
+        let _ = output_command(format!("docker rm {}", container));
+    }
+}
+
+/// Stops all docker containers
+pub fn stop_all() {
+    let containers = output_command("docker container ls -a -q");
+    for container in containers.split("\n") {
+        let _ = output_command(format!("docker stop {}", container));
+    }
+}
