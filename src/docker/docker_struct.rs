@@ -38,7 +38,7 @@ use crate::types::amount::Amount;
 pub struct Docker {
     #[serde(flatten)]
     pub docker_type: DockerType,    
-    pub config: Option<DockerTypeContainer>,
+    pub config: Amount<Container>
 }
 
 
@@ -50,14 +50,6 @@ pub enum DockerType {
     Image { image: String },
     Dockerfile { dockerfile: String },
     Compose { compose: String }
-}
-
-/// The varying [`Container`] types for the different [`DockerType`].
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum DockerTypeContainer {
-    Default(Container), 
-    Compose(Amount<Container>)
 }
 
 /// The docker `Container` type. Represents the general information tied to the creation of a
@@ -82,13 +74,6 @@ pub struct Container {
     #[serde(default = "default_publish_all")]
     pub publish_all: bool,
 
-    /*
-     * Creation options
-     */
-    pub file: Option<String>,
-    pub image: Option<String>,
-    pub compose: Option<String>,
-    
     #[serde(skip)]
     #[serde(default)]
     pub meta: Meta,

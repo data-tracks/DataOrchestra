@@ -12,7 +12,7 @@ use crate::command::command_func::{output_command, spawn_command, status_command
 use crate::ssh::ssh_struct::ssh;
 use crate::types::amount::Amount;
 
-use super::docker_struct::{default_build_args, default_compose, default_file, default_image, default_mount, default_name, default_network, default_options, default_publish_all, Meta};
+use super::docker_struct::{default_build_args, default_compose, default_file, default_image, default_mount, default_name, default_network, default_options, default_publish_all, Docker, DockerType, Meta};
 
 // Public methods for docker container 
 impl Container {
@@ -25,17 +25,6 @@ impl Container {
     /// Add network to docker container
     pub fn set_network<T: Into<String>>(&mut self, network: T) -> &mut Self {
         self.network = network.into();
-        self
-    }
-
-    /// Add image to docker container
-    pub fn set_image<T: Into<String>>(&mut self, image: T) -> &mut Self {
-        self.image = Some(image.into());
-        self
-    }
-    
-    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
-        self.compose = Some(compose.into());
         self
     }
 
@@ -110,27 +99,50 @@ impl Container {
 
 }
 
-impl Container {
-    /// Get [`Container`] with filled with default values
-    pub fn new() -> Self {
+impl Docker {
+    /// Add image to docker container
+    pub fn set_image<T: Into<String>>(&mut self, image: T) -> &mut Self {
+        self.docker_type = DockerType::Image { image: image.into() };
+        self
+    }
+
+    pub fn set_dockerfile<T: Into<String>>(&mut self, dockerfile: T) -> &mut Self {
+        self.docker_type = DockerType::Dockerfile { dockerfile: dockerfile.into() };
+        self
+    }
+    
+    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
+        self.docker_type = DockerType::Compose { compose: compose.into() };
+        self
+    }
+}
+
+impl Default for Container {
+    fn default() -> Self {
         Container {
             name: default_name(),
-            image: default_image(),
             network: default_network(),
             mount: default_mount(),
             build_args: default_build_args(),
             publish_all: default_publish_all(),
             options: default_options(),
-            compose: default_compose(),
-            file: default_file(),
             meta: Meta::default(),
         }
     }
+}
 
+impl Container {
+    /// Get [`Container`] with filled with default values
+    pub fn new() -> Self {
+        Self::default()        
+    }
+}
+
+impl Docker {
     /// Initialise docker container based on specified data in [`Container`] struct.
     pub fn build(&mut self) -> Result<(), String>{
         // Hierarchy creation. compose > file > image
-        if let Some(ref compose) = self.compose {
+        if let DockerType::Compose { ref compose} = self.docker_type {
             info!("Initializing docker container from docker compose");
             let _ = spawn_command(format!("docker compose -f {} up -d --build", compose)).wait();
         }
@@ -138,7 +150,7 @@ impl Container {
             info!("Initializing docker container from docker image");
 
             // Create network
-            let network = create_network(&self.network);
+            let network = create_network(&self.config.network);
             match network {
                 Ok(_) => info!("Successfully created network"),
                 Err(value) => error!("{}", value),

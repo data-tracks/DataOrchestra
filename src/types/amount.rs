@@ -38,6 +38,15 @@ impl<T> Amount<T> {
             Self::Multiple(values) => values.len()
         }
     }
+
+    pub fn get_single(&self) -> &T {
+        matches!(&self, Self::Single(_));
+
+        match self {
+            Self::Single(value) => value,
+            _ => panic!(),
+        }
+    }
 }
 
 impl<T> Default for Amount<T> {
