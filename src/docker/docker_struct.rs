@@ -2,6 +2,111 @@ use std::{collections::HashMap, net::{IpAddr, Ipv4Addr}};
 use serde::{Deserialize, Serialize};
 use crate::types::amount::Amount;
 
+
+/// The `Docker` type. This struct is used as the overarching struct. It contains the
+/// `docker_type`, and the `config` related to it.
+/// 
+/// The `docker_type` is a docker creation type, which is either a standalone `image`, the path
+/// to a `dockerfile` or the path to a docker `compose`. The `config` is then for the additional
+/// definining of the container. More over the container parameters can be seen in the [`Container`] type.
+///
+/// # Example 
+///
+/// {
+///     "image": "ubuntu".
+///     "config": 
+///     {
+///         "name": "ubuntu-container"
+///     }
+/// }
+/// {
+///     "dockerfile": "/path/to/dockerfile".
+///     "config": 
+///     {
+///         "name": "ubuntu-container"
+///     }
+/// }
+/// {
+///     "compose": "/path/to/compose".
+///     "config": 
+///     {
+///         "name": "ubuntu-container"
+///     }
+/// }
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Docker {
+    #[serde(flatten)]
+    pub docker_type: DockerType,    
+    pub config: Option<DockerTypeContainer>,
+}
+
+
+/// Docker creation types
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+#[serde(rename_all = "lowercase")]
+pub enum DockerType {
+    Image { image: String },
+    Dockerfile { dockerfile: String },
+    Compose { compose: String }
+}
+
+/// The varying [`Container`] types for the different [`DockerType`].
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DockerTypeContainer {
+    Default(Container), 
+    Compose(Amount<Container>)
+}
+
+/// The docker `Container` type. Represents the general information tied to the creation of a
+/// docker container
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all="camelCase")]
+pub struct Container {
+    #[serde(default = "default_name")]
+    pub name: Option<String>,
+
+    #[serde(default = "default_network")]
+    pub network: String,
+
+    pub options: Option<HashMap<String, String>>,
+
+    #[serde(default = "default_mount")]
+    pub mount: Option<Amount<String>>,
+
+    #[serde(default = "default_build_args")]
+    pub build_args: Option<HashMap<String, String>>,
+
+    #[serde(default = "default_publish_all")]
+    pub publish_all: bool,
+
+    /*
+     * Creation options
+     */
+    pub file: Option<String>,
+    pub image: Option<String>,
+    pub compose: Option<String>,
+    
+    #[serde(skip)]
+    #[serde(default)]
+    pub meta: Meta,
+}
+
+
+
+#[derive(Debug)]
+pub struct Meta {
+    /// Id of container
+    pub id: Option<String>,
+    /// Ip of container
+    pub ip: Option<IpAddr>,
+    /// Published ports of container. A vector of [`PortMap`] which defines the combination
+    /// `host:internal`.
+    pub publish_ports: Option<Vec<PortMap>>
+}
+
 pub fn default_network() -> String {
     String::from("orchestra")
 }
@@ -38,77 +143,6 @@ pub fn default_publish_all() -> bool {
     false
 }
 
-
-/// The docker `Container` type. Represents the general information tied to the creation of a
-/// docker container
-///
-/// # Creation
-///
-/// The creation of the container is dictated by the fields [`image`], [`compose`] and [`file`]. 
-/// They are in the order hierarchy: [`compose`] > [`file`] > [`image`], meaning that if both a
-/// compose and image are passed, the compose is preferred over the image.
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all="camelCase")]
-pub struct Container {
-    #[serde(default = "default_name")]
-    pub name: Option<String>,
-    #[serde(default = "default_network")]
-    pub network: String,
-    pub options: Option<HashMap<String, String>>,
-    #[serde(default = "default_mount")]
-    pub mount: Option<Amount<String>>,
-    #[serde(default = "default_build_args")]
-    pub build_args: Option<HashMap<String, String>>,
-    #[serde(default = "default_publish_all")]
-    pub publish_all: bool,
-    /*
-     * Creation options
-     */
-    pub file: Option<String>,
-    pub image: Option<String>,
-    pub compose: Option<String>,
-    
-    
-
-    /*
-     * Container values
-     */
-
-    #[serde(skip)]
-    #[serde(default)]
-    pub meta: Meta,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Docker {
-    #[serde(flatten)]
-    pub docker_type: DockerType,
-    pub config: Option<DockerTypeContainer>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum DockerType {
-    Image { image: String },
-    Dockerfile { dockerfile: String },
-    Compose { compose: String }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum DockerTypeContainer {
-    Default(Container), 
-    Compose(Vec<Container>)
-}
-
-
-#[derive(Debug)]
-pub struct Meta {
-    pub id: Option<String>,
-    pub ip: Option<IpAddr>,
-    pub publish_ports: Option<Vec<PortMap>>
-}
 
 impl Default for Meta {
     fn default() -> Self {
