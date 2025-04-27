@@ -1,0 +1,48 @@
+- name: Setup connection
+  hosts: localhost
+  gather_facts: no
+  tags: always
+  tasks:
+    - name: Get connection
+      add_host:
+        name: node
+        ansible_host: "{{ host | default('127.0.0.1') }}"
+        ansible_user: "{{ user | default('root') }}"
+        ansible_password: "{{ password | default('password') }}"
+        ansible_port: "{{ port }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+- name: Setup node
+  hosts: node
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Installing packages 
+      tags: install-pkg
+      apt:
+        name: 
+          - curl
+          - git
+          - tmux
+        state: present
+
+- name: Node behaviour
+  hosts: node
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Check connection
+      tags: ping-node
+      ansible.builtin.ping:
+
+
+    #- name: Close connection
+    #  tags: close-conn
+
+    #- name: Run
+    #  tags: run
+      # Run
+      # ...
+      # Conditional
+      # when:
+      # ...
