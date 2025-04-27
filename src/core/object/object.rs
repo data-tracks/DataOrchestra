@@ -1,21 +1,24 @@
-use std::{path::Path, thread::{self, JoinHandle}};
+use std::{path::Path};
+use std::thread::{self, JoinHandle};
 
-use serde::{Deserialize, Serialize};
-
-use crate::{common::common_trait::Start, docker::container::ContainerParent, internal::attach::attach_types::AttachType, ssh::ssh_struct::ssh, types::{address::Address, amount::Amount, node::Node}};
+use crate::core::adapters::docker::ContainerType;
+use crate::core::adapters::ssh::Ssh;
+use crate::core::attach::attach_types::AttachType;
+use crate::shared::traits::Start;
+use crate::shared::{Address, Amount, Node};
 
 /// The `Object` type. Acts as a generic component. Implements basic fields that every object
 /// should possess.
 #[derive(Debug)]
 pub struct Object {
-    pub docker: Option<ContainerParent>,
+    pub docker: Option<ContainerType>,
     pub start: Option<String>,
     pub data: Option<String>,
     pub node: Option<Node>,
     pub remote: Option<Address>,
     pub attach_type: Option<AttachType>,
     pub attach: Amount<Box<Object>>,
-    pub ssh: Option<ssh>
+    pub ssh: Option<Ssh>
 }
 
 impl Default for Object {

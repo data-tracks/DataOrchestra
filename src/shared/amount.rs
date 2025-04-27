@@ -86,6 +86,15 @@ impl<T> Amount<T> {
             _ => panic!("Get ref mut multiple on non multiple value"),
         }
     }
+
+    /// Transform Amount enum value into vector
+    pub fn to_vec(self) -> Vec<T> {
+        match self {
+            Amount::None => Vec::new(),
+            Amount::Single(value) => vec![value],
+            Amount::Multiple(values) => values
+        }
+    } 
 }
 
 impl<T> Default for Amount<T> {

@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
+use crate::core::adapters::docker::MultiContainer;
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
+use super::types::{Flink, Kafka, Spark, Storm};
+
+#[derive(Debug)]
 pub enum ProcessType {
     Flink,
     Kafka,
@@ -20,9 +21,7 @@ impl ProcessType {
     }
 }
 
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "type")]
+#[derive(Debug)]
 pub enum ProcessTypeConfig {
     Flink(Flink),
     Kafka(Kafka),
@@ -33,7 +32,7 @@ pub enum ProcessTypeConfig {
 impl ProcessTypeConfig {
     /// Setup the given docker container with config of specified [`ProcessType`]
     /// Consumes the docker container object and returns the modified container
-    pub fn setup_container(&self, docker: &mut Data) {
+    pub fn setup_container(&self, docker: &mut MultiContainer) {
         match self {
             ProcessTypeConfig::Flink(flink) => flink.setup_container(docker),
             ProcessTypeConfig::Kafka(kafka) => kafka.setup_container(docker),

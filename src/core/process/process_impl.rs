@@ -1,8 +1,15 @@
-use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh, types::address::Address};
-
-use super::{super::super::common::common_trait::Start, process_struct::Process};
-use std::{net::{IpAddr, Ipv4Addr}, path::Path, thread::{self, JoinHandle}};
+use std::net::{IpAddr, Ipv4Addr};
+use std::thread::{self, JoinHandle};
+use std::path::Path;
 use log::{info, debug};
+
+use crate::core::adapters::command::command_func::spawn_command;
+use crate::core::adapters::docker::Container;
+use crate::core::adapters::ssh::Ssh;
+use crate::shared::traits::Start;
+use crate::shared::Address;
+
+use super::Process;
 
 impl Start<()> for Process {
     /// Start initialisation process for store components
@@ -14,14 +21,15 @@ impl Start<()> for Process {
         info!("Spawning generate thread");
         
         thread::Builder::new().name("process".to_string()).spawn(move || {
-            let mut ssh: Option<ssh> = None;
+            /*
+            let mut ssh: Option<Ssh> = None;
 
             if self.config.is_none() && self.process_type.is_some() {
                 info!("No config given for database type. Loading default config");
                 self.config = Some(self.process_type.unwrap().new());
             }
  
-            let _ = self.object.docker.get_or_insert(Data::new());
+            let _ = self.object.docker.get_or_insert(Container::new());
             if let Some(ref mut docker) = self.object.docker {
                 // Setup the container with needed default parameters for specific [`StoreType`]
                 if let Some(ref config) = self.config {
@@ -65,8 +73,8 @@ impl Start<()> for Process {
                 self.object.ssh.unwrap().exec(format!("sh /{}/setup.sh", upload_directory));
             }
 
-
             info!("Finished");
+            */
         }).unwrap()
     }
 }

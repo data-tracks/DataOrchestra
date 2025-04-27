@@ -8,29 +8,18 @@ use crate::shared::Amount;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Docker {
     // Name of container
-    name: Option<String>,
+    pub name: Option<String>,
     // Network of container
-    network: Option<String>,
+    pub network: Option<String>,
     // Additional options of container
-    options: Option<HashMap<String, String>>,
+    pub options: Option<HashMap<String, String>>,
     // Mounts of container
-    mount: Amount<String>,
+    pub mount: Amount<String>,
     // Publish all ports
-    publish_all: bool,
+    pub publish_all: bool,
     // How container(s) are created
-    #[serde(flatten)]
-    create_type: CreateType,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-#[serde(rename_all = "lowercase")]
-pub enum CreateType {
-    Image { image: String },
-    Dockerfile { 
-        dockerfile: String, 
-        image_name: String, 
-        build_args: Option<HashMap<String, String>> 
-    },
-    Compose { compose: String }
+    pub image: Option<String>,
+    pub dockerfile: Option<String>,
+    pub build_args: Option<HashMap<String, String>>,
+    pub compose: Option<String>,
 }

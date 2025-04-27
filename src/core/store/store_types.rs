@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-
-use crate::{docker::{container::ContainerParent, container_data::Container}, types::amount::Amount};
-
+use crate::core::adapters::docker::Container;
+use crate::shared::Amount;
 use super::types::{mongodb::MongoDB, polypheny::Polypheny, postgres::PostGres, redis::Redis};
 
 /// Store Type. Represents available storage types 
@@ -42,7 +41,7 @@ impl StoreType {
 impl StoreTypeConfig {
     /// Setup the given docker container with config of specified [`StoreType`]
     /// Consumes the docker container object and returns the modified container
-    pub fn setup_container(&self, docker: &mut ContainerParent) {
+    pub fn setup_container(&self, docker: &mut Container) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.setup_container(docker),
             StoreTypeConfig::Redis(redis) => redis.setup_container(docker),
@@ -51,7 +50,7 @@ impl StoreTypeConfig {
         };
     }
 
-    pub fn mount_data(&self, data: Amount<String>, docker: &mut ContainerParent) {
+    pub fn mount_data(&self, data: Amount<String>, docker: &mut Container) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.mount_data(data, docker),
             StoreTypeConfig::Redis(_redis) => (),

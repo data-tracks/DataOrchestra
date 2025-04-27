@@ -1,15 +1,14 @@
-use serde::{Deserialize, Serialize};
+use crate::core::adapters::docker::MultiContainer;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug)]
 pub struct Storm {}
-
 
 impl Storm {
     pub fn new() -> Self {
         Storm { }
     }
 
-    pub fn setup_container(&self, docker: &mut Data) {
+    pub fn setup_container(&self, docker: &mut MultiContainer) {
         docker.set_compose("lib/TrackBench.rs/compose-storm.yaml");
     }
 }

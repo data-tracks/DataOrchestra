@@ -1,16 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::shared::Amount;
-
-use super::config::{General, File};
+use super::config::General;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ExternalObject {
+pub struct ExtObject {
     #[serde(default = "default_amount")]
-    amount: usize,
+    pub amount: usize,
     #[serde(flatten)]
-    general: General,
-    files: Amount<File>
+    pub general: General
 }
 
 pub fn default_amount() -> usize {

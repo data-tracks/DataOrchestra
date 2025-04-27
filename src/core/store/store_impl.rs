@@ -1,8 +1,11 @@
-use crate::{command::command_func::spawn_command, docker::{container::ContainerParent, container_data::Container}, ssh::ssh_struct::ssh, types::{address::Address, amount::Amount}};
-
-use super::{super::super::common::common_trait::Start, store_struct::Store};
 use std::{fs, net::{IpAddr, Ipv4Addr}, path::Path, thread::{self, JoinHandle}};
+
 use log::{debug, info};
+
+use crate::{core::adapters::command::command_func::spawn_command, shared::{traits::Start, Address, Amount}};
+use crate::core::adapters::ssh::Ssh;
+
+use super::Store;
 
 impl Start<()> for Store {
     /// Start initialisation process for store components
@@ -13,7 +16,8 @@ impl Start<()> for Store {
     fn start(mut self) -> JoinHandle<()> {
         info!("Spawning storing thread");
         thread::Builder::new().name("store".to_string()).spawn(move || {
-            let mut ssh: Option<ssh> = None;
+            /*
+            let mut ssh: Option<Ssh> = None;
 
             // Create default config of specified database type ([`StoreType`]) if none was
             // specified
@@ -27,7 +31,7 @@ impl Start<()> for Store {
                 self.object.remote = Some(node.address.unwrap().clone());
             }
             // Set docker container for store
-            self.object.docker = Some(ContainerParent::default());
+            //self.object.docker = Some(Container::default());
             if let Some(ref mut docker) = self.object.docker {
                 if let Some(config) = self.config {
                     // Setup the container with needed default parameters for specific [`StoreType`]
@@ -79,6 +83,7 @@ impl Start<()> for Store {
             }
 
             info!("Finished");
+            */
         }).unwrap()
     }
 }

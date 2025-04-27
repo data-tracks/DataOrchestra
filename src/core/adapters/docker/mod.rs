@@ -1,9 +1,15 @@
 use super::command::command_func::{output_command, spawn_command};
 
 pub mod container;
-pub mod container_data;
 pub mod multi_container;
 pub mod traits;
+pub mod container_type;
+
+pub use container::Container;
+pub use container::PortMap;
+pub use multi_container::MultiContainer;
+pub use container_type::ContainerType;
+
 
 /// Create a new docker network.
 pub fn create_network<T: Into<String>>(network: T) -> Result<(), String>{

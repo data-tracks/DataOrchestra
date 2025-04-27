@@ -2,7 +2,7 @@ use std::path::{absolute, Path};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{docker::docker_struct::Data, types::amount::Amount};
+use crate::{core::adapters::docker::Container, shared::Amount};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "postgres")]
@@ -44,7 +44,7 @@ impl PostGres {
         }
     }
 
-    pub fn setup_container(&self, mut docker: &mut Data)  {
+    pub fn setup_container(&self, mut docker: &mut Container)  {
         docker = docker
             .set_image("postgres")
             .add_env_var("POSTGRES_DB", self.postgres_db.clone())
@@ -56,7 +56,7 @@ impl PostGres {
         }
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, mut docker: &mut Data) {
+    pub fn mount_data(&self, schema: Amount<String>, mut docker: &mut Container) {
         match schema {
             Amount::None => (),
             Amount::Single(value) => { 

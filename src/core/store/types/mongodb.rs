@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{docker::{container::ContainerParent, container_data::Container}, types::amount::Amount};
+use crate::{core::adapters::docker::{Container, MultiContainer}, shared::Amount};
+
 
 pub fn default_username() -> String {
     String::from("mongo")
@@ -41,15 +42,15 @@ impl MongoDB {
         }
     }
     
-    pub fn setup_container(&self, docker: &mut ContainerParent) {
+    pub fn setup_container(&self, docker: &mut Container) {
         docker.set_image("mongo");
-        docker.config.get_ref_mut_single()
+        docker
             .add_env_var("ME_CONFIG_MONGODB_ADMINUSERNAME", self.me_config_mongodb_adminusername.clone())
             .add_env_var("ME_CONFIG_MONGODB_ADMINPASSWORD", self.me_config_mongodb_adminpassword.clone())
             .add_env_var("ME_CONFIG_MONGODB_URL", self.me_config_mongodb_url.clone())
             .add_env_var("ME_CONFIG_MONGODB_BASICAUTH", self.me_config_basicauth.to_string());
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Data) {
+    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Container) {
     }
 }

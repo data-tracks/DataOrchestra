@@ -3,21 +3,19 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::path::Path;
 use ssh2::{Session, Channel};
-use super::ssh_struct::ssh;
 use std::io::Read;
 use std::{fs, io};
-
 use walkdir::WalkDir;
-
 use log::{debug, error};
+use crate::core::adapters::ssh::ssh::Ssh;
 
 
-impl ssh {
-    pub fn new() -> ssh {
-        ssh { session: Session::new().unwrap()  }
+impl Ssh {
+    pub fn new() -> Ssh {
+        Ssh { session: Session::new().unwrap()  }
     }
 
-    /// Connect to ssh server
+    /// Connect to Ssh server
     ///
     /// # Example 
     ///
@@ -30,7 +28,7 @@ impl ssh {
     /// codes
     pub fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) {
         let address: String = format!("{}:{}", host, port);
-        debug!("Connecting to ssh client {} with {}@{}", &address, &username, &password);
+        debug!("Connecting to Ssh client {} with {}@{}", &address, &username, &password);
         let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
     
         if let Err(ref error) = tcp {
@@ -56,7 +54,7 @@ impl ssh {
     }
 
 
-    /// Execute command over ssh connection
+    /// Execute command over Ssh connection
     ///
     /// # Example
     ///
@@ -68,7 +66,7 @@ impl ssh {
         let channel: Result<Channel, ssh2::Error> = self.session.channel_session();
 
         if let Err(ref error) = channel {
-            error!("Unable to open ssh channel {}", error);
+            error!("Unable to open Ssh channel {}", error);
         }
 
         let mut channel = channel.unwrap();
@@ -94,7 +92,7 @@ impl ssh {
     }
 
     
-    /// Upload file to remote server via ssh
+    /// Upload file to remote server via Ssh
     ///
     /// # Example
     ///
@@ -129,7 +127,7 @@ impl ssh {
         return Ok(());
     }
 
-    /// Upload directory to remote server via ssh. 
+    /// Upload directory to remote server via Ssh. 
     ///
     /// # Example
     ///

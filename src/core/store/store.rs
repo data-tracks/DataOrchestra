@@ -1,10 +1,4 @@
-use std::thread::JoinHandle;
-
-use serde::{Deserialize, Serialize};
-
-use crate::internal::object::object::Object;
-use crate::{common::common_trait::Start, types::amount::Amount};
-use super::super::object;
+use crate::core::object::Object;
 
 use super::store_types::{StoreTypeConfig, StoreType};
 
@@ -22,7 +16,7 @@ pub struct Store {
      */
 
     /// Relation structure
-    pub schema: Amount<String>,
+    pub schema: Vec<String>,
     
     /// Store type
     /// Refers to the database type, as available in [`StoreType`].
@@ -34,28 +28,12 @@ pub struct Store {
 
 impl Default for Store {
     fn default() -> Self {
-        Store {
+        Store
+        {
             object: Object::default(),
-            schema: Amount::None,
+            schema: Vec::new(),
             db_type: None,
             config: None
         }
-    }
-}
-
-impl Amount<Store> {
-    pub fn start(self) -> Vec<JoinHandle<()>> {
-        let mut threads = Vec::<JoinHandle<()>>::new();
-        match self {
-            Amount::Single(store) => threads.push(store.start()),
-            Amount::Multiple(stores) => {
-                for store in stores {
-                    threads.push(store.start());
-                }
-            }
-            Amount::None => ()
-        } 
-
-        threads
     }
 }

@@ -2,10 +2,16 @@ use std::fs::File;
 use std::path::Path;
 use std::process::exit;
 use std::thread::JoinHandle;
+use data_orchestra::core::generate::Generate;
+use data_orchestra::core::process::Process;
+use data_orchestra::core::store::Store;
+use data_orchestra::interface::config::Config;
+use data_orchestra::shared::traits::{Start, ToInternal};
+use data_orchestra::shared::Amount;
 use log::{debug, info, LevelFilter};
 
-use data_orchestra::{logger::init_logger};
-use data_orchestra::interface::docker;
+use data_orchestra::logger::init_logger;
+use data_orchestra::core::adapters::docker;
 
 use clap::Parser;
 
@@ -33,7 +39,7 @@ fn main() {
     let args: Args = Args::parse();
 
     if args.generate_valid_json {
-        //println!("{}", serde_json::to_string_pretty(Config));
+        println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
         exit(-1);
     }
    
@@ -55,11 +61,17 @@ fn main() {
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
 
+
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
+
+    // Parse to internal structure
+    let stores: Amount<Store> = config.store.to_internal();
+    let processes: Amount<Process> = config.process.to_internal();
+    let generates: Amount<Generate> = config.generate.to_internal();
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
-    match config.store {
+    match stores {
         Amount::None => (),
         Amount::Single(task) => {
             thread_pool.push(task.start());
@@ -70,8 +82,8 @@ fn main() {
             }
         }
     }
-    
-    match config.process {
+
+    match processes {
         Amount::None => (),
         Amount::Single(task) => {
             thread_pool.push(task.start());
@@ -83,7 +95,7 @@ fn main() {
         }
     }
      
-    match config.generate {
+    match generates {
         Amount::None => (),
         Amount::Single(task) => {
             thread_pool.push(task.start());

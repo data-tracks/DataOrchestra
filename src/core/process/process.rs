@@ -1,4 +1,4 @@
-use crate::internal::object::object::Object;
+use crate::core::object::Object;
 
 use super::process_types::{ProcessType, ProcessTypeConfig};
 
@@ -22,4 +22,15 @@ pub struct Process {
 
 pub fn default_amount() -> usize {
     1
+}
+
+impl Default for Process {
+    fn default() -> Self {
+        Process 
+        { 
+            object: Object::default(), 
+            process_type: None, 
+            config: None 
+        } 
+    }
 }

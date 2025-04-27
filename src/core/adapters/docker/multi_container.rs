@@ -1,6 +1,5 @@
-use super::super::command::command_func::spawn_command;
+use super::{super::command::command_func::spawn_command, container::Container, traits::EnvBuilder, ContainerType};
 
-use super::{container_data::Container, traits::EnvBuilder};
 
 use log::error;
 
@@ -13,6 +12,17 @@ pub struct MultiContainer {
 impl Default for MultiContainer {
     fn default() -> Self {
         MultiContainer { compose: None, containers: Vec::<Container>::new() }
+    }
+}
+
+impl MultiContainer {
+    pub fn new<T: Into<String>>(compose: T, containers: Vec<Container>) -> Self {
+        MultiContainer { compose: Some(compose.into()), containers }
+    }
+
+    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
+        self.compose = Some(compose.into());
+        self
     }
 }
 
@@ -31,9 +41,7 @@ impl EnvBuilder<(), String> for MultiContainer {
             panic!("Not a valid multicontainer enviroment");
         }
 
-        let compose = self.compose.as_ref().unwrap();
-
-        let result = spawn_command(format!("docker compose {} up -d --build", compose)).wait();
+        let result = spawn_command(format!("docker compose {} up -d --build", self.compose.as_ref().unwrap())).wait();
 
         if let Err(error) = result {
             error!("{}", error);

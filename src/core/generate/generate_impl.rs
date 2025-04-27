@@ -1,8 +1,12 @@
-use crate::{command::command_func::spawn_command, ssh::ssh_struct::ssh, types::address::Address};
-
-use super::{super::super::common::common_trait::Start, generate_struct::Generate};
-use std::{net::{IpAddr, Ipv4Addr}, path::Path, thread::{self, JoinHandle}};
+use std::net::{IpAddr, Ipv4Addr};
+use std::path::Path;
+use std::thread::{self, JoinHandle};
 use log::{debug, info};
+use crate::core::adapters::command::command_func::spawn_command;
+use crate::shared::{traits::Start, Address};
+use crate::core::adapters::ssh::Ssh;
+
+use super::Generate;
 
 impl Start<()> for Generate {
     /// Start initialisation process for store components
@@ -14,7 +18,8 @@ impl Start<()> for Generate {
         info!("Spawning generate thread");
         
         thread::Builder::new().name("generate".to_string()).spawn(move || {
-            let mut ssh: Option<ssh> = None;
+            /*
+            let mut ssh: Option<Ssh> = None;
 
             if let Some(ref mut docker) = self.docker {
                 let _ = docker.build();
@@ -56,6 +61,7 @@ impl Start<()> for Generate {
 
 
             info!("Finished");
+            */
         }).unwrap()
     }
 }

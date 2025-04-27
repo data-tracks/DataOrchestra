@@ -1,17 +1,14 @@
-use serde::{Deserialize, Serialize};
+use crate::core::adapters::docker::MultiContainer;
 
-use crate::docker::container_data::Container;
-
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug)]
 pub struct Spark {}
-
 
 impl Spark {
     pub fn new() -> Self {
         Spark { }
     }
 
-    pub fn setup_container(&self, docker: &mut Container) {
+    pub fn setup_container(&self, docker: &mut MultiContainer) {
         docker.set_compose("lib/TrackBench.rs/compose-spark.yaml");
     }
 }
