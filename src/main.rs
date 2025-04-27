@@ -1,13 +1,11 @@
 use std::fs::File;
 use std::path::Path;
+use std::process::exit;
 use std::thread::JoinHandle;
 use log::{debug, info, LevelFilter};
 
-use DataOrchester::docker;
-use DataOrchester::logger::init_logger;
-use DataOrchester::common::common_trait::Start;
-use DataOrchester::types::amount::Amount;
-use DataOrchester::types::config::Config;
+use data_orchestra::{logger::init_logger};
+use data_orchestra::interface::docker;
 
 use clap::Parser;
 
@@ -24,12 +22,20 @@ struct Args {
 
     /// Remove all running and stopped docker containers
     #[arg(long = "remove_all", default_value_t = false)]
-    remove_all: bool
+    remove_all: bool,
+
+    #[arg(long = "generate_valid_json", default_value_t = false)]
+    generate_valid_json: bool
 }
 
 fn main() {
     // Read starting arguments
     let args: Args = Args::parse();
+
+    if args.generate_valid_json {
+        //println!("{}", serde_json::to_string_pretty(Config));
+        exit(-1);
+    }
    
     init_logger(args.level);
 

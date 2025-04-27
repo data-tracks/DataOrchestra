@@ -1,11 +1,7 @@
-pub mod object;
-
-pub mod common;
-pub mod docker;
-pub mod command;
-
-pub mod types;
-
-pub mod ssh;
+// Accessibility
+pub mod core;
+pub mod interface;
+pub mod shared;
 
 pub mod logger;
+
