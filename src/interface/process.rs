@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{core::process::Process, shared::{traits::ToInternal, Amount}};
@@ -6,6 +8,9 @@ use super::config::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtProcess {
+    //TODO: HASHMAP IS PLACEHOLDER
+    pub process_type: Option<String>,
+    pub config: Option<HashMap<String, String>>,
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]

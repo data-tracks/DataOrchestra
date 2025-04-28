@@ -47,8 +47,6 @@ impl EnvBuilder<(), String> for MultiContainer {
             error!("{}", error);
         }
 
-
-
         Ok(())
     }
 }

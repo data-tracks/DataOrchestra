@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-
 use crate::core::adapters::docker::{Container, ContainerType, MultiContainer};
 use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::core::store::Store;
@@ -13,6 +12,7 @@ pub struct ExtStore {
     #[serde(rename = "type")]
     pub db_type: Option<StoreType>,
     pub config: Option<StoreTypeConfig>,
+    #[serde(default)]
     pub schema: Amount<String>,
     #[serde(flatten)]
     pub general: General
@@ -50,7 +50,7 @@ impl ToInternal<Store> for ExtStore {
         // Set Database Type and config
         store.db_type = self.db_type;
         store.config = self.config;
-
+        // Set Container(s)
         store.object.node = self.general.node;
         if let Some(docker) = self.general.docker {
             if let Some(compose) = docker.compose {

@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
-
 use crate::{core::generate::Generate, shared::{traits::ToInternal, Amount}};
-
 use super::config::General;
 
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtGenerate {
+    pub x: String,
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]

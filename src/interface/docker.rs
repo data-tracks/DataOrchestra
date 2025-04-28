@@ -14,8 +14,10 @@ pub struct Docker {
     // Additional options of container
     pub options: Option<HashMap<String, String>>,
     // Mounts of container
+    #[serde(default)]
     pub mount: Amount<String>,
     // Publish all ports
+    #[serde(default)]
     pub publish_all: bool,
     // How container(s) are created
     pub image: Option<String>,
