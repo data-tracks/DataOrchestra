@@ -1,4 +1,4 @@
-use crate::core::adapters::docker::MultiContainer;
+use crate::core::adapters::docker::DockerPlan;
 use crate::shared::Amount;
 use crate::core::adapters::ssh::Ssh;
 
@@ -13,7 +13,7 @@ impl Kafka {
         Kafka { topics: Amount::None }
     }
 
-    pub fn setup_container(&self, docker: &mut MultiContainer) {
+    pub fn setup_container(&self, docker: &mut DockerPlan) {
         docker.set_compose("lib/TrackBench.rs/compose-kafka.yaml");
     }
 

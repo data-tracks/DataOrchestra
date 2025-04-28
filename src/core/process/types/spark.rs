@@ -1,4 +1,4 @@
-use crate::core::adapters::docker::MultiContainer;
+use crate::core::adapters::docker::DockerPlan;
 
 #[derive(Debug)]
 pub struct Spark {}
@@ -8,7 +8,7 @@ impl Spark {
         Spark { }
     }
 
-    pub fn setup_container(&self, docker: &mut MultiContainer) {
+    pub fn setup_container(&self, docker: &mut DockerPlan) {
         docker.set_compose("lib/TrackBench.rs/compose-spark.yaml");
     }
 }

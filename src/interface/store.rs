@@ -50,6 +50,7 @@ impl ToInternal<Store> for ExtStore {
         // Set Database Type and config
         store.db_type = self.db_type;
         store.config = self.config;
+
         // Set Container(s)
         store.object.node = self.general.node;
         if let Some(docker) = self.general.docker {

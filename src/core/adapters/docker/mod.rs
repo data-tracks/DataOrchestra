@@ -1,15 +1,22 @@
 use super::command::command_func::{output_command, spawn_command};
 
+pub mod source;
+pub use source::DockerSource;
+
+mod compose;
+pub use compose::ComposeGroup;
+
 pub mod container;
-pub mod multi_container;
-pub mod traits;
-pub mod container_type;
-
 pub use container::Container;
-pub use container::PortMap;
-pub use multi_container::MultiContainer;
-pub use container_type::ContainerType;
 
+pub mod portmapping;
+pub use portmapping::PortMapping;
+
+pub mod manager;
+pub use manager::DockerManager;
+
+pub mod config;
+pub use config::ContainerConfig;
 
 /// Create a new docker network.
 pub fn create_network<T: Into<String>>(network: T) -> Result<(), String>{

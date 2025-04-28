@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::docker::Container;
+use crate::core::adapters::docker::{container::ContainerBuilder, Container};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "redis")]
@@ -12,7 +12,7 @@ impl Redis {
         Redis {  }
     }
 
-    pub fn setup_container(&self, docker: &mut Container) {
+    pub fn setup_container(&self, docker: &mut ContainerBuilder) {
         docker.set_image("redis");
     }
 }

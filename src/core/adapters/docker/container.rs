@@ -1,212 +1,113 @@
-use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::process::{Child, Command, Stdio};
 use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
 use log::{debug, info, error};
-use serde::de;
 use crate::core::adapters::command::command_func::{output_command, spawn_command, status_command};
 use crate::core::adapters::docker::create_network;
-use crate::shared::Amount;
 use crate::core::adapters::ssh::Ssh;
 
-use super::traits::EnvBuilder;
+use super::config::ContainerConfigBuilder;
+use super::source::DockerSourceBuilder;
+use super::{ContainerConfig, DockerSource, PortMapping};
 
 /// The docker `ContainerData` type. Represents the general information tied to the creation of a
 /// docker container.
 #[derive(Debug)]
 pub struct Container {
-    pub image: Option<String>,
-    pub dockerfile: Option<String>,
-    // Additional building args for dockerfile
-    pub build_args: HashMap<String, String>,
-
-    // Name of container
-    pub name: Option<String>,
-    // Network container belongs to
-    pub network: String,
-    // Additional arguments for image
-    pub options: HashMap<String, String>,
-    // Mounting values of data
-    pub mount: Vec<String>,
-        // Publish all ports
-    pub publish_all: bool,
     /// Id of container
     pub id: Option<String>,
     /// Ip of container
     pub ip: Option<IpAddr>,
     /// Published ports of container. A vector of [`PortMap`] which defines the combination
     /// `host:internal`.
-    pub publish_ports: Vec<PortMap>,
+    pub publish_ports: Vec<PortMapping>,
     pub is_running: bool,
+    pub config: ContainerConfig,
+    pub source: DockerSource,
 }
 
-impl Default for Container {
-    fn default() -> Self {
-        Container {
-            image: None,
-            dockerfile: None,
-            name: None,
-            network: String::from("orchestra"),
-            mount: Vec::new(),
-            options: HashMap::new(),
-            build_args: HashMap::new(),
-            publish_all: false,
-            id: None,
-            ip: None,
-            publish_ports: Vec::<PortMap>::new(),
-            is_running: false
-        }
-    }
+pub struct ContainerBuilder {
+    containerconfig: ContainerConfigBuilder,
+    dockersource: DockerSourceBuilder,
 }
 
-#[derive(Debug)]
-pub struct PortMap {
-    host: u16,
-    internal: u16
-}
-
-impl PortMap {
-    pub fn new(host: u16, internal: u16) -> Self {
-        PortMap { host, internal }
-    }
-
-    pub fn get_host(&self) -> u16 {
-        self.host.clone()
-    }
-
-    pub fn get_internal(&self) -> u16 {
-        self.internal.clone()
-    }
-}
-
-// Public methods for docker container 
-impl Container {
-    pub fn new(
-            image: Option<String>,
-            dockerfile: Option<String>,
-            build_args: Option<HashMap<String, String>>,
-            name: Option<String>,
-            network: Option<String>,
-            options: Option<HashMap<String, String>>,
-            mount: Option<Vec<String>>,
-            publish_all: bool
-        ) -> Self {
-        let default = Container::default();
-        Container
-        {
-            image: image.or(default.image),
-            dockerfile: dockerfile.or(default.dockerfile),
-            build_args: build_args.or(Some(default.build_args)).unwrap(),
-            name: name.or(default.name),
-            network: network.or(Some(default.network)).unwrap(),
-            options: options.or(Some(default.options)).unwrap(),
-            mount: mount.or(Some(default.mount)).unwrap(),
-            publish_all,
-            id: default.id,
-            ip: default.ip,
-            publish_ports: default.publish_ports,
-            is_running: default.is_running 
-        }
-    }
-
-    /// Set name of docker container
+impl ContainerBuilder {
     pub fn set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
-        self.name = Some(name.into());
+        self.containerconfig.set_name(name);
         self
     }
 
-    /// Add network to docker container
     pub fn set_network<T: Into<String>>(&mut self, network: T) -> &mut Self {
-        self.network = network.into();
+        self.containerconfig.set_network(network);
         self
     }
 
-    pub fn set_publish_all(&mut self, value: bool) -> &mut Self {
-        self.publish_all = value;
+    pub fn add_env_var<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+        self.containerconfig.add_env_var(key, value);
+        self
+    }
+
+    pub fn add_mount<T: Into<String>>(&mut self, mount: T) -> &mut Self {
+        self.containerconfig.add_mount(mount);
+        self
+    }
+
+    pub fn set_publish_all(&mut self, publish_all: bool) -> &mut Self {
+        self.containerconfig.set_publish_all(publish_all);
+        self
+    }
+
+    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
+        self.dockersource.set_compose(compose);
         self
     }
     
-    /// Add enviroment variables to docker container
-    pub fn add_env_var<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
-        self.options.insert(key.into(), value.into());
-        self
-    }
-
-    /// Add building arguments for dockerfile
-    pub fn add_build_arg<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
-        self.options.insert(key.into(), value.into());
-        self
-    }
-
-    /// Add a directory mount to docker container
-    pub fn add_mount<T: Into<String>, S: Into<String>>(&mut self, mount: T, target: S) -> &mut Self {
-        let mount_value = format!("{}:{}", mount.into(), target.into());
-        self.mount.push(mount_value);
-        self
-    }
-
-    /// Set id of docker container
-    pub fn set_id(&mut self, id: String) {
-        self.id = Some(id);
-    }
-
-    /// Get id of docker container
-    pub fn get_id(&self) -> Option<&String> {
-        self.id.as_ref()
-    }
-
-    /// Add [`PortMap`] to docker container
-    pub fn add_port_map(&mut self, host: u16, internal: u16) {
-        let map = PortMap::new(host, internal);
-        self.publish_ports.push(map);
-    }
-
     pub fn set_image<T: Into<String>>(&mut self, image: T) -> &mut Self {
-        self.image = Some(image.into());
+        self.dockersource.set_image(image);
         self
     }
 
     pub fn set_dockerfile<T: Into<String>>(&mut self, dockerfile: T) -> &mut Self {
-        self.dockerfile = Some(dockerfile.into());
+        self.dockersource.set_dockerfile(dockerfile);
         self
+    }
+
+    pub fn add_build_arg<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+        self.dockersource.add_build_arg(key, value);
+        self
+    }
+
+    pub fn build(self) -> Container {
+        Container 
+        {
+            id: None,
+            ip: None,
+            config: self.containerconfig.build(),
+            source: self.dockersource.build(),
+            is_running: false,
+            publish_ports: Vec::new()
+        }
+    }
+} 
+
+// Public methods for docker container 
+impl Container {
+    pub fn new(config: ContainerConfig, source: DockerSource) -> Self {
+        Container 
+        { 
+            id: None, 
+            ip: None, 
+            publish_ports: Vec::new(), 
+            is_running: false, 
+            config, 
+            source 
+        }
     }
 }
 
 impl Container {
-    /// Get docker container options as command input
-    pub fn get_options(&self) -> String {
-        let mut command: String = String::from("-d -q");
-
-        // Parse network variable
-        command = format!("{command} --network={}", &self.network);
-
-        // Parse name variable
-        if let Some(ref name) = self.name {
-            command = format!("{command} --name={}", name);
-        }
-    
-        if self.publish_all {
-            command = format!("{command} -P");
-        }
-        else {
-            // Publish ssh port
-            command = format!("{command} -p 22");
-        }
-
-        for (key, value) in &self.options {
-            command = format!("{command} -e {key}={value}")
-        }
-
-        // Parse mount 
-        for value in &self.mount {
-            command = format!("{command} -v {}", value);
-        }
-
-        command
-    }
-
     /// Get ssh connection to docker container
     pub fn get_ssh(&mut self) -> Ssh {
         let mut ssh = Ssh::new();
@@ -222,7 +123,7 @@ impl Container {
     /// ```
     /// ```
     fn execute<T: Into<String>>(&self, arg: T) -> Child {
-        let command = format!("docker exec {} {}", &self.name.as_ref().unwrap(), &arg.into());
+        let command = format!("docker exec {} {}", &self.config.name.as_ref().unwrap(), &arg.into());
         debug!("{}", format!("Running command: {}", command));
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
@@ -289,40 +190,37 @@ impl Container {
 
         return Err(String::from("Unable to find given internal port"));
     }
-}
 
-impl EnvBuilder<(), String> for Container {
-    /// validate if the container is buildable
-    fn validate(&self) -> bool {
-       true 
+    pub fn add_port_mapping(&mut self, ext: u16, int: u16) {
+        self.publish_ports.push(PortMapping::new(ext, int));
     }
 
+    pub fn set_id(&mut self, id: String) {
+        self.id = Some(id);
+    }
+
+    pub fn get_id(&self) -> &String {
+        self.id.as_ref().unwrap()
+    }
+}
+
+impl Container {
     /// Create docker container using a dockerfile or image
     fn build(&mut self) -> Result<(), String> {
-        if let Some(ref dockerfile) = self.dockerfile {
-            let mut build_args_string = String::new();
-            for (key, value) in self.build_args.iter() {
-                build_args_string = format!("{build_args_string} {}={}", key, value);
-            }
-
-            if build_args_string.is_empty() {
-                let _ = output_command(format!("docker build -t {} {}", self.image.as_ref().unwrap(), dockerfile));
-            }
-            else {
-                let _ = output_command(format!("docker build --build-arg {} -t {} {}", build_args_string, self.image.as_ref().unwrap(), dockerfile));
-            }
-        }
-
         // Create network
-        let network = create_network(self.network.clone());
+        let network = create_network(self.config.network.clone());
         match network {
             Ok(_) => info!("Successfully created network"),
             Err(value) => error!("{}", value),
         }
 
-        // Create image
-        let id = output_command(format!("docker run {} -it {}", self.get_options(), self.image.as_ref().unwrap()));
-        self.set_id(id.trim().to_string());
+        // Build and start container
+        if self.source.dockerfile.is_some() && self.source.image.is_some() {
+            self.build_from_dockerfile();
+        }
+        else if self.source.image.is_some() {
+            self.build_from_image();
+        }
 
         // get ip
         let ip = self.get_ip();
@@ -337,11 +235,11 @@ impl EnvBuilder<(), String> for Container {
             let (int, ext) = port.split_once("/").unwrap();
             let int = int.parse::<u16>().unwrap();
             let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
-            self.add_port_map(ext, int);
+            self.add_port_mapping(ext, int);
         }
 
         // Install ssh server
-        info!("Installing shh server on {}", self.get_id().unwrap());
+        info!("Installing shh server on {}", self.get_id());
         // Reformat sh script for linux distro
         if cfg!(target_os = "windows") {
             spawn_command(&"dos2unix src/docker/docker_ssh_init.sh".to_string());
@@ -356,5 +254,12 @@ impl EnvBuilder<(), String> for Container {
         sleep(Duration::from_secs(1));
 
         Ok(())     
+    }
+
+    fn build_from_dockerfile(&mut self) {}
+    fn build_from_image(&mut self) {
+        // Create image
+        let id = output_command(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));
+        self.set_id(id.trim().to_string());
     }
 }

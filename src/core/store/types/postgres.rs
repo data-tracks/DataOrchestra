@@ -2,7 +2,7 @@ use std::path::{absolute, Path};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{core::adapters::docker::Container, shared::Amount};
+use crate::{core::adapters::docker::{container::ContainerBuilder, Container}, shared::Amount};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "postgres")]
@@ -44,7 +44,7 @@ impl PostGres {
         }
     }
 
-    pub fn setup_container(&self, mut docker: &mut Container)  {
+    pub fn setup_container(&self, mut docker: &mut ContainerBuilder)  {
         docker = docker
             .set_image("postgres")
             .add_env_var("POSTGRES_DB", self.postgres_db.clone())
@@ -56,15 +56,15 @@ impl PostGres {
         }
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, mut docker: &mut Container) {
+    pub fn mount_data(&self, schema: Amount<String>, mut docker: &mut ContainerBuilder) {
         match schema {
             Amount::None => (),
             Amount::Single(value) => { 
-                let _ = docker.add_mount(absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap()));
+                let _ = docker.add_mount(format!("{}:{}", absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap())));
             },
             Amount::Multiple(values) => {
                 for value in values {
-                    docker = docker.add_mount(absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap()));
+                    docker = docker.add_mount(format!("{}:{}", absolute(Path::new(&value)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", value.clone().split("/").last().unwrap())));
                 }
             }
         };

@@ -1,7 +1,6 @@
-use std::{path::Path};
+use std::path::Path;
 use std::thread::{self, JoinHandle};
-
-use crate::core::adapters::docker::ContainerType;
+use crate::core::adapters::docker::{ComposeGroup, Container};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::attach::attach_types::AttachType;
 use crate::shared::traits::Start;
@@ -11,9 +10,11 @@ use crate::shared::{Address, Amount, Node};
 /// should possess.
 #[derive(Debug)]
 pub struct Object {
-    pub docker: Option<ContainerType>,
+    pub docker_group: Option<ComposeGroup>,
+    pub docker_container: Option<Container>,
     pub start: Option<String>,
     pub data: Option<String>,
+    pub upload_directory: Option<String>,
     pub node: Option<Node>,
     pub remote: Option<Address>,
     pub attach_type: Option<AttachType>,
@@ -24,9 +25,11 @@ pub struct Object {
 impl Default for Object {
     fn default() -> Self {
         Object { 
-            docker: None, 
+            docker_group: None,
+            docker_container: None, 
             start: None, 
             data: None, 
+            upload_directory: None,
             node: None, 
             remote: None, 
             attach_type: None, 
@@ -45,7 +48,7 @@ impl Start<()> for Object {
 } 
 
 impl Object {
-    pub fn upload_data(&self) -> String {
+    pub fn upload_data(&mut self) {
         let mut upload_directory = String::from("/");
         if let Some(ref data) = self.data {
             let upload = self.ssh.as_ref().unwrap().upload_directory(&Path::new(&data), &Path::new("/"));
@@ -54,7 +57,7 @@ impl Object {
             }
         }
 
-        upload_directory
+        self.upload_directory = Some(upload_directory);
     }
 
     
