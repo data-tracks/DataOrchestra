@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
-
-use crate::{core::process::Process, shared::{traits::ToInternal, Amount}};
+use crate::shared::{traits::ToInternal, Amount};
+use crate::core::process::Process;
+use crate::core::adapters::docker::ComposeGroupBuilder;
+use crate::core::adapters::docker::container::ContainerBuilder;
 
 use super::config::General;
 
@@ -46,6 +47,56 @@ impl ToInternal<Process> for ExtProcess {
         process.process_type = self.process_type;
         process.config = self.config;
         */
+
+        if let Some(docker) = self.general.docker {
+            if let Some(compose) = docker.compose {
+                let mut builder = ComposeGroupBuilder::new();
+                builder.set_compose(compose);
+                process.object.docker_group_builder = Some(builder);
+            }
+            else 
+            {
+                let mut builder = ContainerBuilder::new();
+                if let Some(name) = docker.name {
+                    builder.set_name(name);
+                }
+                if let Some(image) = docker.image {
+                    builder.set_image(image);
+                }
+                if let Some(dockerfile) = docker.dockerfile {
+                    builder.set_dockerfile(dockerfile);
+                }
+                if let Some(build_args) = docker.build_args {
+                    for (key, value) in build_args {
+                        builder.add_build_arg(key, value);
+                    }
+                }
+                if let Some(network) = docker.network {
+                    builder.set_network(network);
+                }
+                if let Some(env) = docker.enviroment {
+                    for (key, value) in env {
+                        builder.add_env_var(key, value);
+                    }
+                }
+                match docker.mount {
+                    Amount::Single(mount) => {
+                        builder.add_mount(mount);
+                    }
+                    ,
+                    Amount::Multiple(mounts) => {
+                        for mount in mounts {
+                            builder.add_mount(mount);
+                        }
+                    },
+                    Amount::None => ()
+                }
+
+                builder.set_publish_all(docker.publish_all);
+
+                process.object.docker_container_builder = Some(builder);
+            } 
+        }
 
         process
     }
