@@ -1,4 +1,4 @@
-use crate::core::adapters::docker::DockerPlan;
+use crate::core::adapters::docker::ComposeGroupBuilder;
 
 #[derive(Debug)]
 pub struct Storm {}
@@ -8,7 +8,7 @@ impl Storm {
         Storm { }
     }
 
-    pub fn setup_container(&self, docker: &mut DockerPlan) {
+    pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
         docker.set_compose("lib/TrackBench.rs/compose-storm.yaml");
     }
 }

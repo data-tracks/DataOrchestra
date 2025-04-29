@@ -12,7 +12,7 @@ pub struct Docker {
     // Network of container
     pub network: Option<String>,
     // Additional options of container
-    pub options: Option<HashMap<String, String>>,
+    pub enviroment: Option<HashMap<String, String>>,
     // Mounts of container
     #[serde(default)]
     pub mount: Amount<String>,

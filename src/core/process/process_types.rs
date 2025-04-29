@@ -1,4 +1,4 @@
-use crate::core::adapters::docker::DockerPlan;
+use crate::core::adapters::docker::ComposeGroupBuilder;
 
 use super::types::{Flink, Kafka, Spark, Storm};
 
@@ -32,7 +32,7 @@ pub enum ProcessTypeConfig {
 impl ProcessTypeConfig {
     /// Setup the given docker container with config of specified [`ProcessType`]
     /// Consumes the docker container object and returns the modified container
-    pub fn setup_container(&self, docker: &mut DockerPlan) {
+    pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
         match self {
             ProcessTypeConfig::Flink(flink) => flink.setup_container(docker),
             ProcessTypeConfig::Kafka(kafka) => kafka.setup_container(docker),

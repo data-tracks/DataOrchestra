@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::adapters::docker::Container, shared::Amount};
+use crate::{core::adapters::docker::{container::ContainerBuilder, Container}, shared::Amount};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "polypheny")]
@@ -11,9 +11,9 @@ impl Polypheny {
         Polypheny {  }
     }
 
-    pub fn setup_container(&self, docker: &mut Container) {
+    pub fn setup_container(&self, docker: &mut ContainerBuilder) {
     }
 
-    pub fn mount_data(&self, schema: Amount<String>, docker: &mut Container) {
+    pub fn mount_data(&self, schema: Amount<String>, docker: &mut ContainerBuilder) {
     }
 }

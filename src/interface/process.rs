@@ -42,6 +42,11 @@ impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();
 
+        /*
+        process.process_type = self.process_type;
+        process.config = self.config;
+        */
+
         process
     }
 }

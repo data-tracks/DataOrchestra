@@ -42,6 +42,7 @@ impl ContainerConfig {
     }
 }
 
+#[derive(Debug)]
 pub struct ContainerConfigBuilder {
     containerconfig: ContainerConfig,
 }

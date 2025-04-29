@@ -1,4 +1,5 @@
-use std::{fs::{self, File}, path::Path};
+use std::path::Path;
+use std::fs::{self};
 
 use yaml_rust::YamlLoader;
 
@@ -6,8 +7,8 @@ use super::Container;
 
 #[derive(Debug)]
 pub struct ComposeGroup {
-    compose: Option<String>,
-    containers: Vec<Container>
+    pub compose: Option<String>,
+    pub containers: Vec<Container>
 }
 
 impl ComposeGroup {
@@ -16,6 +17,8 @@ impl ComposeGroup {
         let yaml = fs::read_to_string(compose).expect("Unable to read compose");
         YamlLoader::load_from_str(yaml.as_str());
     }
+
+    fn build() {}
 }
 
 #[derive(Debug)]

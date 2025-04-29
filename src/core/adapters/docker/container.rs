@@ -21,19 +21,29 @@ pub struct Container {
     /// Ip of container
     pub ip: Option<IpAddr>,
     /// Published ports of container. A vector of [`PortMap`] which defines the combination
-    /// `host:internal`.
+    /// `host:internal` or `external:internal`.
     pub publish_ports: Vec<PortMapping>,
+    /// If container is available and running
     pub is_running: bool,
+    /// Ssh client connected to container
+    pub ssh: Option<Ssh>,
+    /// Container config
     pub config: ContainerConfig,
+    /// Container creation source
     pub source: DockerSource,
 }
 
+#[derive(Debug)]
 pub struct ContainerBuilder {
     containerconfig: ContainerConfigBuilder,
     dockersource: DockerSourceBuilder,
 }
 
 impl ContainerBuilder {
+    pub fn new() -> ContainerBuilder {
+        ContainerBuilder { containerconfig: ContainerConfigBuilder::new(), dockersource: DockerSourceBuilder::new() }
+    }
+
     pub fn set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
         self.containerconfig.set_name(name);
         self
@@ -87,7 +97,8 @@ impl ContainerBuilder {
             config: self.containerconfig.build(),
             source: self.dockersource.build(),
             is_running: false,
-            publish_ports: Vec::new()
+            publish_ports: Vec::new(),
+            ssh: None
         }
     }
 } 
@@ -101,6 +112,7 @@ impl Container {
             ip: None, 
             publish_ports: Vec::new(), 
             is_running: false, 
+            ssh: None,
             config, 
             source 
         }
@@ -205,8 +217,8 @@ impl Container {
 }
 
 impl Container {
-    /// Create docker container using a dockerfile or image
-    fn build(&mut self) -> Result<(), String> {
+    /// Run docker container using a dockerfile or image
+    pub fn run(&mut self) -> Result<(), String> {
         // Create network
         let network = create_network(self.config.network.clone());
         match network {
@@ -252,6 +264,8 @@ impl Container {
 
         // Sleep to wait for ssh server to properly start
         sleep(Duration::from_secs(1));
+
+        self.ssh = Some(self.get_ssh());
 
         Ok(())     
     }

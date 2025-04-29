@@ -171,7 +171,7 @@ impl Default for Config {
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
-                                        options: Some(hashmap.clone()),
+                                        enviroment: Some(hashmap.clone()),
                                         mount: Amount::None,
                                         publish_all: true,
                                         image: Some("".to_string()),
@@ -209,7 +209,7 @@ impl Default for Config {
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
-                                        options: Some(hashmap.clone()),
+                                        enviroment: Some(hashmap.clone()),
                                         mount: Amount::None,
                                         publish_all: true,
                                         image: Some("".to_string()),
@@ -244,7 +244,7 @@ impl Default for Config {
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
-                                        options: Some(hashmap.clone()),
+                                        enviroment: Some(hashmap.clone()),
                                         mount: Amount::None,
                                         publish_all: true,
                                         image: Some("".to_string()),
@@ -283,7 +283,7 @@ impl Default for Config {
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
-                                        options: Some(hashmap.clone()),
+                                        enviroment: Some(hashmap.clone()),
                                         mount: Amount::None,
                                         publish_all: true,
                                         image: Some("".to_string()),

@@ -1,5 +1,7 @@
+use log::debug;
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::docker::{Container, ContainerType, MultiContainer};
+use crate::core::adapters::docker::container::ContainerBuilder;
+use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::core::store::Store;
 use crate::shared::traits::ToInternal;
@@ -51,31 +53,60 @@ impl ToInternal<Store> for ExtStore {
         store.db_type = self.db_type;
         store.config = self.config;
 
-        // Set Container(s)
+        // Set Container(s) builder
         store.object.node = self.general.node;
         if let Some(docker) = self.general.docker {
             if let Some(compose) = docker.compose {
-                store.object.docker = Some(ContainerType::Multiple(
-                    MultiContainer::new(compose, Vec::new())
-                ));
+                let mut builder = ComposeGroupBuilder::new();
+                builder.set_compose(compose);
+                store.object.docker_group_builder = Some(builder);
             }
             else 
             {
-                store.object.docker = Some(ContainerType::Single(
-                    Container::new(
-                        docker.image,
-                        docker.dockerfile,
-                        docker.build_args,
-                        docker.name,
-                        docker.network,
-                        docker.options,
-                        Some(docker.mount.to_vec()),
-                        docker.publish_all
-                        )
-                ));
+                let mut builder = ContainerBuilder::new();
+                if let Some(name) = docker.name {
+                    builder.set_name(name);
+                }
+                if let Some(image) = docker.image {
+                    builder.set_image(image);
+                }
+                if let Some(dockerfile) = docker.dockerfile {
+                    builder.set_dockerfile(dockerfile);
+                }
+                if let Some(build_args) = docker.build_args {
+                    for (key, value) in build_args {
+                        builder.add_build_arg(key, value);
+                    }
+                }
+                if let Some(network) = docker.network {
+                    builder.set_network(network);
+                }
+                if let Some(env) = docker.enviroment {
+                    for (key, value) in env {
+                        builder.add_env_var(key, value);
+                    }
+                }
+                match docker.mount {
+                    Amount::Single(mount) => {
+                        builder.add_mount(mount);
+                    }
+                    ,
+                    Amount::Multiple(mounts) => {
+                        for mount in mounts {
+                            builder.add_mount(mount);
+                        }
+                    },
+                    Amount::None => ()
+                }
+
+                builder.set_publish_all(docker.publish_all);
+
+                store.object.docker_container_builder = Some(builder);
             } 
         }
 
+        debug!("Finished parsing to internal");
+        dbg!("{}", &store);
         store
     }
 }

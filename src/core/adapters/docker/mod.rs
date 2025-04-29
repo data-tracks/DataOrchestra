@@ -5,6 +5,7 @@ pub use source::DockerSource;
 
 mod compose;
 pub use compose::ComposeGroup;
+pub use compose::ComposeGroupBuilder;
 
 pub mod container;
 pub use container::Container;
@@ -17,6 +18,7 @@ pub use manager::DockerManager;
 
 pub mod config;
 pub use config::ContainerConfig;
+pub use config::ContainerConfigBuilder;
 
 /// Create a new docker network.
 pub fn create_network<T: Into<String>>(network: T) -> Result<(), String>{

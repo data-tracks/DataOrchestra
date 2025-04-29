@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::thread::{self, JoinHandle};
-use crate::core::adapters::docker::{ComposeGroup, Container};
+use crate::core::adapters::docker::container::ContainerBuilder;
+use crate::core::adapters::docker::{ComposeGroup, ComposeGroupBuilder, Container, ContainerConfigBuilder};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::attach::attach_types::AttachType;
 use crate::shared::traits::Start;
@@ -10,8 +11,8 @@ use crate::shared::{Address, Amount, Node};
 /// should possess.
 #[derive(Debug)]
 pub struct Object {
-    pub docker_group: Option<ComposeGroup>,
-    pub docker_container: Option<Container>,
+    pub docker_group_builder: Option<ComposeGroupBuilder>,
+    pub docker_container_builder: Option<ContainerBuilder>,
     pub start: Option<String>,
     pub data: Option<String>,
     pub upload_directory: Option<String>,
@@ -25,8 +26,8 @@ pub struct Object {
 impl Default for Object {
     fn default() -> Self {
         Object { 
-            docker_group: None,
-            docker_container: None, 
+            docker_group_builder: None,
+            docker_container_builder: None, 
             start: None, 
             data: None, 
             upload_directory: None,

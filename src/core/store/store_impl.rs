@@ -1,11 +1,10 @@
 use std::fs;
-use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::thread::{self, JoinHandle};
 use log::{debug, info};
 use crate::core::adapters::command::command_func::spawn_command;
-use crate::shared::{traits::Start, Address, Amount};
-use crate::core::adapters::ssh::Ssh;
+use crate::core::adapters::docker::DockerManager;
+use crate::shared::{traits::Start, Amount};
 
 use super::Store;
 
@@ -16,20 +15,74 @@ impl Start<()> for Store {
     ///
     /// Calling `store.start()` moves the store into the thread
     fn start(mut self) -> JoinHandle<()> {
-        info!("Spawning storing thread");
+        debug!("Spawning storing thread");
         thread::Builder::new().name("store".to_string()).spawn(move || {
-            let mut ssh: Option<Ssh> = None;
-
-            if let Some(ref docker) = self.object.docker {
-            }
-
             // Create default config of specified database type ([`StoreType`]) if none was
             // specified
             if self.config.is_none() && self.db_type.is_some(){
                 info!("No config given for database type. Loading default config");
-                self.config = Some(self.db_type.unwrap().new());
+                self.config = Some(self.db_type.as_ref().unwrap().new());
             }
-                
+
+            // Create and run containers
+            let mut manager = DockerManager::new();
+
+            // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
+            if let Some(group) = self.object.docker_group_builder.take() {
+                debug!("Setting up compose");
+                let compose_group = group.build();
+                for container in compose_group.containers {
+                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+                }
+            }  
+
+            // Take ownership of ContainerBuilder out of object to prevent partial move
+            else if let Some(mut container) = self.object.docker_container_builder.take() {
+                debug!("Setting up container");
+                if let Some(ref database) = self.db_type {
+                    let mut db_config = &database.new();
+                    if let Some(ref mut config) = self.config {
+                        db_config = config;
+                    }
+                    db_config.setup_container(&mut container); 
+
+                    if self.schema.len() > 0 {
+                        //TODO: Maybe remove clone
+                        db_config.mount_data(Amount::Multiple(self.schema.clone()), &mut container);
+                    }
+                    // Upload all sql files of non was specified
+                    else if let Some(ref data) = self.object.data {
+                        let path = fs::read_dir(data).unwrap();
+                        let mut sql_files = Vec::<String>::new();
+                        for file in path {
+                            if let Ok(file) = file {
+                                let file = file.path();
+                                let is_sql_file = file.to_str().unwrap().contains(".sql");
+                                if is_sql_file {
+                                    sql_files.push(file.display().to_string());
+                                }
+                            }
+                        }
+                        db_config.mount_data(Amount::Multiple(sql_files), &mut container);
+                    }
+                }
+
+                let mut container = container.build();
+                let _ = container.run();
+                manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+            }
+
+            // Run ansible setup script on all containers
+            for container in manager.as_vec() {
+                let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
+            }
+
+            // Upload data directory
+            self.object.upload_data();
+
+            // Start script
+            self.start_script();
+            info!("Finished");
         }).unwrap()
     }
 }
@@ -45,53 +98,5 @@ impl Store {
             self.object.ssh.as_ref().unwrap().exec(format!("sh /{}/setup.sh", self.object.upload_directory.as_ref().unwrap()));
         }
     }
-
-    pub fn store_container(&mut self) {
-        // Set docker container for store
-        if let Some(ref mut docker) = self.object.docker {
-            if let Some(ref mut config) = self.config {
-                container = docker.get_ref_mut_single();
-                // Setup the container with needed default parameters for specific [`StoreType`]
-                config.setup_container(docker);
-                
-                if self.schema.has_something() {
-                    config.mount_data(self.schema, docker);
-                }
-                // Upload all sql files of non was specified
-                else if let Some(ref data) = self.object.data {
-                    let path = fs::read_dir(data).unwrap();
-                    let mut sql_files = Vec::<String>::new();
-                    for file in path {
-                        if let Ok(file) = file {
-                            let file = file.path();
-                            let is_sql_file = file.to_str().unwrap().contains(".sql");
-                            if is_sql_file {
-                                sql_files.push(file.display().to_string());
-                            }
-                        }
-                    }
-                    config.mount_data(Amount::Multiple(sql_files), docker);
-                }
-            }
-                        
-            // Start docker container
-            self.object.ssh = Some(docker.config.get_ref_mut_single().get_ssh());
-            self.object.remote = Some(Address { ip: IpAddr::V4(Ipv4Addr::LOCALHOST), port: docker.config.get_ref_mut_single().get_ssh_port().unwrap().clone() } );
-        }
-
-        let remote = self.object.remote.unwrap();
-        
-        let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
-       
-        // Upload data directory
-        self.object.upload_data();
-
-        // Start script
-        self.start_script();
-        info!("Finished");
-    }
-
-
-    pub fn store_multicontainer(&mut self) {}
 }
 
