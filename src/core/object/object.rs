@@ -1,11 +1,11 @@
 use std::path::Path;
 use std::thread::{self, JoinHandle};
 use crate::core::adapters::docker::container::ContainerBuilder;
-use crate::core::adapters::docker::{ComposeGroup, ComposeGroupBuilder, Container, ContainerConfigBuilder};
+use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::ssh::Ssh;
 use crate::core::attach::attach_types::AttachType;
 use crate::shared::traits::Start;
-use crate::shared::{Address, Amount, Node};
+use crate::shared::{Address, Amount, File, Node};
 
 /// The `Object` type. Acts as a generic component. Implements basic fields that every object
 /// should possess.
@@ -20,7 +20,8 @@ pub struct Object {
     pub remote: Option<Address>,
     pub attach_type: Option<AttachType>,
     pub attach: Amount<Box<Object>>,
-    pub ssh: Option<Ssh>
+    pub ssh: Option<Ssh>,
+    pub files: Vec<File> 
 }
 
 impl Default for Object {
@@ -35,7 +36,8 @@ impl Default for Object {
             remote: None, 
             attach_type: None, 
             attach: Amount::None, 
-            ssh: None 
+            ssh: None,
+            files: Vec::new()
         }
     }
 }

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
 use crate::shared::{traits::ToInternal, Amount};
 use crate::core::process::Process;
 use crate::core::adapters::docker::ComposeGroupBuilder;
@@ -9,9 +10,10 @@ use super::config::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtProcess {
-    //TODO: HASHMAP IS PLACEHOLDER
-    pub process_type: Option<String>,
-    pub config: Option<HashMap<String, String>>,
+    #[serde(rename = "type")]
+    pub process_type: Option<ProcessType>,
+    #[serde(rename = "config")]
+    pub config: Option<ProcessTypeConfig>,
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]
@@ -43,10 +45,8 @@ impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();
 
-        /*
         process.process_type = self.process_type;
         process.config = self.config;
-        */
 
         if let Some(docker) = self.general.docker {
             if let Some(compose) = docker.compose {

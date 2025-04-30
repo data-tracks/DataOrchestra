@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::shared::Amount;
+use crate::shared::{traits::ToInternal, Amount};
 
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Docker {
+pub struct ExtDocker {
     // Name of container
     pub name: Option<String>,
     // Network of container
@@ -25,3 +25,4 @@ pub struct Docker {
     pub build_args: Option<HashMap<String, String>>,
     pub compose: Option<String>,
 }
+

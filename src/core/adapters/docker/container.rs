@@ -248,16 +248,17 @@ impl Container {
             let int = int.parse::<u16>().unwrap();
             let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
             self.add_port_mapping(ext, int);
+            debug!("{}:{}", ext, int);
         }
 
         // Install ssh server
         info!("Installing shh server on {}", self.get_id());
         // Reformat sh script for linux distro
         if cfg!(target_os = "windows") {
-            spawn_command(&"dos2unix src/docker/docker_ssh_init.sh".to_string());
+            spawn_command(&"dos2unix scripts/docker/docker_ssh_init.sh".to_string());
         }
 
-        let _ = spawn_command(&format!("docker cp src/docker/docker_ssh_init.sh {}:/", self.id.as_ref().unwrap())).wait();
+        let _ = spawn_command(&format!("docker cp scripts/docker/docker_ssh_init.sh {}:/", self.id.as_ref().unwrap())).wait();
         let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", self.id.as_ref().unwrap()));
         // Start ssh server
         let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();

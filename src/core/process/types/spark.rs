@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::core::adapters::docker::ComposeGroupBuilder;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Spark {}
 
 impl Spark {

@@ -1,5 +1,4 @@
 use crate::core::object::Object;
-
 use super::store_types::{StoreTypeConfig, StoreType};
 
 /// Represents a store object able to store data. Holds general information for the creation and
@@ -33,7 +32,7 @@ impl Default for Store {
             object: Object::default(),
             schema: Vec::new(),
             db_type: None,
-            config: None
+            config: None,
         }
     }
 }

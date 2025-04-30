@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::core::adapters::docker::ComposeGroupBuilder;
 
 use super::types::{Flink, Kafka, Spark, Storm};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ProcessType {
     Flink,
     Kafka,
@@ -21,7 +24,8 @@ impl ProcessType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum ProcessTypeConfig {
     Flink(Flink),
     Kafka(Kafka),

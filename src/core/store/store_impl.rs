@@ -4,6 +4,7 @@ use std::thread::{self, JoinHandle};
 use log::{debug, info};
 use crate::core::adapters::command::command_func::spawn_command;
 use crate::core::adapters::docker::DockerManager;
+use crate::core::adapters::ssh::Ssh;
 use crate::shared::{traits::Start, Amount};
 
 use super::Store;
@@ -74,7 +75,7 @@ impl Start<()> for Store {
 
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
-                let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
+                let _ = spawn_command(&format!("ansible-playbook scripts/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
             }
 
             // Upload data directory
@@ -96,6 +97,13 @@ impl Store {
         }
         else {
             self.object.ssh.as_ref().unwrap().exec(format!("sh /{}/setup.sh", self.object.upload_directory.as_ref().unwrap()));
+        }
+    }
+
+    pub fn start_script_<T: Into<String>>(path: T, ssh: &Ssh) {
+        let path = path.into();
+        if path.ends_with(".sh") {
+            ssh.exec(format!("sh /{}", path));
         }
     }
 }

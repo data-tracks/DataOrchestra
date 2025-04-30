@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
+use log::debug;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use crate::shared::{Amount, Node};
+use crate::shared::{Amount, File, Node};
 use super::store::ExtStore;
 use super::process::ExtProcess;
 use super::object::ExtObject;
 use super::generate::ExtGenerate;
-use super::docker::Docker;
+use super::docker::ExtDocker;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -39,6 +40,7 @@ where
             return Ok(Amount::Multiple(compact));
         }    
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing Vec<generate> [{}]", error);
         }
     }
@@ -48,6 +50,7 @@ where
             return Ok(Amount::Single(full));
         }
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing generate: [{}]", error);
         }  
     }
@@ -70,6 +73,7 @@ where
             return Ok(Amount::Multiple(compact));
         }    
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing Vec<process> [{}]", error);
         }
     }
@@ -79,6 +83,7 @@ where
             return Ok(Amount::Single(full));
         }
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing process: [{}]", error);
         }  
     }
@@ -101,6 +106,7 @@ where
             return Ok(Amount::Multiple(compact));
         }    
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing Vec<store> [{}]", error);
         }
     }
@@ -110,6 +116,7 @@ where
             return Ok(Amount::Single(full));
         }
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing store: [{}]", error);
         }  
     }
@@ -132,6 +139,7 @@ where
             return Ok(Amount::Multiple(compact));
         }    
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing Vec<object> [{}]", error);
         }
     }
@@ -141,6 +149,7 @@ where
             return Ok(Amount::Single(full));
         }
         else if let Err(error) = result {
+            debug!("{}", value.clone());
             panic!("Error while deserializing object: [{}]", error);
         }  
     }
@@ -167,7 +176,7 @@ impl Default for Config {
                         {
                             docker: Some
                                 (
-                                    Docker
+                                    ExtDocker
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
@@ -205,7 +214,7 @@ impl Default for Config {
                         {
                             docker: Some
                                 (
-                                    Docker
+                                    ExtDocker
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
@@ -240,7 +249,7 @@ impl Default for Config {
                         {
                             docker: Some
                                 (
-                                    Docker
+                                    ExtDocker
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
@@ -279,7 +288,7 @@ impl Default for Config {
                         {
                             docker: Some
                                 (
-                                    Docker
+                                    ExtDocker
                                     {
                                         name: Some("".to_string()),
                                         network: Some("".to_string()),
@@ -312,18 +321,12 @@ impl Default for Config {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct General {
-    pub docker: Option<Docker>, 
+    pub docker: Option<ExtDocker>, 
     pub node: Option<Node>,
     #[serde(default)]
     pub file: Amount<File>
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct File {
-    pub name: Option<String>,
-    pub path: Option<String>,
-    pub destination: Option<String>,
-    pub start: Option<String>
-}
+
 
 

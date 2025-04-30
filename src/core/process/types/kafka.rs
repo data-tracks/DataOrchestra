@@ -1,16 +1,16 @@
+use serde::{Deserialize, Serialize};
 use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::shared::Amount;
 use crate::core::adapters::ssh::Ssh;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Kafka {
-    topics: Amount<String>
+    topics: Vec<String>
 }
 
 
 impl Kafka {
     pub fn new() -> Self {
-        Kafka { topics: Amount::None }
+        Kafka { topics: Vec::new() }
     }
 
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
@@ -18,15 +18,9 @@ impl Kafka {
     }
 
     pub fn create_topic(&self, ssh: &Ssh) {
-        match self.topics {
-            Amount::Single(ref topic) => self.exec_create_topic(ssh, topic),
-            Amount::Multiple(ref topics) => {
-                for topic in topics {
-                    self.exec_create_topic(ssh, topic);
-                }
-            },
-            Amount::None => (),
-        };
+        for topic in &self.topics {
+            self.exec_create_topic(ssh, topic);
+        }
     }
 
     fn exec_create_topic<T: Into<String>>(&self, ssh: &Ssh, topic: T) {

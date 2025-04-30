@@ -65,46 +65,22 @@ fn main() {
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
     // Parse to internal structure
-    let stores: Amount<Store> = config.store.to_internal();
-    let processes: Amount<Process> = config.process.to_internal();
-    let generates: Amount<Generate> = config.generate.to_internal();
+    let stores: Vec<Store> = config.store.to_internal();
+    let processes: Vec<Process> = config.process.to_internal();
+    let generates: Vec<Generate> = config.generate.to_internal();
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
-    match stores {
-        Amount::None => (),
-        Amount::Single(task) => {
-            thread_pool.push(task.start());
-        }
-        Amount::Multiple(tasks) => {
-            for task in tasks {
-                thread_pool.push(task.start());
-            }
-        }
+    for store in stores {
+        thread_pool.push(store.start());
     }
 
-    match processes {
-        Amount::None => (),
-        Amount::Single(task) => {
-            thread_pool.push(task.start());
-        }
-        Amount::Multiple(tasks) => {
-            for task in tasks {
-                thread_pool.push(task.start());
-            }
-        }
+    for process in processes {
+        thread_pool.push(process.start());
     }
-     
-    match generates {
-        Amount::None => (),
-        Amount::Single(task) => {
-            thread_pool.push(task.start());
-        }
-        Amount::Multiple(tasks) => {
-            for task in tasks {
-                thread_pool.push(task.start());
-            }
-        }
+
+    for generate in generates {
+        thread_pool.push(generate.start());
     }
 
     // Wait for threads to finish

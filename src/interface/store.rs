@@ -86,17 +86,9 @@ impl ToInternal<Store> for ExtStore {
                         builder.add_env_var(key, value);
                     }
                 }
-                match docker.mount {
-                    Amount::Single(mount) => {
-                        builder.add_mount(mount);
-                    }
-                    ,
-                    Amount::Multiple(mounts) => {
-                        for mount in mounts {
-                            builder.add_mount(mount);
-                        }
-                    },
-                    Amount::None => ()
+
+                for mount in docker.mount.to_vec() {
+                    builder.add_mount(mount);
                 }
 
                 builder.set_publish_all(docker.publish_all);
@@ -104,6 +96,8 @@ impl ToInternal<Store> for ExtStore {
                 store.object.docker_container_builder = Some(builder);
             } 
         }
+    
+        store.object.files = self.general.file.to_vec();
 
         debug!("Finished parsing to internal");
         dbg!("{}", &store);

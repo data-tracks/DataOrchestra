@@ -1,13 +1,9 @@
-use std::net::{IpAddr, Ipv4Addr};
 use std::thread::{self, JoinHandle};
 use std::path::Path;
 use log::{info, debug};
-
 use crate::core::adapters::command::command_func::spawn_command;
-use crate::core::adapters::docker::{ComposeGroupBuilder, Container, DockerManager};
-use crate::core::adapters::ssh::Ssh;
+use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
 use crate::shared::traits::Start;
-use crate::shared::Address;
 
 use super::Process;
 
