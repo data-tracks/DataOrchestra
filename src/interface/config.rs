@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use log::debug;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
+use crate::core::process::types::{kafka, Kafka};
 use crate::shared::{Amount, File, Node};
+use super::general::General;
 use super::store::ExtStore;
 use super::process::ExtProcess;
 use super::object::ExtObject;
@@ -207,8 +210,8 @@ impl Default for Config {
                 (
                     ExtProcess
                     {
-                        process_type: None,
-                        config: None,
+                        process_type: Some(ProcessType::Kafka),
+                        config: Some(ProcessTypeConfig::Kafka(Kafka::new())),
                         amount: 1, 
                         general: General 
                         {
@@ -319,13 +322,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct General {
-    pub docker: Option<ExtDocker>, 
-    pub node: Option<Node>,
-    #[serde(default)]
-    pub file: Amount<File>
-}
+
 
 
 

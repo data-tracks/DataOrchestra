@@ -1,18 +1,16 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
 use crate::shared::{traits::ToInternal, Amount};
 use crate::core::process::Process;
-use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::core::adapters::docker::container::ContainerBuilder;
+use super::general::General;
 
-use super::config::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtProcess {
     #[serde(rename = "type")]
     pub process_type: Option<ProcessType>,
-    #[serde(rename = "config")]
+    #[serde(flatten)]
     pub config: Option<ProcessTypeConfig>,
     #[serde(default = "default_amount")]
     pub amount: usize,
@@ -44,59 +42,34 @@ impl ToInternal<Amount<Process>> for Amount<ExtProcess> {
 impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();
-
+        dbg!(&self.config);
         process.process_type = self.process_type;
         process.config = self.config;
 
-        if let Some(docker) = self.general.docker {
-            if let Some(compose) = docker.compose {
-                let mut builder = ComposeGroupBuilder::new();
-                builder.set_compose(compose);
-                process.object.docker_group_builder = Some(builder);
+        // If a process type is given prioritise this over additional docker config
+        if process.process_type.is_some() {
+            let mut builder = ComposeGroupBuilder::new();
+            if process.config.is_none() {
+                dbg!(&process.process_type);
+                process.config = Some(process.process_type.as_ref().unwrap().new());
             }
-            else 
-            {
-                let mut builder = ContainerBuilder::new();
-                if let Some(name) = docker.name {
-                    builder.set_name(name);
-                }
-                if let Some(image) = docker.image {
-                    builder.set_image(image);
-                }
-                if let Some(dockerfile) = docker.dockerfile {
-                    builder.set_dockerfile(dockerfile);
-                }
-                if let Some(build_args) = docker.build_args {
-                    for (key, value) in build_args {
-                        builder.add_build_arg(key, value);
-                    }
-                }
-                if let Some(network) = docker.network {
-                    builder.set_network(network);
-                }
-                if let Some(env) = docker.enviroment {
-                    for (key, value) in env {
-                        builder.add_env_var(key, value);
-                    }
-                }
-                match docker.mount {
-                    Amount::Single(mount) => {
-                        builder.add_mount(mount);
-                    }
-                    ,
-                    Amount::Multiple(mounts) => {
-                        for mount in mounts {
-                            builder.add_mount(mount);
-                        }
-                    },
-                    Amount::None => ()
-                }
 
-                builder.set_publish_all(docker.publish_all);
-
-                process.object.docker_container_builder = Some(builder);
+            process.config.as_ref().unwrap().setup_container(&mut builder);
+        }
+        else {
+            if let Some(docker) = self.general.docker {
+                if docker.compose.is_some() {
+                    process.object.docker_group_builder = Some(docker.to_internal());
+                }
+                else 
+                {
+                    process.object.docker_container_builder = Some(docker.to_internal());
+                } 
             } 
         }
+
+        process.object.node = self.general.node;
+        process.object.data = self.general.file.to_internal();
 
         process
     }

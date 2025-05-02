@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::object::Object, shared::traits::ToInternal};
+use crate::{core::{data::{Data}, object::Object}, shared::traits::ToInternal};
 
-use super::config::General;
+use super::general::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtObject {
@@ -20,7 +20,11 @@ impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();
 
-        object.files = self.general.file.to_vec();
+        let mut data_vec = Vec::<Data>::new();
+        for file in self.general.file.to_vec() {
+            data_vec.push(file.to_internal());
+        }
+        object.data = data_vec;
 
         object
     } 

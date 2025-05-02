@@ -1,9 +1,9 @@
 use std::path::Path;
 use std::fs::{self};
-
 use yaml_rust::YamlLoader;
-
-use super::Container;
+use crate::core::adapters::command::command_func::{output_command, spawn_command};
+use super::container::ContainerBuilder;
+use super::{config, Container, Run};
 
 #[derive(Debug)]
 pub struct ComposeGroup {
@@ -12,13 +12,62 @@ pub struct ComposeGroup {
 }
 
 impl ComposeGroup {
-    fn get_names(&self) {
+    pub fn get_names(&self) -> Vec<String>{
+        let mut vec_names = Vec::<String>::new();
         let compose = Path::new(self.compose.as_ref().unwrap());
         let yaml = fs::read_to_string(compose).expect("Unable to read compose");
-        YamlLoader::load_from_str(yaml.as_str());
-    }
+        let yaml = YamlLoader::load_from_str(yaml.as_str());
+        if let Ok(yaml) = yaml {
+            let doc = &yaml[0]["services"]; 
+            for yaml in doc.as_hash() {
+                for key in x.keys() {
+                    let container = yaml[key];
+                    let container_hash = container.as_hash().unwrap();
+                    if let Some(name) = container_hash.get("container_name") {
+                        vec_names.push(name.as_str().unwrap().to_string());
+                    }
+                    else {
+                        vec_names.push(key.as_str().unwrap().to_string());
+                    }
+                }
+            }
+        }
 
-    fn build() {}
+        vec_names
+    }
+}
+
+impl Run<(), String> for ComposeGroup {
+    fn run(&mut self) -> Result<(), String> {
+        if let Some(ref compose) = self.compose {
+            spawn_command(format!("docker compose -f {} up -d --build", compose)).wait();
+        }
+        else {
+            panic!("No compose to execute");
+        }
+
+        // Set id of containers.
+        // As the containers here are non specific yet, we can arbitrarily set the id(s)
+        let names: Vec<String> = self.get_names();
+        for name in names {
+            let mut container = ContainerBuilder::new().build();
+            let id = output_command(format!("docker ps -aqf \"name={}\"", name));
+            container.set_id(id);
+            self.containers.push(container);
+        }
+
+        for container in self.containers.iter_mut() {
+            let result = container.load_ip();
+            if let Err(error) = result {
+                panic!("Unable to get ip of container {}", error);
+            }
+
+            let _result = container.load_ports();
+            let _result = container.load_ssh();
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug)]

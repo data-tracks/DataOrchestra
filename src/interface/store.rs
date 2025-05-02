@@ -1,13 +1,11 @@
 use log::debug;
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::docker::container::ContainerBuilder;
-use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::core::store::Store;
 use crate::shared::traits::ToInternal;
 use crate::shared::Amount;
 
-use super::config::General;
+use super::general::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtStore {
@@ -42,12 +40,7 @@ impl ToInternal<Store> for ExtStore {
         let mut store = Store::default();
 
         // Set Schema(s)
-        store.schema = 
-            match self.schema {
-                Amount::None => Vec::new(),
-                Amount::Single(schema) => vec![schema],
-                Amount::Multiple(schemas) => schemas
-            };
+        store.schema = self.schema.to_vec(); 
     
         // Set Database Type and config
         store.db_type = self.db_type;
@@ -56,51 +49,18 @@ impl ToInternal<Store> for ExtStore {
         // Set Container(s) builder
         store.object.node = self.general.node;
         if let Some(docker) = self.general.docker {
-            if let Some(compose) = docker.compose {
-                let mut builder = ComposeGroupBuilder::new();
-                builder.set_compose(compose);
-                store.object.docker_group_builder = Some(builder);
+            if docker.compose.is_some() {
+                store.object.docker_group_builder = Some(docker.to_internal());
             }
             else 
             {
-                let mut builder = ContainerBuilder::new();
-                if let Some(name) = docker.name {
-                    builder.set_name(name);
-                }
-                if let Some(image) = docker.image {
-                    builder.set_image(image);
-                }
-                if let Some(dockerfile) = docker.dockerfile {
-                    builder.set_dockerfile(dockerfile);
-                }
-                if let Some(build_args) = docker.build_args {
-                    for (key, value) in build_args {
-                        builder.add_build_arg(key, value);
-                    }
-                }
-                if let Some(network) = docker.network {
-                    builder.set_network(network);
-                }
-                if let Some(env) = docker.enviroment {
-                    for (key, value) in env {
-                        builder.add_env_var(key, value);
-                    }
-                }
-
-                for mount in docker.mount.to_vec() {
-                    builder.add_mount(mount);
-                }
-
-                builder.set_publish_all(docker.publish_all);
-
-                store.object.docker_container_builder = Some(builder);
+                store.object.docker_container_builder = Some(docker.to_internal());
             } 
         }
     
-        store.object.files = self.general.file.to_vec();
+        store.object.data = self.general.file.to_internal();
 
         debug!("Finished parsing to internal");
-        dbg!("{}", &store);
         store
     }
 }

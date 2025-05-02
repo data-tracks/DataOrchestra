@@ -11,6 +11,7 @@ use crate::core::adapters::ssh::Ssh;
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
 use super::{ContainerConfig, DockerSource, PortMapping};
+use super::Run;
 
 /// The docker `ContainerData` type. Represents the general information tied to the creation of a
 /// docker container.
@@ -120,14 +121,6 @@ impl Container {
 }
 
 impl Container {
-    /// Get ssh connection to docker container
-    pub fn get_ssh(&mut self) -> Ssh {
-        let mut ssh = Ssh::new();
-        ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
-
-        ssh
-    }
-
     /// Execute command remotely in docker container
     ///
     /// # Examples
@@ -158,23 +151,6 @@ impl Container {
         output    
     }
 
-
-    /// Get ip of docker container
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// ```
-    pub fn get_ip(&self) -> Result<IpAddr, String>  {
-        let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
-        let ip = ip.replace("\n", "").trim().to_string();
-        let ip = Ipv4Addr::from_str(ip.as_str());
-        if let Err(err) = ip {
-            return Err(err.to_string());
-        }
-        
-        Ok(IpAddr::V4(ip.unwrap()))
-    }
 
     /// Get host ssh port mapping from docker container
     pub fn get_ssh_port(&self) -> Result<u16, String> {
@@ -216,9 +192,9 @@ impl Container {
     }
 }
 
-impl Container {
+impl Run<(), String> for Container {
     /// Run docker container using a dockerfile or image
-    pub fn run(&mut self) -> Result<(), String> {
+    fn run(&mut self) -> Result<(), String> {
         // Create network
         let network = create_network(self.config.network.clone());
         match network {
@@ -234,22 +210,14 @@ impl Container {
             self.build_from_image();
         }
 
-        // get ip
-        let ip = self.get_ip();
-        match ip {
-            Ok(ip) => self.ip = Some(ip),
-            Err(error) => error!("{}", error)
-        }
+        // get and set ip
+        let result = self.load_ip();
+            if let Err(error) = result {
+                panic!("Unable to get ip of container {}", error);
+            }
 
-        // Get ssh port
-        let ports = output_command(format!("docker port {}", self.id.as_ref().unwrap()));
-        for port in ports.split("\n").filter(|x| !x.is_empty()) {
-            let (int, ext) = port.split_once("/").unwrap();
-            let int = int.parse::<u16>().unwrap();
-            let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
-            self.add_port_mapping(ext, int);
-            debug!("{}:{}", ext, int);
-        }
+        // get and set port mappings
+        let _ = self.load_ports();
 
         // Install ssh server
         info!("Installing shh server on {}", self.get_id());
@@ -266,15 +234,52 @@ impl Container {
         // Sleep to wait for ssh server to properly start
         sleep(Duration::from_secs(1));
 
-        self.ssh = Some(self.get_ssh());
+        // Set ssh client
+        let _ = self.load_ssh();
 
         Ok(())     
     }
+}
 
+impl Container {
     fn build_from_dockerfile(&mut self) {}
     fn build_from_image(&mut self) {
         // Create image
         let id = output_command(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));
         self.set_id(id.trim().to_string());
+    }
+
+    pub fn load_ip(&mut self) -> Result<(), String> {
+        let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
+        let ip = ip.replace("\n", "").trim().to_string();
+        let ip = Ipv4Addr::from_str(ip.as_str());
+        if let Ok(ip) = ip {
+            self.ip = Some(IpAddr::V4(ip));
+        }
+        else if let Err(err) = ip {
+            return Err(err.to_string());
+        }
+        
+        Ok(()) 
+    }
+
+    pub fn load_ports(&mut self) -> Result<(), String> {
+        let ports = output_command(format!("docker port {}", self.id.as_ref().unwrap()));
+        for port in ports.split("\n").filter(|x| !x.is_empty()) {
+            let (int, ext) = port.split_once("/").unwrap();
+            let int = int.parse::<u16>().unwrap();
+            let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
+            self.add_port_mapping(ext, int);
+        }
+
+        Ok(())
+    }
+
+    pub fn load_ssh(&mut self) -> Result<(), String> {
+        let mut ssh = Ssh::new();
+        ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
+
+        self.ssh = Some(ssh);
+        Ok(())
     }
 }

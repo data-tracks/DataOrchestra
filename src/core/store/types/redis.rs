@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::docker::{container::ContainerBuilder, Container};
+use crate::core::adapters::docker::container::ContainerBuilder;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "redis")]

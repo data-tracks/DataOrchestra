@@ -1,9 +1,10 @@
 use std::thread::{self, JoinHandle};
-use std::path::Path;
 use log::{info, debug};
 use crate::core::adapters::command::command_func::spawn_command;
 use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
+use crate::core::utils::start_script;
 use crate::shared::traits::Start;
+use crate::core::adapters::docker::Run;
 
 use super::Process;
 
@@ -17,31 +18,28 @@ impl Start<()> for Process {
         debug!("Spawning process thread");
         
         thread::Builder::new().name("process".to_string()).spawn(move || {
-            if self.config.is_none() && self.process_type.is_some() {
-                info!("No config given for database type. Loading default config");
-                self.config = Some(self.process_type.as_ref().unwrap().new());
-            }
-
             let mut manager = DockerManager::new();
+            dbg!(&self);
+            if let Some(ref process) = self.process_type {
+                debug!("Setting up {:?} enviroment", process);
 
-            if let Some(group) = self.object.docker_group_builder.take() {
-                debug!("Setting up compose");
-                let compose_group = group.build();
-                for container in compose_group.containers {
-                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+                if self.config.is_none() {
+                    info!("No config was provided. Setting up default config");
+                    self.config = Some(self.process_type.as_ref().unwrap().new());
                 }
+                let config = self.config.as_ref().unwrap();
+
+                let mut compose = ComposeGroupBuilder::new();
+                config.setup_container(&mut compose);
+                self.object.docker_group_builder = Some(compose);
             }
             // Take ownership of ContainerBuilder out of object to prevent partial move
-            else if let Some(ref process) = self.process_type {
-                debug!("Setting up {:?} enviroment", process);
-                let mut process_config = &process.new();
-                if let Some(ref mut config) = self.config {
-                    process_config = config;
-                }
-                let mut compose = ComposeGroupBuilder::new();
-                process_config.setup_container(&mut compose);
-                let compose = compose.build();
-                for container in compose.containers {
+            
+            if let Some(group) = self.object.docker_group_builder.take() {
+                debug!("Setting up compose");
+                let mut compose_group = group.build();
+                let result = compose_group.run();
+                for container in compose_group.containers {
                     manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
                 }
             }
@@ -57,24 +55,27 @@ impl Start<()> for Process {
             for container in manager.as_vec() {
                 let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
             }
-            self.object.upload_data();
+
+            for (container, data) in manager.iter_combine_data(&self.object.data) {
+                if let Some(ref ssh) = container.ssh {
+                    let _ = ssh.upload_directory(&data.path, &data.destination);
+                }
+                else {
+                    panic!("Ssh client unavailable");
+                }
+            }
+
+            for (container, data) in manager.iter_combine_data(&self.object.data) {
+                if let Some(ref ssh) = container.ssh {
+                    start_script(ssh, data);
+                }
+                else {
+                    panic!("Ssh client unavailable");
+                }
+            }
             
-            self.start_script();
             
             info!("Finished");
         }).unwrap()
-    }
-}
-
-impl Process {
-    pub fn start_script(&self) {
-        if let Some(ref start) = self.object.start {
-            if start.contains("sh") {
-                self.object.ssh.as_ref().unwrap().exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()));
-            }
-        }
-        else {
-            self.object.ssh.as_ref().unwrap().exec(format!("sh /{}/setup.sh", self.object.upload_directory.as_ref().unwrap()));
-        }
     }
 }

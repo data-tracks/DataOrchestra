@@ -1,15 +1,16 @@
 {
   "process": {
     "type": "kafka",
-    "config": {
-      "topics": "words"
+    "kafka": {
+      "topics": ["words"]
     }
   },
   "store": {
-    "type": "postgres",
+    "type": "postgres", 
     "file": {
+      "name": "store",
       "path": "examples/word_count/store",
-      "start": "examples/word_count/store/setup.sh"
+      "start": "/store/setup.sh"
     },
     "schema": "examples/word_count/store/schema.sql",
     "docker": {

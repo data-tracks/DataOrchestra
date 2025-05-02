@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::{core::generate::Generate, shared::{traits::ToInternal, Amount}};
-use super::config::General;
 
+use super::general::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtGenerate {
@@ -36,6 +36,19 @@ impl ToInternal<Amount<Generate>> for Amount<ExtGenerate> {
 impl ToInternal<Generate> for ExtGenerate {
     fn to_internal(self) -> Generate {
         let mut generate = Generate::default();
+
+        generate.object.node = self.general.node;
+        if let Some(docker) = self.general.docker {
+            if docker.compose.is_some() {
+                generate.object.docker_group_builder = Some(docker.to_internal());
+            }
+            else 
+            {
+                generate.object.docker_container_builder = Some(docker.to_internal());
+            } 
+        } 
+
+        generate.object.data = self.general.file.to_internal();
 
         generate
     }

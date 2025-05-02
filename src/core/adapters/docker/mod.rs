@@ -1,5 +1,8 @@
 use super::command::command_func::{output_command, spawn_command};
 
+pub mod traits;
+pub use traits::Run;
+
 pub mod source;
 pub use source::DockerSource;
 

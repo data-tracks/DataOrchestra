@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::docker::{container::ContainerBuilder, Container};
-use crate::shared::Amount;
-use super::types::{mongodb::MongoDB, polypheny::Polypheny, postgres::PostGres, redis::Redis};
+use crate::core::adapters::docker::container::ContainerBuilder;
+use super::types::{MongoDB, Polypheny, PostGres, Redis};
 
 /// Store Type. Represents available storage types 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -50,12 +49,12 @@ impl StoreTypeConfig {
         };
     }
 
-    pub fn mount_data(&self, data: Amount<String>, docker: &mut ContainerBuilder) {
+    pub fn mount_data(&self, data: &Vec<String>, docker: &mut ContainerBuilder) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.mount_data(data, docker),
-            StoreTypeConfig::Redis(_redis) => (),
-            StoreTypeConfig::MongoDB(mongodb) => mongodb.mount_data(data, docker),
-            StoreTypeConfig::Polypheny(polypheny) => polypheny.mount_data(data, docker)
+            StoreTypeConfig::Redis(_redis) => panic!("No mount data for redis"),
+            StoreTypeConfig::MongoDB(_mongodb) => panic!("No mount data for mongodb"),
+            StoreTypeConfig::Polypheny(_polypheny) => panic!("No mount data for polypheny")
         };
     }
 }

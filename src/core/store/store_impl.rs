@@ -1,11 +1,10 @@
-use std::fs;
-use std::path::Path;
 use std::thread::{self, JoinHandle};
 use log::{debug, info};
 use crate::core::adapters::command::command_func::spawn_command;
-use crate::core::adapters::docker::DockerManager;
+use crate::core::adapters::docker::{DockerManager, Run};
 use crate::core::adapters::ssh::Ssh;
-use crate::shared::{traits::Start, Amount};
+use crate::core::utils::start_script;
+use crate::shared::traits::Start;
 
 use super::Store;
 
@@ -49,22 +48,7 @@ impl Start<()> for Store {
 
                     if self.schema.len() > 0 {
                         //TODO: Maybe remove clone
-                        db_config.mount_data(Amount::Multiple(self.schema.clone()), &mut container);
-                    }
-                    // Upload all sql files of non was specified
-                    else if let Some(ref data) = self.object.data {
-                        let path = fs::read_dir(data).unwrap();
-                        let mut sql_files = Vec::<String>::new();
-                        for file in path {
-                            if let Ok(file) = file {
-                                let file = file.path();
-                                let is_sql_file = file.to_str().unwrap().contains(".sql");
-                                if is_sql_file {
-                                    sql_files.push(file.display().to_string());
-                                }
-                            }
-                        }
-                        db_config.mount_data(Amount::Multiple(sql_files), &mut container);
+                        db_config.mount_data(&self.schema, &mut container);
                     }
                 }
 
@@ -75,36 +59,30 @@ impl Start<()> for Store {
 
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
-                let _ = spawn_command(&format!("ansible-playbook scripts/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
+                let _ = spawn_command(&format!("ansible-playbook scripts/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait(); 
             }
 
             // Upload data directory
-            self.object.upload_data();
+            for (container, data) in manager.iter_combine_data(&self.object.data) {
+                if let Some(ref ssh) = container.ssh {
+                    let _ = ssh.upload_directory(&data.path, &data.destination);
+                }
+                else {
+                    panic!("Ssh client unavailable");
+                }
+            }
+
+            for (container, data) in manager.iter_combine_data(&self.object.data) {
+                if let Some(ref ssh) = container.ssh {
+                    start_script(ssh, data);
+                }
+                else {
+                    panic!("Ssh client unavailable");
+                }
+            }
 
             // Start script
-            self.start_script();
             info!("Finished");
         }).unwrap()
     }
 }
-
-impl Store {
-    pub fn start_script(&self) {
-        if let Some(ref start) = self.object.start {
-            if start.contains("sh") {
-                self.object.ssh.as_ref().unwrap().exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()));
-            }
-        }
-        else {
-            self.object.ssh.as_ref().unwrap().exec(format!("sh /{}/setup.sh", self.object.upload_directory.as_ref().unwrap()));
-        }
-    }
-
-    pub fn start_script_<T: Into<String>>(path: T, ssh: &Ssh) {
-        let path = path.into();
-        if path.ends_with(".sh") {
-            ssh.exec(format!("sh /{}", path));
-        }
-    }
-}
-

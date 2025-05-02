@@ -1,10 +1,10 @@
-use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::thread::{self, JoinHandle};
 use log::{debug, info};
 use crate::core::adapters::command::command_func::spawn_command;
-use crate::shared::{traits::Start, Address};
-use crate::core::adapters::ssh::Ssh;
+use crate::core::adapters::docker::DockerManager;
+use crate::core::utils::start_script;
+use crate::shared::traits::Start;
 
 use super::Generate;
 
@@ -18,50 +18,44 @@ impl Start<()> for Generate {
         info!("Spawning generate thread");
         
         thread::Builder::new().name("generate".to_string()).spawn(move || {
-            /*
-            let mut ssh: Option<Ssh> = None;
 
-            if let Some(ref mut docker) = self.docker {
-                let _ = docker.build();
-                ssh = Some(docker.get_ssh());
-                self.remote = Some( Address { ip: IpAddr::V4(Ipv4Addr::LOCALHOST), port: docker.get_ssh_port().unwrap().clone() } );
-            }
-            
-            if self.remote.is_none() {
-                panic!("No remote connection");
-            }
+            let mut manager = DockerManager::new();
 
-            if ssh.is_none() {
-                panic!("No ssh connection available");
+            if let Some(group) = self.object.docker_group_builder.take() {
+                debug!("Setting up compose");
+                let compose_group = group.build();
+                for container in compose_group.containers {
+                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+                }
+     
             }
 
-            let ssh = ssh.unwrap();
-            let remote = self.remote.unwrap();
-            
-            let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", remote.port)).wait();
+            for container in manager.as_vec() {
+                let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
+            }
 
-            let mut upload_directory = String::from("/");
-            if let Some(ref data) = self.object.data {
-                let upload = ssh.upload_directory(&Path::new(data), &Path::new("/"));
-                if let Ok(dir) = upload {
-                    upload_directory = dir
+            // Upload data directory
+            for (container, data) in manager.iter_combine_data(&self.object.data) {
+                if let Some(ref ssh) = container.ssh {
+                    debug!("Uploading [{}] to [{}]", &data.path, container.config.name.as_ref().unwrap());
+                    let _ = ssh.upload_directory(&data.path, &data.destination);
+                }
+                else {
+                    panic!("Ssh client unavailable");
                 }
             }
 
-            debug!("upload dir : {:?}", upload_directory);
-            if let Some(ref mut start) = self.object.start {
-            // Run start script
-                if start.contains("sh") {
-                    ssh.exec(format!("sh /{}", start.strip_prefix(Path::new(&start).parent().unwrap().parent().unwrap().to_str().unwrap()).unwrap()).as_str());
+            for (container, data) in manager.iter_combine_data(&self.object.data) {
+                if let Some(ref ssh) = container.ssh {
+                    start_script(ssh, data);
                 }
-            }
-            else {
-                self.object.ssh.unwrap().exec(format!("sh /{}/setup.sh", upload_directory));
+                else {
+                    panic!("Ssh client unavailable");
+                }
             }
 
 
             info!("Finished");
-            */
         }).unwrap()
     }
 }

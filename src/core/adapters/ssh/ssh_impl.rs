@@ -138,7 +138,9 @@ impl Ssh {
     /// # Return
     ///
     /// [`Result`] type with the parent directory of the files on success or error message.
-    pub fn upload_directory(&self, dir: &Path, location: &Path) -> Result<String, String> {
+    pub fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, location: S) -> Result<String, String> {
+        let dir = dir.as_ref();
+        let location = location.as_ref();
         assert!(dir.is_dir());
         //TODO: Reformat to make more safe
         let parent = format!("/{}/", dir.parent().unwrap().to_str().unwrap());
