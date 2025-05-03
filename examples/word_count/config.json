@@ -1,4 +1,16 @@
 {
+  "generate": {
+    "file": {
+      "name": "generate",
+      "path": "examples/word_count/generate",
+      "destination": "/generate",
+      "start": "/generate/setup.sh"
+    },
+    "docker": {
+      "image": "python",
+      "name": "generate"
+    }
+  },
   "process": {
     "type": "kafka",
     "kafka": {
@@ -6,10 +18,11 @@
     }
   },
   "store": {
-    "type": "postgres", 
+    "type": "postgres",
     "file": {
       "name": "store",
       "path": "examples/word_count/store",
+      "destination": "/store",
       "start": "/store/setup.sh"
     },
     "schema": "examples/word_count/store/schema.sql",

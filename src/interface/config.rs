@@ -173,7 +173,6 @@ impl Default for Config {
                 (
                     ExtGenerate 
                     {
-                        x: "".to_string(),
                         amount: 1,
                         general: General 
                         {

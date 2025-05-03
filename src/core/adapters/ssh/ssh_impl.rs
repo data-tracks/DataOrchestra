@@ -104,7 +104,7 @@ impl Ssh {
     ///
     pub fn upload_file(&self, file: &Path, location: &Path) -> Result<(), ssh2::Error>{
         assert!(file.is_file());
-        debug!("Uploading file {}", file.display());
+        debug!("Uploading file {} to {}", file.display(), location.display());
 
         let mut local_file = File::open(file).unwrap();
         let remote_file: Result<Channel, ssh2::Error> = self.session.scp_send(location, 0o644, fs::metadata(file).unwrap().len(), None);
@@ -138,20 +138,22 @@ impl Ssh {
     /// # Return
     ///
     /// [`Result`] type with the parent directory of the files on success or error message.
-    pub fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, location: S) -> Result<String, String> {
+    pub fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, destination: S) -> Result<String, String> {
         let dir = dir.as_ref();
-        let location = location.as_ref();
+        let destination = destination.as_ref();
         assert!(dir.is_dir());
-        //TODO: Reformat to make more safe
-        let parent = format!("/{}/", dir.parent().unwrap().to_str().unwrap());
-        let current_dir = dir.strip_prefix(&dir.parent().unwrap()).unwrap_or(Path::new("")).to_str().unwrap().to_string();
+
+        self.exec(format!("mkdir {}", destination.to_str().unwrap()));
+
         for entry in WalkDir::new(dir) {
             if let Ok(ref entry) = entry {
-                let remote_path = format!("{}{}", location.display(), entry.path().display()); 
-                let stripped_remote_path = remote_path.strip_prefix(&parent);
-                let remote_path = stripped_remote_path.unwrap_or(remote_path.as_str());
+                let path = format!("{}", entry.path().display()); 
+                let stripped_remote_path = path.strip_prefix(dir.to_str().unwrap());
+
+                let remote_path = stripped_remote_path.unwrap_or("/");
+
                 // Copy to / directory
-                let remote_path = format!("/{}", remote_path);
+                let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
                 if entry.file_type().is_dir() {
                     self.exec(format!("mkdir /{}", remote_path).as_str());
                 }
@@ -164,6 +166,6 @@ impl Ssh {
             }
         }
 
-        Ok(current_dir)
+        Ok(destination.to_str().unwrap().to_string())
     }
 }

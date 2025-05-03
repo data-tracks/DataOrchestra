@@ -1,8 +1,7 @@
 use std::thread::{self, JoinHandle};
-use log::{info, debug};
-use crate::core::adapters::command::command_func::spawn_command;
+use log::{info, debug, error};
 use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
-use crate::core::utils::start_script;
+use crate::core::utils::{start_ansible, start_script};
 use crate::shared::traits::Start;
 use crate::core::adapters::docker::Run;
 
@@ -33,8 +32,8 @@ impl Start<()> for Process {
                 config.setup_container(&mut compose);
                 self.object.docker_group_builder = Some(compose);
             }
+
             // Take ownership of ContainerBuilder out of object to prevent partial move
-            
             if let Some(group) = self.object.docker_group_builder.take() {
                 debug!("Setting up compose");
                 let mut compose_group = group.build();
@@ -53,7 +52,12 @@ impl Start<()> for Process {
 
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
-                let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
+                if container.ssh.is_some() {
+                    let result = start_ansible(container.get_ssh_port().unwrap()); 
+                    if let Err(error) = result {
+                        error!("{}", error);
+                    }
+                }
             }
 
             for (container, data) in manager.iter_combine_data(&self.object.data) {
@@ -74,7 +78,7 @@ impl Start<()> for Process {
                 }
             }
             
-            
+             
             info!("Finished");
         }).unwrap()
     }

@@ -183,6 +183,11 @@ impl Container {
         self.publish_ports.push(PortMapping::new(ext, int));
     }
 
+    pub fn set_name(&mut self, name: String) -> &mut Self {
+        self.config.name = Some(name);
+        self
+    }
+
     pub fn set_id(&mut self, id: String) {
         self.id = Some(id);
     }
@@ -212,27 +217,15 @@ impl Run<(), String> for Container {
 
         // get and set ip
         let result = self.load_ip();
-            if let Err(error) = result {
-                panic!("Unable to get ip of container {}", error);
-            }
+        if let Err(error) = result {
+            panic!("Unable to get ip of container {}", error);
+        }
 
         // get and set port mappings
         let _ = self.load_ports();
 
         // Install ssh server
-        info!("Installing shh server on {}", self.get_id());
-        // Reformat sh script for linux distro
-        if cfg!(target_os = "windows") {
-            spawn_command(&"dos2unix scripts/docker/docker_ssh_init.sh".to_string());
-        }
-
-        let _ = spawn_command(&format!("docker cp scripts/docker/docker_ssh_init.sh {}:/", self.id.as_ref().unwrap())).wait();
-        let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", self.id.as_ref().unwrap()));
-        // Start ssh server
-        let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
-
-        // Sleep to wait for ssh server to properly start
-        sleep(Duration::from_secs(1));
+        let _ = self.install_ssh();
 
         // Set ssh client
         let _ = self.load_ssh();
@@ -280,6 +273,24 @@ impl Container {
         ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
 
         self.ssh = Some(ssh);
+        Ok(())
+    }
+
+    pub fn install_ssh(&self) -> Result<(), String> {
+        info!("Installing shh server on {}", self.get_id());
+        // Reformat sh script for linux distro
+        if cfg!(target_os = "windows") {
+            spawn_command(&"dos2unix scripts/docker/docker_ssh_init.sh".to_string());
+        }
+
+        let _ = spawn_command(&format!("docker cp scripts/docker/docker_ssh_init.sh {}:/", self.id.as_ref().unwrap())).wait();
+        let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", self.id.as_ref().unwrap()));
+        // Start ssh server
+        let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
+
+        // Sleep to wait for ssh server to properly start
+        sleep(Duration::from_secs(1));
+
         Ok(())
     }
 }

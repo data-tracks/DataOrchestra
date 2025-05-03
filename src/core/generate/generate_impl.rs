@@ -1,9 +1,7 @@
-use std::path::Path;
 use std::thread::{self, JoinHandle};
-use log::{debug, info};
-use crate::core::adapters::command::command_func::spawn_command;
-use crate::core::adapters::docker::DockerManager;
-use crate::core::utils::start_script;
+use log::{debug, info, error};
+use crate::core::adapters::docker::{DockerManager, Run};
+use crate::core::utils::{start_ansible, start_script};
 use crate::shared::traits::Start;
 
 use super::Generate;
@@ -26,18 +24,28 @@ impl Start<()> for Generate {
                 let compose_group = group.build();
                 for container in compose_group.containers {
                     manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
-                }
-     
+                } 
+            }
+
+            else if let Some(container) = self.object.docker_container_builder.take() {
+                debug!("Setting up container");
+                let mut container = container.build();
+                let _ = container.run();
+                manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
             }
 
             for container in manager.as_vec() {
-                let _ = spawn_command(&format!("ansible-playbook src/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait();
+                if container.ssh.is_some() {
+                    let result = start_ansible(container.get_ssh_port().unwrap()); 
+                    if let Err(error) = result {
+                        error!("{}", error);
+                    }
+                }
             }
 
             // Upload data directory
             for (container, data) in manager.iter_combine_data(&self.object.data) {
                 if let Some(ref ssh) = container.ssh {
-                    debug!("Uploading [{}] to [{}]", &data.path, container.config.name.as_ref().unwrap());
                     let _ = ssh.upload_directory(&data.path, &data.destination);
                 }
                 else {

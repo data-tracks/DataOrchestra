@@ -5,7 +5,6 @@ use super::general::General;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtGenerate {
-    pub x: String,
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]

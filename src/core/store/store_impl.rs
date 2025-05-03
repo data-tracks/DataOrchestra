@@ -1,9 +1,7 @@
 use std::thread::{self, JoinHandle};
-use log::{debug, info};
-use crate::core::adapters::command::command_func::spawn_command;
+use log::{debug, info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
-use crate::core::adapters::ssh::Ssh;
-use crate::core::utils::start_script;
+use crate::core::utils::{start_ansible, start_script};
 use crate::shared::traits::Start;
 
 use super::Store;
@@ -59,7 +57,12 @@ impl Start<()> for Store {
 
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
-                let _ = spawn_command(&format!("ansible-playbook scripts/ansible/ansible-setup.yml -e \"port={}\"", container.get_ssh_port().unwrap())).wait(); 
+                if container.ssh.is_some() {
+                    let result = start_ansible(container.get_ssh_port().unwrap()); 
+                    if let Err(error) = result {
+                        error!("{}", error);
+                    }
+                }
             }
 
             // Upload data directory
