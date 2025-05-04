@@ -9,6 +9,6 @@ pub struct General {
     pub docker: Option<ExtDocker>, 
     pub node: Option<Node>,
     #[serde(default)]
-    pub file: Amount<File>
+    pub file: Amount<File>,
 }
 

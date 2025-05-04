@@ -1,15 +1,13 @@
 use std::path::Path;
 
-use serde::de::Error;
-
-use super::{adapters::{command::command_func::spawn_command, ssh::Ssh}, data::Data};
+use super::{adapters::{command::command_func::spawn_command, ssh::Ssh, Executor}, data::Data};
 
 pub fn start_script(ssh: &Ssh, data: &Data) {
     if data.start.ends_with(".sh") {
         ssh.exec(format!("sh {}", data.start));
     }
     else {
-        ssh.exec(format!("{}", data.start));
+        ssh.exec(format!("nohup {}", data.start));
     }
 }
 

@@ -6,8 +6,7 @@ use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::interface::config::Config;
-use data_orchestra::shared::traits::{Start, ToInternal};
-use data_orchestra::shared::Amount;
+use data_orchestra::shared::traits::Start;
 use log::{debug, info, LevelFilter};
 
 use data_orchestra::logger::init_logger;
@@ -35,6 +34,14 @@ struct Args {
 }
 
 fn main() {
+    println!(r#"
+    ____        __        ____            __              __            
+   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _
+  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/
+ / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
+/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
+    "#);                                                               
+
     // Read starting arguments
     let args: Args = Args::parse();
 
@@ -50,6 +57,7 @@ fn main() {
     }
 
     if args.remove_all {
+        info!("Removing and deleting all docker containers");
         docker::stop_all();
         docker::remove_all();
     }
@@ -61,7 +69,6 @@ fn main() {
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config.json");
 
-
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
     // Parse to internal structure
@@ -71,6 +78,7 @@ fn main() {
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
+    info!("Running tasks");
     for store in stores {
         thread_pool.push(store.start());
     }

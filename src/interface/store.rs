@@ -60,7 +60,7 @@ impl ToInternal<Store> for ExtStore {
     
         store.object.data = self.general.file.to_internal();
 
-        debug!("Finished parsing to internal");
+        debug!("Finished parsing store to internal");
         store
     }
 }

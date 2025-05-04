@@ -1,6 +1,8 @@
+use std::path::Path;
 use std::thread::{self, JoinHandle};
 use log::{debug, info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
+use crate::core::adapters::Executor;
 use crate::core::utils::{start_ansible, start_script};
 use crate::shared::traits::Start;
 
@@ -27,7 +29,7 @@ impl Start<()> for Store {
 
             // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
             if let Some(group) = self.object.docker_group_builder.take() {
-                debug!("Setting up compose");
+                info!("Setting up docker compose");
                 let compose_group = group.build();
                 for container in compose_group.containers {
                     manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
@@ -36,7 +38,7 @@ impl Start<()> for Store {
 
             // Take ownership of ContainerBuilder out of object to prevent partial move
             else if let Some(mut container) = self.object.docker_container_builder.take() {
-                debug!("Setting up container");
+                info!("Setting up docker container");
                 if let Some(ref database) = self.db_type {
                     let mut db_config = &database.new();
                     if let Some(ref mut config) = self.config {
@@ -68,7 +70,14 @@ impl Start<()> for Store {
             // Upload data directory
             for (container, data) in manager.iter_combine_data(&self.object.data) {
                 if let Some(ref ssh) = container.ssh {
+                    info!("Uploading {} for {}", data.path, container.config.name.as_ref().unwrap());
                     let _ = ssh.upload_directory(&data.path, &data.destination);
+                    if let Some(ref dependency) = data.dependency {
+                        let dependency_path= Path::new(dependency);
+                        let _ = ssh.exec("mkdir /scripts");
+                        let _ = ssh.upload_file(dependency_path, Path::new(&format!("/scripts/{}", &dependency_path.file_name().unwrap().to_str().unwrap())));
+                        let _ = ssh.exec(format!("sh /scripts/{}", dependency_path.file_name().unwrap().to_str().unwrap()));
+                    }
                 }
                 else {
                     panic!("Ssh client unavailable");
@@ -77,6 +86,7 @@ impl Start<()> for Store {
 
             for (container, data) in manager.iter_combine_data(&self.object.data) {
                 if let Some(ref ssh) = container.ssh {
+                    info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
                     start_script(ssh, data);
                 }
                 else {

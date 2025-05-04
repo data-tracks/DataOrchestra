@@ -1,17 +1,17 @@
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
 use ssh2::{Session, Channel};
-use std::io::Read;
+use walkdir::{DirEntry, WalkDir};
 use std::{fs, io};
-use walkdir::WalkDir;
 use log::{debug, error};
 use crate::core::adapters::ssh::ssh::Ssh;
+use crate::core::adapters::Executor;
 
 
-impl Ssh {
-    pub fn new() -> Ssh {
+impl Executor for Ssh {
+    fn new() -> Ssh {
         Ssh { session: Session::new().unwrap()  }
     }
 
@@ -26,7 +26,7 @@ impl Ssh {
     /// 
     /// See <https://github.com/libssh2/libssh2/blob/master/include/libssh2.h> for relevant error
     /// codes
-    pub fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) {
+    fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
         let address: String = format!("{}:{}", host, port);
         debug!("Connecting to Ssh client {} with {}@{}", &address, &username, &password);
         let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
@@ -41,18 +41,21 @@ impl Ssh {
         let handshake: Result<(), ssh2::Error> = self.session.handshake();
 
         if let Err(ref error) = handshake {
-            error!("Unsuccessful handshake {}", error);
+            return Err(format!("Unsuccessful handshake {}", error));
         }
         
         let authentication: Result<(), ssh2::Error> = self.session.userauth_password(username, password);
 
         if let Err(ref error) = authentication {
-            error!("Unsuccessful authentication {}", error);
+            return Err(format!("Unsuccessful authentication {}", error));
         }
 
-        assert!(self.session.authenticated()); 
-    }
+        if !self.session.authenticated() {
+            return Err("Session not authenticated".to_string());
+        } 
 
+        Ok(())
+    }
 
     /// Execute command over Ssh connection
     ///
@@ -60,7 +63,7 @@ impl Ssh {
     ///
     /// ```
     /// ```
-    pub fn exec<T: Into<String>>(&self, command: T) -> String {
+    fn exec<T: Into<String>>(&self, command: T) -> Result<String, String> {
         let command = command.into();
         debug!("Executing command [{}]", &command);
         let channel: Result<Channel, ssh2::Error> = self.session.channel_session();
@@ -88,9 +91,8 @@ impl Ssh {
             error!("Unable to close channel {}", error);
         }
 
-        result
+        Ok(result)
     }
-
     
     /// Upload file to remote server via Ssh
     ///
@@ -102,9 +104,11 @@ impl Ssh {
     ///
     /// # Return 
     ///
-    pub fn upload_file(&self, file: &Path, location: &Path) -> Result<(), ssh2::Error>{
+    fn upload_file<T: AsRef<Path>, S: AsRef<Path>>(&self, file: T, location: S) -> Result<(), String>{
+        let file = file.as_ref();
+        let location = location.as_ref();
         assert!(file.is_file());
-        debug!("Uploading file {} to {}", file.display(), location.display());
+        debug!("Uploading file {}", file.display());
 
         let mut local_file = File::open(file).unwrap();
         let remote_file: Result<Channel, ssh2::Error> = self.session.scp_send(location, 0o644, fs::metadata(file).unwrap().len(), None);
@@ -138,34 +142,62 @@ impl Ssh {
     /// # Return
     ///
     /// [`Result`] type with the parent directory of the files on success or error message.
-    pub fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, destination: S) -> Result<String, String> {
+    fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, destination: S) -> Result<(), String> {
         let dir = dir.as_ref();
         let destination = destination.as_ref();
         assert!(dir.is_dir());
 
-        self.exec(format!("mkdir {}", destination.to_str().unwrap()));
+        let _ = self.exec(format!("mkdir {}", destination.to_str().unwrap()));
 
         for entry in WalkDir::new(dir) {
             if let Ok(ref entry) = entry {
-                let path = format!("{}", entry.path().display()); 
-                let stripped_remote_path = path.strip_prefix(dir.to_str().unwrap());
+                // Apply filter for DirEntry to ignore unneeded files
+                if !ignore(entry) {
+                    let path = format!("{}", entry.path().display()); 
+                    let stripped_remote_path = path.strip_prefix(dir.to_str().unwrap());
 
-                let remote_path = stripped_remote_path.unwrap_or("/");
+                    let remote_path = stripped_remote_path.unwrap_or("/");
 
-                // Copy to / directory
-                let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
-                if entry.file_type().is_dir() {
-                    self.exec(format!("mkdir /{}", remote_path).as_str());
-                }
-                else {
-                    let result = self.upload_file(entry.path(), &Path::new(&remote_path));
-                    if let Err(ref error) = result {
-                        return Err(format!("Unable to upload file from directory {}", error));
+                    // Copy to / directory
+                    let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
+                    if entry.file_type().is_dir() {
+                        let _ = self.exec(format!("mkdir /{}", remote_path).as_str());
+                    }
+                    else {
+                        let result = self.upload_file(entry.path(), &Path::new(&remote_path));
+                        if let Err(ref error) = result {
+                            return Err(format!("Unable to upload file from directory {}", error));
+                        }
                     }
                 }
             }
         }
-
-        Ok(destination.to_str().unwrap().to_string())
+        
+        Ok(())
     }
+
+
+    
+}
+
+/// Ignore a directory entry based on predefined filtering for folders and files
+fn ignore(obj: &DirEntry) -> bool {
+    let file_filter = vec!["so", "rmeta", "d", "rlib", "TAG"];
+    let folder_filter = vec!["target"];
+    let path = obj.path();
+    let path_str = path.to_str().unwrap();
+
+    // Check if file in folder 
+    for f in folder_filter.iter() {
+        if path_str.contains(f) {
+            return true;
+        }
+    }
+
+    // Check file extension
+    if let Some(ext) = path.extension() {
+        return file_filter.contains(&ext.to_str().unwrap_or(""));
+    }
+
+    false
 }

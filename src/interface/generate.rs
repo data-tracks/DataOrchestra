@@ -1,3 +1,4 @@
+use log::debug;
 use serde::{Deserialize, Serialize};
 use crate::{core::generate::Generate, shared::{traits::ToInternal, Amount}};
 
@@ -49,6 +50,7 @@ impl ToInternal<Generate> for ExtGenerate {
 
         generate.object.data = self.general.file.to_internal();
 
+        debug!("Finished parsing generate to internal");
         generate
     }
 }

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
 use crate::shared::{traits::ToInternal, Amount};
 use crate::core::process::Process;
@@ -42,31 +41,19 @@ impl ToInternal<Amount<Process>> for Amount<ExtProcess> {
 impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();
-        dbg!(&self.config);
         process.process_type = self.process_type;
         process.config = self.config;
 
         // If a process type is given prioritise this over additional docker config
-        if process.process_type.is_some() {
-            let mut builder = ComposeGroupBuilder::new();
-            if process.config.is_none() {
-                dbg!(&process.process_type);
-                process.config = Some(process.process_type.as_ref().unwrap().new());
+        if let Some(docker) = self.general.docker {
+            if docker.compose.is_some() {
+                process.object.docker_group_builder = Some(docker.to_internal());
             }
-
-            process.config.as_ref().unwrap().setup_container(&mut builder);
-        }
-        else {
-            if let Some(docker) = self.general.docker {
-                if docker.compose.is_some() {
-                    process.object.docker_group_builder = Some(docker.to_internal());
-                }
-                else 
-                {
-                    process.object.docker_container_builder = Some(docker.to_internal());
-                } 
+            else 
+            {
+                process.object.docker_container_builder = Some(docker.to_internal());
             } 
-        }
+        } 
 
         process.object.node = self.general.node;
         process.object.data = self.general.file.to_internal();

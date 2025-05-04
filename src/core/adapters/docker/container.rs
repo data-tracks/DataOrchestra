@@ -7,6 +7,7 @@ use log::{debug, info, error};
 use crate::core::adapters::command::command_func::{output_command, spawn_command, status_command};
 use crate::core::adapters::docker::create_network;
 use crate::core::adapters::ssh::Ssh;
+use crate::core::adapters::{Executor, OsSystems};
 
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
@@ -21,6 +22,8 @@ pub struct Container {
     pub id: Option<String>,
     /// Ip of container
     pub ip: Option<IpAddr>,
+    // Os system of container
+    pub os: Option<OsSystems>,
     /// Published ports of container. A vector of [`PortMap`] which defines the combination
     /// `host:internal` or `external:internal`.
     pub publish_ports: Vec<PortMapping>,
@@ -95,6 +98,7 @@ impl ContainerBuilder {
         {
             id: None,
             ip: None,
+            os: None,
             config: self.containerconfig.build(),
             source: self.dockersource.build(),
             is_running: false,
@@ -111,12 +115,17 @@ impl Container {
         { 
             id: None, 
             ip: None, 
+            os: None,
             publish_ports: Vec::new(), 
             is_running: false, 
             ssh: None,
             config, 
             source 
         }
+    }
+
+    pub fn os(&self) -> Option<&OsSystems> {
+        self.os.as_ref()
     }
 }
 
@@ -128,7 +137,7 @@ impl Container {
     /// ```
     /// ```
     fn execute<T: Into<String>>(&self, arg: T) -> Child {
-        let command = format!("docker exec {} {}", &self.config.name.as_ref().unwrap(), &arg.into());
+        let command = format!("docker exec {} {}", self.config.name.as_ref().unwrap(), &arg.into());
         debug!("{}", format!("Running command: {}", command));
         let output = if cfg!(target_os = "windows") {
             Command::new("cmd")
@@ -221,6 +230,8 @@ impl Run<(), String> for Container {
             panic!("Unable to get ip of container {}", error);
         }
 
+        let _ = self.load_os();
+
         // get and set port mappings
         let _ = self.load_ports();
 
@@ -239,7 +250,7 @@ impl Container {
     fn build_from_image(&mut self) {
         // Create image
         let id = output_command(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));
-        self.set_id(id.trim().to_string());
+        self.set_id(id.trim().to_string().replace("\n", ""));
     }
 
     pub fn load_ip(&mut self) -> Result<(), String> {
@@ -270,24 +281,74 @@ impl Container {
 
     pub fn load_ssh(&mut self) -> Result<(), String> {
         let mut ssh = Ssh::new();
-        ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
+        let _ = ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
 
         self.ssh = Some(ssh);
         Ok(())
     }
 
-    pub fn install_ssh(&self) -> Result<(), String> {
-        info!("Installing shh server on {}", self.get_id());
-        // Reformat sh script for linux distro
-        if cfg!(target_os = "windows") {
-            spawn_command(&"dos2unix scripts/docker/docker_ssh_init.sh".to_string());
+    /// Get os system of container
+    pub fn load_os(&mut self) -> Result<(), String> {
+        let result = output_command(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()));
+        let keys = result.split("\n");
+        for entry in keys {
+            let pair = entry.split_once("=").unzip();
+            if let (Some(key), Some(value)) = pair {
+                if key.eq("ID") {
+                    let os = OsSystems::from_str(value);
+                    if let Ok(os) = os {
+                        self.os = Some(os);
+                    }
+                    else {
+                        error!("Unable to get os for container {}", self.config.name.as_ref().unwrap());
+                    }
+                } 
+            } 
         }
 
-        let _ = spawn_command(&format!("docker cp scripts/docker/docker_ssh_init.sh {}:/", self.id.as_ref().unwrap())).wait();
-        let _ = status_command(&format!("docker exec {} sh ../docker_ssh_init.sh", self.id.as_ref().unwrap()));
-        // Start ssh server
-        let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
+        Ok(()) 
+    }
 
+    pub fn install_ssh(&self) -> Result<(), String> {
+        debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
+
+        // Set correct install script for different distros
+        if let Some(ref os) = self.os {
+            match os {
+                OsSystems::Debian => {
+                    let script = String::from("apt_ssh_setup.sh");
+
+                    // Reformat sh script for linux distro
+                    if cfg!(target_os = "windows") {
+                        spawn_command(&format!("dos2unix scripts/docker/{}", script));
+                    }
+
+                    let _ = spawn_command(&format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap())).wait();
+                    let _ = status_command(&format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script));
+                    
+                    // Start ssh server
+                    let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
+
+                },
+                OsSystems::Alpine => {
+                    let script = String::from("apk_ssh_setup.sh");
+
+                    // Reformat sh script for alpine distro
+                    if cfg!(target_os = "windows") {
+                        spawn_command(&format!("dos2unix scripts/docker/{}", script));
+                    }
+                    
+                    let _ = spawn_command(&format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap())).wait();
+                    let _ = status_command(&format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script));
+                    
+                    // Start ssh server
+                    let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
+                }
+                _ => ()
+            };
+        }
+        
+        
         // Sleep to wait for ssh server to properly start
         sleep(Duration::from_secs(1));
 

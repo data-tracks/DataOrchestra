@@ -4,6 +4,7 @@ pub struct Data {
     pub path: String,
     pub destination: String,
     pub start: String,
+    pub dependency: Option<String>
 }
 
 impl Default for Data {
@@ -14,6 +15,7 @@ impl Default for Data {
             path: String::new(),
             destination: "/".to_string(),
             start: String::new(),
+            dependency: None
         }
     }
 }

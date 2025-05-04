@@ -1,6 +1,9 @@
+use std::path::Path;
 use std::thread::{self, JoinHandle};
 use log::{info, debug, error};
 use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
+use crate::core::adapters::Executor;
+use crate::core::process::process_types::ProcessTypeConfig;
 use crate::core::utils::{start_ansible, start_script};
 use crate::shared::traits::Start;
 use crate::core::adapters::docker::Run;
@@ -17,8 +20,11 @@ impl Start<()> for Process {
         debug!("Spawning process thread");
         
         thread::Builder::new().name("process".to_string()).spawn(move || {
+            ////////////////////////////////////////////////////////////
+            // Pre - processing
+            ////////////////////////////////////////////////////////////
+
             let mut manager = DockerManager::new();
-            dbg!(&self);
             if let Some(ref process) = self.process_type {
                 debug!("Setting up {:?} enviroment", process);
 
@@ -35,20 +41,25 @@ impl Start<()> for Process {
 
             // Take ownership of ContainerBuilder out of object to prevent partial move
             if let Some(group) = self.object.docker_group_builder.take() {
-                debug!("Setting up compose");
+                info!("Setting up docker compose");
                 let mut compose_group = group.build();
-                let result = compose_group.run();
+                let _result = compose_group.run();
                 for container in compose_group.containers {
                     manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
                 }
             }
 
             else if let Some(container) = self.object.docker_container_builder.take() {
-                debug!("Setting up container");
+                info!("Setting up docker container");
                 let mut container = container.build();
                 let _ = container.run();
                 manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
             }
+
+            ////////////////////////////////////////////////////////////
+            // Post - processing
+            ////////////////////////////////////////////////////////////
+
 
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
@@ -62,22 +73,42 @@ impl Start<()> for Process {
 
             for (container, data) in manager.iter_combine_data(&self.object.data) {
                 if let Some(ref ssh) = container.ssh {
+                    info!("Uploading {} for {}", data.path, container.config.name.as_ref().unwrap());
                     let _ = ssh.upload_directory(&data.path, &data.destination);
+                    if let Some(ref dependency) = data.dependency {
+                        let dependency_path= Path::new(dependency);
+                        let _ = ssh.upload_file(dependency_path, Path::new(&format!("/scripts/{}", dependency_path.display())));
+                        let _ = ssh.exec(format!("sh /scripts/{}", dependency_path.file_name().unwrap().to_str().unwrap()));
+                    }
                 }
                 else {
                     panic!("Ssh client unavailable");
                 }
             }
 
+            if let Some(ref config) = self.config {
+                match config {
+                    ProcessTypeConfig::Kafka(kafka) => {
+                        if let Some(broker) = manager.containers.get("kafka-broker") {
+                            kafka.create_topic(broker.id.as_ref().unwrap());
+                        }
+                        else {
+                            panic!("Unable to find kafka-broker for kafka compose configuration");
+                        }
+                    },
+                    _ => ()
+                }
+            }
+
             for (container, data) in manager.iter_combine_data(&self.object.data) {
                 if let Some(ref ssh) = container.ssh {
+                    info!("Starting {} for {}", data.path, container.config.name.as_ref().unwrap());
                     start_script(ssh, data);
                 }
                 else {
                     panic!("Ssh client unavailable");
                 }
             }
-            
              
             info!("Finished");
         }).unwrap()

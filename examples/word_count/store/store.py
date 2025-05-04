@@ -1,37 +1,15 @@
-import json
-
-import psycopg
-from flask import Flask, request
+"""
+Dummy consumer which consumes kafka data and stores it into a postgres database
+"""
+#import psycopg
 from kafka import KafkaConsumer
 
+#conn = psycopg.connect("dbname=store user=postgres password=postgres")
+#cur = conn.cursor()
+consumer = KafkaConsumer(
+    'words',
+    bootstrap_servers='broker:29092'
+)
 
-app = Flask(__name__)
-conn = psycopg.connect("dbname=store user=postgres password=postgres")
-cur = conn.cursor()
-consumer = KafkaConsumer('words')
 for msg in consumer:
-    cur.execute("""
-        INSERT INTO counts (word, count)
-        VALUES (%s, 1) ON CONFLICT (word)
-    DO
-        UPDATE SET count = counts.count + 1
-        """, (msg,))
-
-@app.route("/", methods=["POST"])
-def writer():
-    word = json.dumps(request.get_json())
-    word = word.replace("\\", "")
-    word = word.replace(".", "")
-    word = word.replace("\"", "")
-    cur.execute("""
-        INSERT INTO counts (word, count)
-        VALUES (%s, 1)
-        ON CONFLICT (word)
-        DO UPDATE SET count = counts.count + 1
-    """, (word,))
-    conn.commit()
-    return "ok"
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    print(msg)

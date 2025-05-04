@@ -19,7 +19,7 @@ pub struct Object {
     pub attach_type: Option<AttachType>,
     pub attach: Amount<Box<Object>>,
     pub ssh: Option<Ssh>,
-    pub data: Vec<Data>
+    pub data: Vec<Data>,
 }
 
 impl Default for Object {
@@ -33,7 +33,7 @@ impl Default for Object {
             attach_type: None, 
             attach: Amount::None, 
             ssh: None,
-            data: Vec::new()
+            data: Vec::new(),
         }
     }
 }

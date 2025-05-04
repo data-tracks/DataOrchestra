@@ -7,7 +7,8 @@ pub struct File {
     pub name: Option<String>,
     pub path: Option<String>,
     pub destination: Option<String>,
-    pub start: Option<String>
+    pub start: Option<String>,
+    pub dependency: Option<String>
 }
 
 impl ToInternal<Data> for File {
@@ -26,6 +27,8 @@ impl ToInternal<Data> for File {
         if let Some(start) = self.start {
             data.start = start;
         }
+
+        data.dependency = self.dependency;
 
         data
     }

@@ -1,6 +1,7 @@
+use log::info;
 use serde::{Deserialize, Serialize};
+use crate::core::adapters::command::command_func::output_command;
 use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::core::adapters::ssh::Ssh;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Kafka {
@@ -17,14 +18,15 @@ impl Kafka {
         docker.set_compose("lib/TrackBench.rs/compose-kafka.yaml");
     }
 
-    pub fn create_topic(&self, ssh: &Ssh) {
+    pub fn create_topic(&self, id: &String) {
+        info!("Creating kafka topics {:?}", self.topics);
         for topic in &self.topics {
-            self.exec_create_topic(ssh, topic);
+            self.exec_create_topic(id, topic);
         }
     }
 
-    fn exec_create_topic<T: Into<String>>(&self, ssh: &Ssh, topic: T) {
-       ssh.exec(format!("/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic {}", topic.into())); 
+    fn exec_create_topic<T: Into<String>>(&self, id: &String, topic: T) {
+        let _ = output_command(format!("docker exec {} /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic {}", id, topic.into()));
     }
 }
 

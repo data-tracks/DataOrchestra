@@ -4,8 +4,8 @@ use log::debug;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
-use crate::core::process::types::{kafka, Kafka};
-use crate::shared::{Amount, File, Node};
+use crate::core::process::types::Kafka;
+use crate::shared::{Amount, File};
 use super::general::General;
 use super::store::ExtStore;
 use super::process::ExtProcess;
@@ -199,9 +199,10 @@ impl Default for Config {
                                     name: None, 
                                     path: None, 
                                     destination: None, 
-                                    start: None 
+                                    start: None,
+                                    dependency: None
                                 }
-                            )
+                            ),
                         }
                     }
                  ), 
@@ -237,9 +238,10 @@ impl Default for Config {
                                     name: None, 
                                     path: None, 
                                     destination: None, 
-                                    start: None 
+                                    start: None,
+                                    dependency: None
                                 }
-                            )
+                            ),
                         }
                     }
                 ), 
@@ -272,9 +274,10 @@ impl Default for Config {
                                     name: None, 
                                     path: None, 
                                     destination: None, 
-                                    start: None 
+                                    start: None,
+                                    dependency: None
                                 }
-                            )
+                            ),
                         },
                         schema: Amount::Single("".to_string()),
                         db_type: None,
@@ -311,9 +314,10 @@ impl Default for Config {
                                     name: None, 
                                     path: None, 
                                     destination: None, 
-                                    start: None 
+                                    start: None,
+                                    dependency: None
                                 }
-                            ) 
+                            ),
                         },  
                     }
                 )  
