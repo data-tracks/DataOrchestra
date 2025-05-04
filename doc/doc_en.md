@@ -30,6 +30,20 @@ The startup config file can be set via
 
 Where the starting path point is the root of the repository.
 
+### Remove docker containers
+
+All docker containers which exist can be automatically stopped and deleted with the additional flag
+```sh
+--remove_all
+```
+
+### Generate valid json
+
+A sample json can be generated with the flag
+```sh
+--generate_valid_json
+```
+
 ## Config
 
 ### Object

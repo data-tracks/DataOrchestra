@@ -11,6 +11,7 @@ use super::general::General;
 pub struct ExtStore {
     #[serde(rename = "type")]
     pub db_type: Option<StoreType>,
+    #[serde(flatten)]
     pub config: Option<StoreTypeConfig>,
     #[serde(default)]
     pub schema: Amount<String>,
@@ -44,6 +45,7 @@ impl ToInternal<Store> for ExtStore {
     
         // Set Database Type and config
         store.db_type = self.db_type;
+        dbg!(&self.config);
         store.config = self.config;
 
         // Set Container(s) builder

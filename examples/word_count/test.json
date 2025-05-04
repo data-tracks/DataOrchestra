@@ -1,8 +1,0 @@
-{
-  "process": {
-    "type": "kafka",
-    "kafka": {
-      "topics": ["words"]
-    }
-  }
-}

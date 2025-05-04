@@ -18,7 +18,7 @@ pub enum StoreType {
 ///
 /// Tied to the [`StoreType`] field.
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "type")]
+#[serde(rename_all = "lowercase")]
 pub enum StoreTypeConfig {
     PostGres(PostGres),
     Redis(Redis),

@@ -20,12 +20,17 @@
   },
   "store": {
     "type": "postgres",
+    "schema": "examples/word_count/store/schema.sql",
+    "postgres": {
+      "postgres_db": "store"
+    },
     "file": {
       "name": "store",
       "path": "examples/word_count/store",
       "destination": "/store",
       "start": "/store/setup.sh"
     },
+
     "docker": {
       "name": "store",
       "network": "trackbenchrs_kafka-network"

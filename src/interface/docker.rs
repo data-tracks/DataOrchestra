@@ -40,6 +40,7 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
         let mut builder = ContainerBuilder::new();
         
         if let Some(name) = self.name {
+            dbg!("NAME : {}", &name);
             builder.set_name(name);
         }
         if let Some(image) = self.image {

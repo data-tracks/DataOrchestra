@@ -6,6 +6,7 @@ pub struct ContainerConfig {
     pub network: String,
     pub enviroment: HashMap<String, String>,
     pub mount: Vec<String>,
+    pub publish: Vec<u16>,
     pub publish_all: bool
 }
 
@@ -27,6 +28,9 @@ impl ContainerConfig {
         else {
             // Publish ssh port
             command = format!("{command} -p 22");
+            for port in self.publish.iter() {
+                command = format!("{command} -p {}", port);
+            }
         }
 
         for (key, value) in &self.enviroment {
@@ -57,6 +61,7 @@ impl ContainerConfigBuilder {
                 network: String::from("orchestra"), 
                 enviroment: HashMap::new(), 
                 mount: Vec::new(), 
+                publish: Vec::new(),
                 publish_all: false 
             }
         }
@@ -79,6 +84,11 @@ impl ContainerConfigBuilder {
 
     pub fn add_mount<T: Into<String>>(&mut self, mount: T) -> &mut Self {
         self.containerconfig.mount.push(mount.into());
+        self
+    }
+
+    pub fn add_publish(&mut self, port: u16) -> &mut Self {
+        self.containerconfig.publish.push(port);
         self
     }
 

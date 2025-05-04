@@ -68,6 +68,11 @@ impl ContainerBuilder {
         self
     }
 
+    pub fn add_publish(&mut self, port: u16) -> &mut Self {
+        self.containerconfig.add_publish(port);
+        self
+    }
+
     pub fn set_publish_all(&mut self, publish_all: bool) -> &mut Self {
         self.containerconfig.set_publish_all(publish_all);
         self
