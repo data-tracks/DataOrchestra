@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::data::Data;
 use super::ToInternal;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct File {
     pub name: Option<String>,
     pub path: Option<String>,

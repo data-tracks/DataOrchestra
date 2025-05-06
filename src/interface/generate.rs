@@ -1,6 +1,6 @@
 use log::debug;
 use serde::{Deserialize, Serialize};
-use crate::{core::generate::Generate, shared::{traits::ToInternal, Amount}};
+use crate::{core::generate::Generate, shared::traits::ToInternal};
 
 use super::general::General;
 
@@ -16,6 +16,7 @@ pub fn default_amount() -> usize {
     1
 }
 
+/*
 impl ToInternal<Amount<Generate>> for Amount<ExtGenerate> {
     fn to_internal(self) -> Amount<Generate> {
         match self {
@@ -32,6 +33,7 @@ impl ToInternal<Amount<Generate>> for Amount<ExtGenerate> {
         }
     }
 }
+*/
 
 impl ToInternal<Generate> for ExtGenerate {
     fn to_internal(self) -> Generate {
@@ -51,6 +53,7 @@ impl ToInternal<Generate> for ExtGenerate {
         generate.object.data = self.general.file.to_internal();
 
         debug!("Finished parsing generate to internal");
+
         generate
     }
 }

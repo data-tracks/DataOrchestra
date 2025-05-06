@@ -19,6 +19,7 @@ pub struct ExtStore {
     pub general: General
 }
 
+/*
 impl ToInternal<Amount<Store>> for Amount<ExtStore> {
     fn to_internal(self) -> Amount<Store> {
         match self {
@@ -35,6 +36,7 @@ impl ToInternal<Amount<Store>> for Amount<ExtStore> {
         }
     }
 }
+*/
 
 impl ToInternal<Store> for ExtStore {
     fn to_internal(self) -> Store {

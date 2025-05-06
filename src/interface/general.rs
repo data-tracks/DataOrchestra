@@ -4,7 +4,7 @@ use crate::shared::{Amount, File, Node};
 
 use super::docker::ExtDocker;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct General {
     pub docker: Option<ExtDocker>, 
     pub node: Option<Node>,

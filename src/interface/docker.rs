@@ -6,7 +6,7 @@ use crate::core::adapters::docker::{container::ContainerBuilder, ComposeGroupBui
 use crate::shared::{traits::ToInternal, Amount};
 
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExtDocker {
     // Name of container
     pub name: Option<String>,

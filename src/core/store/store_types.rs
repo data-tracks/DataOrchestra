@@ -13,10 +13,6 @@ pub enum StoreType {
 }
 
 /// Represents the available storing types
-/// 
-/// # Json
-///
-/// Tied to the [`StoreType`] field.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum StoreTypeConfig {

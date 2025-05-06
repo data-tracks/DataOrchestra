@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// The `Amount` type. Allows a value to be nothing, one value or a collection on values
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Amount<T> {
     None,
