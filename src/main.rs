@@ -6,7 +6,7 @@ use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::interface::config::Config;
-use data_orchestra::shared::traits::Start;
+use data_orchestra::shared::traits::{Start, ToInternal, ToInternalVec};
 use log::{debug, info, LevelFilter};
 
 use data_orchestra::logger::init_logger;
@@ -34,13 +34,7 @@ struct Args {
 }
 
 fn main() {
-    println!(r#"
-    ____        __        ____            __              __            
-   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _
-  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/
- / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
-/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
-    "#);                                                               
+    print_logo();                                                             
 
     // Read starting arguments
     let args: Args = Args::parse();
@@ -95,4 +89,14 @@ fn main() {
     for thread in thread_pool {
         let _ = thread.join();
     }
+}
+
+pub fn print_logo() {
+    println!(r#"
+    ____        __        ____            __              __            
+   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _
+  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/
+ / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
+/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
+    "#);  
 }

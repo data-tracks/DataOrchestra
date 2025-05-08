@@ -17,6 +17,8 @@ use super::docker::ExtDocker;
 #[serde(rename_all = "snake_case")]
 pub struct Config {
     #[serde(default)]
+    pub variables: HashMap<String, String>,
+    #[serde(default)]
     #[serde(deserialize_with = "deserialize_generate")]
     pub generate: Amount<ExtGenerate>,
     #[serde(default)]
@@ -169,6 +171,7 @@ impl Default for Config {
         hashmap.insert("key".to_string(), "value".to_string());
         Config 
         { 
+            variables: HashMap::new(),
             generate: Amount::Single
                 (
                     ExtGenerate 
@@ -324,9 +327,3 @@ impl Default for Config {
         }
     }
 }
-
-
-
-
-
-

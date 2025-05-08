@@ -1,7 +1,7 @@
 use std::path::Path;
 use super::adapters::command::command_func::spawn_command;
 use super::adapters::Executor;
-use super::data::Data;
+use super::types::Data;
 use super::adapters::ssh::Ssh;
 
 /// Start starting script on remote object
@@ -43,3 +43,5 @@ pub fn upload(ssh: &Ssh, data: &Data) -> Result<(), String> {
     }
     Ok(())
 }
+
+upload

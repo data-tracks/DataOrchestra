@@ -4,6 +4,6 @@ pub mod generate;
 pub mod object;
 pub mod process;
 pub mod store;
-pub mod data;
+pub mod types;
 
 pub mod utils;

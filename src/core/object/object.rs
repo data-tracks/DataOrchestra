@@ -3,9 +3,10 @@ use crate::core::adapters::docker::container::ContainerBuilder;
 use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::ssh::Ssh;
 use crate::core::attach::attach_types::AttachType;
-use crate::core::data::Data;
+use crate::core::types::Data;
 use crate::shared::traits::Start;
-use crate::shared::{Address, Amount, Node};
+use crate::shared::{Address, Amount};
+use crate::core::types::Node;
 
 /// The `Object` type. Acts as a generic component. Implements basic fields that every object
 /// should possess.

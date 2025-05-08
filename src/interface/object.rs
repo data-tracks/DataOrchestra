@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::{data::{Data}, object::Object}, shared::traits::ToInternal};
+use crate::core::object::Object;
+use crate::shared::traits::ToInternal;
+use crate::core::types::Data;
 
 use super::general::General;
 

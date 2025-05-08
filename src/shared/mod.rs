@@ -1,11 +1,11 @@
 pub mod traits;
-pub use traits::{Start, ToInternal};
+pub use traits::{Start, ToInternal, ToInternalVec};
 
 pub mod amount;
 pub use amount::Amount;
 
 pub mod node;
-pub use node::Node;
+pub use node::ExtNode;
 
 pub mod address;
 pub use address::Address;

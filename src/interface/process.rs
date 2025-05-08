@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
-use crate::shared::{traits::ToInternal, Amount};
 use crate::core::process::Process;
+use crate::shared::traits::ToInternal;
 use super::general::General;
 
 
@@ -21,23 +21,6 @@ pub fn default_amount() -> usize {
     1
 }
 
-impl ToInternal<Amount<Process>> for Amount<ExtProcess> {
-    fn to_internal(self) -> Amount<Process> {
-        match self {
-            Amount::None => Amount::None,
-            Amount::Single(process) => Amount::Single(process.to_internal()),
-            Amount::Multiple(processes) => {
-                let mut vec_process = Vec::<Process>::new();
-                for process in processes {
-                    vec_process.push(process.to_internal());
-                };
-
-                Amount::Multiple(vec_process)
-            }
-        }
-    }
-}
-
 impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();
@@ -54,8 +37,11 @@ impl ToInternal<Process> for ExtProcess {
                 process.object.docker_container_builder = Some(docker.to_internal());
             } 
         } 
-
-        process.object.node = self.general.node;
+        
+        if self.general.node.is_some() {
+            process.object.node = Some(self.general.node.unwrap().to_internal());
+        } 
+        
         process.object.data = self.general.file.to_internal();
 
         process

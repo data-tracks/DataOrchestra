@@ -19,25 +19,6 @@ pub struct ExtStore {
     pub general: General
 }
 
-/*
-impl ToInternal<Amount<Store>> for Amount<ExtStore> {
-    fn to_internal(self) -> Amount<Store> {
-        match self {
-            Amount::None => Amount::None,
-            Amount::Single(store) => Amount::Single(store.to_internal()),
-            Amount::Multiple(stores) => {
-                let mut vec_stores = Vec::<Store>::new();
-                for store in stores {
-                    vec_stores.push(store.to_internal());
-                };
-
-                Amount::Multiple(vec_stores)
-            }
-        }
-    }
-}
-*/
-
 impl ToInternal<Store> for ExtStore {
     fn to_internal(self) -> Store {
         let mut store = Store::default();
@@ -50,8 +31,11 @@ impl ToInternal<Store> for ExtStore {
         dbg!(&self.config);
         store.config = self.config;
 
+        if self.general.node.is_some() {
+            store.object.node = Some(self.general.node.unwrap().to_internal());
+        }
+
         // Set Container(s) builder
-        store.object.node = self.general.node;
         if let Some(docker) = self.general.docker {
             if docker.compose.is_some() {
                 store.object.docker_group_builder = Some(docker.to_internal());

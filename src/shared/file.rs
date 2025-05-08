@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::core::data::Data;
-use super::ToInternal;
+use crate::core::types::Data;
+use crate::shared::traits::ToInternal;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct File {
