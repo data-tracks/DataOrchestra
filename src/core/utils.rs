@@ -43,5 +43,3 @@ pub fn upload(ssh: &Ssh, data: &Data) -> Result<(), String> {
     }
     Ok(())
 }
-
-upload

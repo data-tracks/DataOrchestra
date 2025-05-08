@@ -5,3 +5,4 @@ pub mod object;
 pub mod config;
 pub mod docker;
 pub mod general;
+pub mod node;   

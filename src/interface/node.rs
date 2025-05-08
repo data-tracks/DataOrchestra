@@ -1,7 +1,6 @@
 use serde::{Serialize, Deserialize};
-use crate::core::types::Node;
+use crate::{core::types::Node, shared::{Address, ToInternal}};
 
-use super::{address::Address, ToInternal};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all="camelCase")]
@@ -25,7 +24,7 @@ impl ToInternal<Node> for ExtNode {
         }
 
         if let Some(user) = self.user {
-            node.user = user;
+            node.username = user;
         }
 
         if let Some(password) = self.password {

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::shared::{Amount, File, ExtNode};
+use crate::shared::{Amount, File};
 
-use super::docker::ExtDocker;
+use super::{docker::ExtDocker, node::ExtNode};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct General {
