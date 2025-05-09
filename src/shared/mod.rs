@@ -1,5 +1,5 @@
 pub mod traits;
-pub use traits::{Start, ToInternal, ToInternalVec};
+pub use traits::{Spawner, ToInternal, ToInternalVec};
 
 pub mod amount;
 pub use amount::Amount;

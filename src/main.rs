@@ -6,7 +6,7 @@ use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::interface::config::Config;
-use data_orchestra::shared::traits::{Start, ToInternal, ToInternalVec};
+use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
 use log::{debug, info, LevelFilter};
 
 use data_orchestra::logger::init_logger;
@@ -74,15 +74,15 @@ fn main() {
     // Note: Task not referencable anymore as it is moved into `start`
     info!("Running tasks");
     for store in stores {
-        thread_pool.push(store.start());
+        thread_pool.push(store.spawn());
     }
 
     for process in processes {
-        thread_pool.push(process.start());
+        thread_pool.push(process.spawn());
     }
 
     for generate in generates {
-        thread_pool.push(generate.start());
+        thread_pool.push(generate.spawn());
     }
 
     // Wait for threads to finish

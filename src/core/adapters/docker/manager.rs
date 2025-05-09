@@ -1,4 +1,3 @@
-use crate::core::types::Data;
 use std::collections::HashMap;
 
 use super::Container;
@@ -43,20 +42,5 @@ impl DockerManager {
         } 
 
         vec
-    }
-
-    /// Combine containers managed by manager with [`Data`] to [`Iterator`] 
-    pub fn iter_combine_data<'a>(&'a self, data: &'a Vec<Data>) -> impl Iterator<Item = (&'a Container, &'a Data)> {
-        let mut vec_container = Vec::<&Container>::new();
-        let mut vec_data = Vec::<&Data>::new();
-
-        for d in data {
-            if let Some(ref mut container) = self.containers.get(&d.name) {
-                vec_data.push(d);
-                vec_container.push(container);
-            }
-        };
-
-        vec_container.into_iter().zip(vec_data)
     }
 }

@@ -1,100 +1,95 @@
 use std::thread::{self, JoinHandle};
 use log::{debug, info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
-use crate::core::utils::{start_ansible, start_script, upload};
-use crate::shared::traits::Start;
+use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
+use crate::shared::traits::Spawner;
 
 use super::Store;
 
-impl Start<()> for Store {
-    /// Start initialisation process for store components
-    ///
-    /// # Note
-    ///
-    /// Calling `store.start()` moves the store into the thread
-    fn start(mut self) -> JoinHandle<()> {
-        debug!("Spawning storing thread");
-        thread::Builder::new().name("store".to_string()).spawn(move || {
-            // Create default config of specified database type ([`StoreType`]) if none was
-            // specified
-            if self.config.is_none() && self.db_type.is_some(){
-                info!("No config given for database type. Loading default config");
-                self.config = Some(self.db_type.as_ref().unwrap().new());
+impl Spawner<()> for Store {
+    fn spawn(mut self) -> JoinHandle<()> {
+
+        info!("Spawing");
+
+        let thread = thread::Builder::new().name("store".to_string()).spawn(move || {
+            let result = self.setup();
+            if let Err(error) = result {
+                panic!("{}", error);
             }
 
-            // Create and run containers
-            let mut manager = DockerManager::new();
+            let setup = result.unwrap();
+            setup.deploy();
+        }).unwrap();
 
-            // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
-            if let Some(group) = self.object.docker_group_builder.take() {
-                info!("Setting up docker compose");
-                let compose_group = group.build();
-                for container in compose_group.containers {
-                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
-                }
-            }  
+        info!("Finished");
 
-            // Take ownership of ContainerBuilder out of object to prevent partial move
-            else if let Some(mut container) = self.object.docker_container_builder.take() {
-                info!("Setting up docker container");
-                if let Some(ref database) = self.db_type {
-                    let mut db_config = &database.new();
-                    if let Some(ref mut config) = self.config {
-                        db_config = config;
-                    }
-                    db_config.setup_container(&mut container); 
+        thread
+    }
 
-                    if self.schema.len() > 0 {
-                        db_config.mount_data(&self.schema, &mut container);
-                    }
-                }
+    fn setup(mut self) -> Result<Self, String> where Self: Sized {
+        // Create default config of specified database type ([`StoreType`]) if none was
+        // specified
+        if self.config.is_none() && self.db_type.is_some(){
+            info!("No config given for database type. Loading default config");
+            self.config = Some(self.db_type.as_ref().unwrap().new());
+        }
 
-                let mut container = container.build();
-                let _ = container.run();
+        // Create and run containers
+        let mut manager = DockerManager::new();
+
+        // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
+        if let Some(group) = self.object.docker_group_builder.take() {
+            info!("Setting up docker compose");
+            let compose_group = group.build();
+            for container in compose_group.containers {
                 manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
             }
+        }  
 
-            // Run ansible setup script on all containers
-            for container in manager.as_vec() {
-                if container.ssh.is_some() {
-                    let result = start_ansible(container.get_ssh_port().unwrap()); 
-                    if let Err(error) = result {
-                        error!("{}", error);
-                    }
+        // Take ownership of ContainerBuilder out of object to prevent partial move
+        else if let Some(mut container) = self.object.docker_container_builder.take() {
+            info!("Setting up docker container");
+            if let Some(ref database) = self.db_type {
+                let mut db_config = &database.new();
+                if let Some(ref mut config) = self.config {
+                    db_config = config;
+                }
+                db_config.setup_container(&mut container); 
+
+                if self.schema.len() > 0 {
+                    db_config.mount_data(&self.schema, &mut container);
                 }
             }
 
-            if manager.amount() > 1 {
-                // Upload data directory
-                for (container, data) in manager.iter_combine_data(&self.object.data) {
-                    if let Some(ref ssh) = container.ssh {
-                        info!("Uploading {} for {}", data.path, container.config.name.as_ref().unwrap());
-                        let result = upload(ssh, data);
-                        if let Err(error) = result {
-                            error!("Unable to upload data | {}", error);
-                        }
-                    }
-                    else {
-                        panic!("Ssh client unavailable");
-                    }
+            let mut container = container.build();
+            let _ = container.run();
+            manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+        }
+
+        // Run ansible setup script on all containers
+        for container in manager.as_vec() {
+            if container.ssh.is_some() {
+                let result = start_ansible(container.get_ssh_port().unwrap()); 
+                if let Err(error) = result {
+                    error!("{}", error);
                 }
             }
-            else {
-                if let Some(container) = manager.get_container() {
-                    for data in self.object.data.iter() {
-                        if let Some(ref ssh) = container.ssh {
-                            info!("Uploading {} for {}", &data.path, container.config.name.as_ref().unwrap());
-                            let result = upload(ssh, data);
-                            if let Err(error) = result {
-                                error!("Unable to upload data | {}", error);
-                            }
-                        }
-                    } 
-                }
-            }
-            
+        }
+
+        // Upload data to docker containers
+        let result = upload_data(&manager,&self.object.data);
+        if let Err(error) = result {
+            panic!("Unable to upload data {}", error);
+        }
+        
+        self.object.docker_manager = Some(manager);
+        Ok(self)
+    }
+
+    fn deploy(mut self) -> Result<Self, String> where Self: Sized {
+        if let Some(ref manager) = self.object.docker_manager {
             if manager.amount() > 1 {
-                for (container, data) in manager.iter_combine_data(&self.object.data) {
+                for (container, data) in iter_combine_data(manager, &self.object.data) {
                     if let Some(ref ssh) = container.ssh {
                         info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
                         let result = start_script(ssh, data);
@@ -123,9 +118,11 @@ impl Start<()> for Store {
                     }
                 }
             }
+        }
+        else if let Some(ref node) = self.object.node {
+            
+        }
 
-            // Start script
-            info!("Finished");
-        }).unwrap()
+        Ok(self)
     }
 }

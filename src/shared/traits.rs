@@ -2,8 +2,10 @@ use std::thread::JoinHandle;
 
 use super::Amount;
 
-pub trait Start<T> {
-    fn start(self) -> JoinHandle<T>;
+pub trait Spawner<T> {
+    fn spawn(self) -> JoinHandle<()>;
+    fn setup(self) -> Result<Self, String> where Self: Sized;
+    fn deploy(self) -> Result<Self, String> where Self: Sized;
 }
 
 /// Parsing external structure to internal structure

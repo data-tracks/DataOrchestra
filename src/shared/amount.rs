@@ -11,26 +11,31 @@ pub enum Amount<T> {
 
 impl<T> Amount<T> {
     /// Check if amount has only one value
+    #[inline]
     pub fn has_one(&self) -> bool {
         matches!(self, Self::Single(_))
     }
 
     /// Check if amount has multiple values
+    #[inline]
     pub fn has_multiple(&self) -> bool {
         matches!(self, Self::Multiple(_))
     }
 
     /// Check if amount has a value or multiple
+    #[inline]
     pub fn has_something(&self) -> bool {
        self.has_one() || self.has_multiple() 
     }
 
     /// Check if amount has no value
+    #[inline]
     pub fn has_none(&self) -> bool {
         matches!(self, Self::None)
     }
 
     /// Get the amount of items in the amount enum
+    #[inline]
     pub fn get_amount(&self) -> usize {
         match self {
             Self::None => 0,
