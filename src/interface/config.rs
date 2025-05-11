@@ -176,6 +176,8 @@ impl Default for Config {
                 (
                     ExtGenerate 
                     {
+                        generate_type: None,
+                        config: None,
                         amount: 1,
                         general: General 
                         {

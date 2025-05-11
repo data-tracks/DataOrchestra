@@ -1,6 +1,7 @@
 use super::command::command_func::{output_command, spawn_command};
 
 pub mod traits;
+use log::debug;
 pub use traits::Run;
 
 pub mod source;
@@ -26,7 +27,7 @@ pub use config::ContainerConfigBuilder;
 /// Create a new docker network.
 pub fn create_network<T: Into<String>>(network: T) -> Result<(), String>{
     let network = network.into();
-    let networks: String = output_command("docker network ls");
+    let networks = get_networks();
     if !networks.contains(&network) {
         let create_bridge = spawn_command(&format!("docker network create -d bridge {}", &network))
             .wait();
@@ -40,9 +41,12 @@ pub fn create_network<T: Into<String>>(network: T) -> Result<(), String>{
 }
 
 pub fn get_networks() -> Vec<String> {
-   let mut networks = Vec::<String>::new();
-   let output = output_command("docker network ls");
-   networks
+    let mut networks = Vec::<String>::new();
+    let output = output_command("docker network ls --format {{.Name}}");
+    for network in output.split("\n") {
+        networks.push(network.to_string());
+    }
+    networks 
 }
 
 /// Deletes all docker containers

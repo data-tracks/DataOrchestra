@@ -13,6 +13,17 @@ pub enum ProcessType {
     Storm
 }
 
+impl ToString for ProcessType {
+    fn to_string(&self) -> String {
+        match self {
+            ProcessType::Flink => String::from("Flink"),
+            ProcessType::Kafka => String::from("Kafka"),
+            ProcessType::Spark => String::from("Spark"),
+            ProcessType::Storm => String::from("Storm")
+        }
+    }
+}
+
 impl ProcessType {
     pub fn new(&self) -> ProcessTypeConfig {
         match self {
