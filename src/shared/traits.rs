@@ -1,11 +1,11 @@
-use std::thread::JoinHandle;
+use std::thread::{JoinHandle, ScopedJoinHandle};
 
 use super::Amount;
 
 pub trait Spawner<T> {
-    fn spawn(self) -> JoinHandle<()>;
-    fn setup(self) -> Result<Self, String> where Self: Sized;
-    fn deploy(self) -> Result<Self, String> where Self: Sized;
+    fn build(&mut self);
+    fn setup(self) -> JoinHandle<Self> where Self: Sized;
+    fn deploy(self) -> JoinHandle<Self> where Self: Sized;
 }
 
 /// Parsing external structure to internal structure

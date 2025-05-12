@@ -1,13 +1,13 @@
 {
   "generate": {
-    "file": {
-      "name": "generate",
-      "path": "examples/word_count/generate",
-      "destination": "/generate",
-      "start": "/generate/setup.sh"
+    "type": "sensor",
+    "sensor": {
+      "stream_processor": "kafka",
+      "address": "broker:29092",
+      "topics": ["words"]
     },
     "docker": {
-      "image": "python",
+      "image": "rust",
       "name": "generate",
       "network": "trackbenchrs_kafka-network"
     }

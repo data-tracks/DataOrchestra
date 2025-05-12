@@ -260,7 +260,6 @@ impl Container {
 
     pub fn load_ip(&mut self) -> Result<(), String> {
         let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
-        debug!("{}", ip);
         let ip = ip.replace("\n", "").trim().to_string();
         let ip = Ipv4Addr::from_str(ip.as_str());
         if let Ok(ip) = ip {

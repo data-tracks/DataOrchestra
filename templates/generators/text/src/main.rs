@@ -1,10 +1,11 @@
 use std::{thread, time::Duration};
 
 use clap::Parser;
-use fake::{Fake, Faker};
+use fake::{locales::EN, Fake, Faker};
 use log::{info, LevelFilter};
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
 use sensor::{arguments::{Args, StreamProcessor}, logger::init_logger};
+use fake::faker::lorem::raw::Sentence;
 
 #[tokio::main]
 async fn main() {
@@ -41,7 +42,7 @@ pub async fn kafka_producer(args: Args) {
 
     loop {
         for topic in topics.iter() {
-            let val: String = Faker.fake();
+            let val: String = Sentence(EN, 10..20).fake();
             let delivery_status = producer
                 .send(
                     FutureRecord::to(topic)

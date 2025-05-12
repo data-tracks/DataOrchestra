@@ -25,10 +25,11 @@ struct Args {
     #[arg(short, long, default_value_t = LevelFilter::Info)]
     level: LevelFilter,
 
-    /// Remove all running and stopped docker containers
+    /// Remove all running and stopped docker containers aswell as all networks
     #[arg(long = "remove_all", default_value_t = false)]
     remove_all: bool,
 
+    /// Generate a valid config file 
     #[arg(long = "generate_valid_json", default_value_t = false)]
     generate_valid_json: bool
 }
@@ -52,8 +53,9 @@ fn main() {
 
     if args.remove_all {
         info!("Removing and deleting all docker containers");
-        docker::stop_all();
-        docker::remove_all();
+        docker::stop_all_containers();
+        docker::remove_all_containers();
+        docker::remove_all_networks();
     }
 
     // Read config.json
@@ -70,11 +72,14 @@ fn main() {
     let processes: Vec<Process> = config.process.to_internal();
     let generates: Vec<Generate> = config.generate.to_internal();
 
+    prepare(&stores, &processes, &generates);
+
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
     info!("Running tasks");
+    
     for store in stores {
-        thread_pool.push(store.spawn());
+        thread_pool.push(store.build());
     }
 
     for process in processes {
@@ -89,6 +94,8 @@ fn main() {
     for thread in thread_pool {
         let _ = thread.join();
     }
+
+    //cleanup(&stores, &processes, &generates);
 }
 
 pub fn print_logo() {
@@ -99,4 +106,19 @@ pub fn print_logo() {
  / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
 /_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
     "#);  
+}
+
+pub fn prepare(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+    for store in stores.iter() {
+    }
+
+    for process in processes.iter() {
+    }
+
+    for generate in generates.iter() {
+    }
+}
+
+pub fn cleanup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+
 }

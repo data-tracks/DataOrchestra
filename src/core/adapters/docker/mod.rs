@@ -1,7 +1,6 @@
 use super::command::command_func::{output_command, spawn_command};
 
 pub mod traits;
-use log::debug;
 pub use traits::Run;
 
 pub mod source;
@@ -40,27 +39,32 @@ pub fn create_network<T: Into<String>>(network: T) -> Result<(), String>{
     Ok(())
 }
 
+/// Get all docker networks
 pub fn get_networks() -> Vec<String> {
     let mut networks = Vec::<String>::new();
     let output = output_command("docker network ls --format {{.Name}}");
-    for network in output.split("\n") {
+    for network in output.split("\n").filter(|item| item.ne(&"")) {
         networks.push(network.to_string());
     }
     networks 
 }
 
 /// Deletes all docker containers
-pub fn remove_all() {
+pub fn remove_all_containers() {
     let containers = output_command("docker container ls -a -q");
-    for container in containers.split("\n") {
+    for container in containers.split("\n").filter(|item| item.ne(&"")) {
         let _ = output_command(format!("docker rm {}", container));
     }
 }
 
 /// Stops all docker containers
-pub fn stop_all() {
+pub fn stop_all_containers() {
     let containers = output_command("docker container ls -a -q");
-    for container in containers.split("\n") {
+    for container in containers.split("\n").filter(|item| item.ne(&"")) {
         let _ = output_command(format!("docker stop {}", container));
     }
+}
+
+pub fn remove_all_networks() {
+    output_command("docker network prune -f");
 }

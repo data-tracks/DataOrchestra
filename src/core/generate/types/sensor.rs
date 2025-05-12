@@ -1,3 +1,6 @@
+use std::{collections::HashMap, hash::Hash};
+
+use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{process::process_types::ProcessType, types::Data};
@@ -11,7 +14,8 @@ pub struct Sensor {
     #[serde(default = "default_address")]
     pub address: String,
     #[serde(default)]
-    pub topics: Vec<String>
+    pub topics: Vec<String>,
+    additional: Option<HashMap<String, String>>,
 }
 
 pub fn default_interval() -> u64 {
@@ -22,13 +26,18 @@ pub fn default_address() -> String {
     String::from("localhost:9092")
 }
 
+pub fn default_level() -> LevelFilter {
+    LevelFilter::Info
+}
+
 impl Sensor {
     pub fn new() -> Self {
         Sensor { 
             stream_processor: None,
             interval: 1,
             address: String::from("localhost:9092"),
-            topics: Vec::new()
+            topics: Vec::new(),
+            additional: Some(HashMap::new())
         }
     }
 
@@ -36,8 +45,8 @@ impl Sensor {
         Data {
             name: String::new(),
             path: String::from("templates/generators/sensor"),
-            destination: String::from("/"),
-            start: format!("/sensor/{}", self.parse()),
+            destination: String::from("/sensor"),
+            start: format!("cd /sensor && sh spawn.sh \"Sensor\" \"{}\"", self.parse()),
             dependency: None
         }
     }
@@ -47,7 +56,7 @@ impl Sensor {
 
 
         if let Some(ref process) = self.stream_processor {
-            command = format!("{command} --stream_processor {}", process.to_string().to_lowercase());
+            command = format!("{command} --stream-processor {}", process.to_string().to_lowercase());
         }
 
         command = format!("{command} --interval {}", self.interval);
@@ -59,6 +68,12 @@ impl Sensor {
         }
 
         command = format!("{command} --address {}", self.address);
+
+        if let Some(ref options) = self.additional {
+            for (key, value) in options.iter() {
+                command = format!("{command} -{key} {value}");
+            }
+        }
 
         command
     }

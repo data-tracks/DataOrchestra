@@ -28,7 +28,6 @@ impl ToInternal<Store> for ExtStore {
     
         // Set Database Type and config
         store.db_type = self.db_type;
-        dbg!(&self.config);
         store.config = self.config;
 
         if self.general.node.is_some() {

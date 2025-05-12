@@ -11,7 +11,7 @@ pub fn start_script(ssh: &Ssh, data: &Data) -> Result<(), String> {
         ssh.exec(format!("sh {}", data.start))?;
     }
     else {
-        ssh.exec(format!("nohup {}", data.start))?;
+        ssh.exec(format!("{}", data.start))?;
     }
 
     Ok(())

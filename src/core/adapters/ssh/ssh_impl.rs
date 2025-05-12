@@ -90,6 +90,7 @@ impl Executor for Ssh {
         if let Err(ref error) = close {
             error!("Unable to close channel {}", error);
         }
+        debug!("Result {}", &result);
 
         Ok(result)
     }

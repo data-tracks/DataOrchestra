@@ -34,7 +34,7 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 let config = generator_type.new();
                 generate.object.data.push(config.create());
             }
-            
+
             if self.general.node.is_some() {
                 generate.object.node = Some(self.general.node.clone().unwrap().to_internal());
             } 
@@ -49,7 +49,7 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 } 
             } 
 
-            generate.object.data = self.general.file.clone().to_internal();
+            generate.object.data.extend(self.general.file.clone().to_internal());
 
             debug!("Finished parsing generate to internal");
 

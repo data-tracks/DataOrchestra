@@ -1,0 +1,25 @@
+warning: unused imports: `Args` and `StreamProcessor`
+ --> src/lib.rs:4:17
+  |
+4 | use arguments::{Args, StreamProcessor};
+  |                 ^^^^  ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `sensor` (lib) generated 1 warning (run `cargo fix --lib -p sensor` to apply 1 suggestion)
+warning: unused variable: `delivery_status`
+  --> src/main.rs:45:17
+   |
+45 |             let delivery_status = producer
+   |                 ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_delivery_status`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `args`
+  --> src/main.rs:59:26
+   |
+59 | pub fn standard_producer(args: Args) {
+   |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_args`
+
+warning: `sensor` (bin "sensor") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
