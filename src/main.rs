@@ -77,8 +77,19 @@ fn main() {
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
     info!("Running tasks");
-    
+
+    let tasks = stores.iter_mut()
+        .chain(processes.iter_mut())
+        .chain()
+   
+    thread::scope(|s| {
+        for store in stores
+    })
+
     for store in stores {
+        thread::scope(|s| {
+            
+        })
         thread_pool.push(store.build());
     }
 
