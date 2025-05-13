@@ -11,6 +11,6 @@ impl Polypheny {
         Polypheny {  }
     }
 
-    pub fn setup_container(&self, docker: &mut ContainerBuilder) {
+    pub fn setup_container(&self, _docker: &mut ContainerBuilder) {
     }
 }

@@ -1,11 +1,10 @@
+use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
-use std::process::{Child, Command, Stdio};
 use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
-use log::{debug, info, error};
+use log::{debug, error};
 use crate::core::adapters::command::command_func::{output_command, spawn_command, status_command};
-use crate::core::adapters::docker::create_network;
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Executor, OsSystems};
 
@@ -113,7 +112,6 @@ impl ContainerBuilder {
     }
 } 
 
-// Public methods for docker container 
 impl Container {
     pub fn new(config: ContainerConfig, source: DockerSource) -> Self {
         Container 
@@ -135,37 +133,6 @@ impl Container {
 }
 
 impl Container {
-    /// Execute command remotely in docker container
-    ///
-    /// # Examples
-    /// 
-    /// ```
-    /// ```
-    fn execute<T: Into<String>>(&self, arg: T) -> Child {
-        let command = format!("docker exec {} {}", self.config.name.as_ref().unwrap(), &arg.into());
-        debug!("{}", format!("Running command: {}", command));
-        let output = if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .arg("/C")
-                .arg(command)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .expect("failed to execute process")
-        } else {
-            Command::new("sh")
-                .arg("-c")
-                .arg(command)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .expect("failed to execute process")
-        };
-
-        output    
-    }
-
-
     /// Get host ssh port mapping from docker container
     pub fn get_ssh_port(&self) -> Result<u16, String> {
         self.get_external_port(22)     
@@ -211,21 +178,18 @@ impl Container {
     }
 }
 
-impl Run<(), String> for Container {
+impl Run for Container {
+    type Output = ();
+    type Error = String;
+
     /// Run docker container using a dockerfile or image
     fn run(&mut self) -> Result<(), String> {
-        // Create network
-        let network = create_network(self.config.network.clone());
-        match network {
-            Ok(_) => info!("Successfully created network"),
-            Err(value) => error!("{}", value),
-        }
-
         // Build and start container
-        if self.source.dockerfile.is_some() && self.source.image.is_some() {
+        if self.source.dockerfile.is_some() {
             self.build_from_dockerfile();
         }
-        else if self.source.image.is_some() {
+
+        if self.source.image.is_some() {
             self.build_from_image();
         }
 
@@ -251,7 +215,18 @@ impl Run<(), String> for Container {
 }
 
 impl Container {
-    fn build_from_dockerfile(&mut self) {}
+    fn build_from_dockerfile(&mut self) {
+        if let Some(ref name) = self.source.image {
+            let mut building_args = String::new();
+            for (key, value) in self.source.build_args.iter() {
+                building_args = format!("{building_args} {key}={value}");
+            }
+            output_command(format!("docker build -t {name} --build-arg {building_args}"));
+        }
+        else {
+            panic!("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} ");
+        }
+    }
     fn build_from_image(&mut self) {
         // Create image
         let id = output_command(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));

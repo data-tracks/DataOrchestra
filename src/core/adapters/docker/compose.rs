@@ -20,7 +20,7 @@ impl ComposeGroup {
         let yaml = YamlLoader::load_from_str(yaml.as_str());
         if let Ok(yaml) = yaml {
             let doc = &yaml[0]["services"]; 
-            for yaml in doc.as_hash() {
+            if let Some(yaml) = doc.as_hash() {
                 for key in yaml.keys() {
                     let container = &yaml[key];
                     if !container["container_name"].is_badvalue() {
@@ -37,7 +37,10 @@ impl ComposeGroup {
     }
 }
 
-impl Run<(), String> for ComposeGroup {
+impl Run for ComposeGroup {
+    type Output = ();
+    type Error = String;
+
     fn run(&mut self) -> Result<(), String> {
         if let Some(ref compose) = self.compose {
             let _ = spawn_command(format!("docker compose -f {} up -d --build", compose)).wait();

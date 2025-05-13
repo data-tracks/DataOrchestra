@@ -35,8 +35,8 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 generate.object.data.push(config.create());
             }
 
-            if self.general.node.is_some() {
-                generate.object.node = Some(self.general.node.clone().unwrap().to_internal());
+            if let Some(node) = self.general.node.clone() {
+                generate.object.node = Some(node.to_internal());
             } 
 
             if let Some(docker) = self.general.docker.clone() {

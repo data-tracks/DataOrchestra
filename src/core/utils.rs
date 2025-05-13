@@ -1,6 +1,6 @@
 use std::path::Path;
 use super::adapters::command::command_func::spawn_command;
-use super::adapters::docker::{manager, Container, DockerManager};
+use super::adapters::docker::{Container, DockerManager};
 use super::adapters::Executor;
 use super::types::Data;
 use super::adapters::ssh::Ssh;

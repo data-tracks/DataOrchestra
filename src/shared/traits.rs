@@ -1,11 +1,9 @@
-use std::thread::{JoinHandle, ScopedJoinHandle};
-
 use super::Amount;
 
 pub trait Spawner<T> {
     fn build(&mut self);
-    fn setup(self) -> JoinHandle<Self> where Self: Sized;
-    fn deploy(self) -> JoinHandle<Self> where Self: Sized;
+    fn setup(&mut self);
+    fn deploy(&mut self);
 }
 
 /// Parsing external structure to internal structure
@@ -46,7 +44,7 @@ where
 
 
 // ToInternal implementation for the Amount enum to get Vec<S -> Vec<T>>. This is specifically for
-// objects which implement the ToInternalVec, due to the `amount
+// objects which implement the ToInternalVec
 impl<T, S> ToInternalVec<T> for Amount<S> 
 where 
     S: ToInternalVec<T>,

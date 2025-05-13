@@ -34,6 +34,6 @@ impl Node {
     }
 
     pub fn get_ssh_port(&self) -> Option<u16> {
-        Some(1)
+        Some(22)
     }
 }

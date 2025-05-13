@@ -4,7 +4,7 @@ use super::Container;
 
 #[derive(Debug)]
 pub struct DockerManager {
-    pub containers: HashMap<String ,Container>,
+    pub containers: HashMap<String ,Container>
 }
 
 impl DockerManager {
@@ -29,7 +29,7 @@ impl DockerManager {
     }
 
     /// Add a container to the manager
-    pub fn add_container<T: Into<String>>(&mut self, key: T, value: Container) -> &mut Self {
+    pub fn add_container<S: Into<String>>(&mut self, key: S, value: Container) -> &mut Self {
         self.containers.insert(key.into(), value);
         self
     }

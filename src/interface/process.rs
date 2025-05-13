@@ -27,6 +27,10 @@ impl ToInternal<Process> for ExtProcess {
         process.process_type = self.process_type;
         process.config = self.config;
 
+        if let Some(node) = self.general.node {
+            process.object.node = Some(node.to_internal());
+        }
+
         // If a process type is given prioritise this over additional docker config
         if let Some(docker) = self.general.docker {
             if docker.compose.is_some() {
@@ -36,10 +40,6 @@ impl ToInternal<Process> for ExtProcess {
             {
                 process.object.docker_container_builder = Some(docker.to_internal());
             } 
-        } 
-        
-        if self.general.node.is_some() {
-            process.object.node = Some(self.general.node.unwrap().to_internal());
         } 
         
         process.object.data = self.general.file.to_internal();

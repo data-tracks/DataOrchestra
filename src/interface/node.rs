@@ -7,7 +7,7 @@ use crate::{core::types::Node, shared::{Address, ToInternal}};
 pub struct ExtNode {
     pub name: Option<String>,
     pub address: Option<Address>,
-    pub user: Option<String>,
+    pub username: Option<String>,
     pub password: Option<String>
 }
 
@@ -23,7 +23,7 @@ impl ToInternal<Node> for ExtNode {
             node.address = address
         }
 
-        if let Some(user) = self.user {
+        if let Some(user) = self.username {
             node.username = user;
         }
 

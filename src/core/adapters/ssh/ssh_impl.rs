@@ -17,11 +17,6 @@ impl Executor for Ssh {
 
     /// Connect to Ssh server
     ///
-    /// # Example 
-    ///
-    /// ```
-    /// ```
-    ///
     /// # Note
     /// 
     /// See <https://github.com/libssh2/libssh2/blob/master/include/libssh2.h> for relevant error
@@ -58,11 +53,6 @@ impl Executor for Ssh {
     }
 
     /// Execute command over Ssh connection
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// ```
     fn exec<T: Into<String>>(&self, command: T) -> Result<String, String> {
         let command = command.into();
         debug!("Executing command [{}]", &command);
@@ -90,21 +80,11 @@ impl Executor for Ssh {
         if let Err(ref error) = close {
             error!("Unable to close channel {}", error);
         }
-        debug!("Result {}", &result);
 
         Ok(result)
     }
     
     /// Upload file to remote server via Ssh
-    ///
-    /// # Example
-    ///
-    /// ```
-    ///
-    /// ```
-    ///
-    /// # Return 
-    ///
     fn upload_file<T: AsRef<Path>, S: AsRef<Path>>(&self, file: T, location: S) -> Result<(), String>{
         let file = file.as_ref();
         let location = location.as_ref();
@@ -133,12 +113,6 @@ impl Executor for Ssh {
     }
 
     /// Upload directory to remote server via Ssh. 
-    ///
-    /// # Example
-    ///
-    /// ```
-    ///
-    /// ```
     ///
     /// # Return
     ///

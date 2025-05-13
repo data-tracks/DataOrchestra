@@ -24,6 +24,7 @@
           - curl
           - git
           - tmux
+          - ca-certificates
         state: present
 
 - name: Node behaviour

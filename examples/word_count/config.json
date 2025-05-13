@@ -1,6 +1,5 @@
 {
   "generate": {
-    "type": "sensor",
     "sensor": {
       "stream_processor": "kafka",
       "address": "broker:29092",

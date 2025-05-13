@@ -10,5 +10,6 @@ pub struct General {
     pub node: Option<ExtNode>,
     #[serde(default)]
     pub file: Amount<File>,
+    pub ansible: Option<String>
 }
 

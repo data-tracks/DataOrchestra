@@ -30,8 +30,8 @@ impl ToInternal<Store> for ExtStore {
         store.db_type = self.db_type;
         store.config = self.config;
 
-        if self.general.node.is_some() {
-            store.object.node = Some(self.general.node.unwrap().to_internal());
+        if let Some(node) = self.general.node {
+            store.object.node = Some(node.to_internal());
         }
 
         // Set Container(s) builder

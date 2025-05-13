@@ -1,16 +1,18 @@
+use std::env;
 use std::fs::File;
 use std::path::Path;
 use std::process::exit;
-use std::thread::JoinHandle;
+use std::thread::{self};
+use data_orchestra::core::adapters::ping;
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::interface::config::Config;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
-use log::{debug, info, LevelFilter};
+use log::{info, warn, LevelFilter};
 
 use data_orchestra::logger::init_logger;
-use data_orchestra::core::adapters::docker;
+use data_orchestra::core::adapters::docker::{self};
 
 use clap::Parser;
 
@@ -34,7 +36,19 @@ struct Args {
     generate_valid_json: bool
 }
 
+pub fn print_logo() {
+    println!(r#"
+    ____        __        ____            __              __            
+   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _
+  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/
+ / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
+/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
+    "#);  
+}
+
 fn main() {
+    viable_check();
+
     print_logo();                                                             
 
     // Read starting arguments
@@ -59,77 +73,218 @@ fn main() {
     }
 
     // Read config.json
-    debug!("Loading config file {}", args.file.as_ref().unwrap());
+    info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
     let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
-    info!("Finished parsing config.json");
-
-    let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
+    info!("Finished parsing config file");
 
     // Parse to internal structure
-    let stores: Vec<Store> = config.store.to_internal();
-    let processes: Vec<Process> = config.process.to_internal();
-    let generates: Vec<Generate> = config.generate.to_internal();
-
-    prepare(&stores, &processes, &generates);
+    let mut stores: Vec<Store> = config.store.to_internal();
+    let mut processes: Vec<Process> = config.process.to_internal();
+    let mut generates: Vec<Generate> = config.generate.to_internal();
+ 
+    pre_build(&stores, &processes, &generates);
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
     info!("Running tasks");
+    
+    thread::scope(|s| {
+        for store in stores.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("store".to_string())
+                .spawn_scoped(s, || {
+                    store.build();
+            });
+        }
 
-    let tasks = stores.iter_mut()
-        .chain(processes.iter_mut())
-        .chain()
+        for process in processes.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("process".to_string())
+                .spawn_scoped(s, || {
+                    process.build();
+            });
+        }
+
+        for generate in generates.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("generate".to_string())
+                .spawn_scoped(s, || {
+                    generate.build();
+            });
+        }
+    });
    
     thread::scope(|s| {
-        for store in stores
-    })
+        for store in stores.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("store".to_string())
+                .spawn_scoped(s, || {
+                    store.setup();
+            });
+        }
 
-    for store in stores {
-        thread::scope(|s| {
-            
-        })
-        thread_pool.push(store.build());
-    }
+        for process in processes.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("process".to_string())
+                .spawn_scoped(s, || {
+                    process.setup();
+            });
+        }
 
-    for process in processes {
-        thread_pool.push(process.spawn());
-    }
+        for generate in generates.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("generate".to_string())
+                .spawn_scoped(s, || {
+                    generate.setup();
+            });
+        }
+    });
 
-    for generate in generates {
-        thread_pool.push(generate.spawn());
-    }
+    thread::scope(|s| {
+        for store in stores.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("store".to_string())
+                .spawn_scoped(s, || {
+                    store.deploy();
+            });
+        }
 
-    // Wait for threads to finish
-    for thread in thread_pool {
-        let _ = thread.join();
-    }
+        for process in processes.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("process".to_string())
+                .spawn_scoped(s, || {
+                    process.deploy();
+            });
+        }
 
-    //cleanup(&stores, &processes, &generates);
+        for generate in generates.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("generate".to_string())
+                .spawn_scoped(s, || {
+                    generate.deploy();
+            });
+        }
+    });
+
+    cleanup(&stores, &processes, &generates);
 }
 
-pub fn print_logo() {
-    println!(r#"
-    ____        __        ____            __              __            
-   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _
-  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/
- / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
-/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
-    "#);  
+pub fn viable_check() {
+    match env::var("VIRTUAL_ENV") {
+        Ok(_val) => {
+            warn!("Python environment detected. Please ensure that the ansible package is contained in this environment");
+        }
+        Err(_) => {
+            panic!("Not in an ansible environment. Please activate or create a python environment with ansible installed");
+        }
+    }
 }
 
-pub fn prepare(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+pub fn pre_build(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+    info!("Perfoming health check");
+
     for store in stores.iter() {
+        if let Some(ref node) = store.object.node {
+            let result = ping::ping(&node.address.ip);
+            if let Err(error) = result {
+                panic!("[{}] {}", node.address.ip, error);
+            }
+        }
     }
 
     for process in processes.iter() {
+        if let Some(ref node) = process.object.node {
+            let result = ping::ping(&node.address.ip);
+            if let Err(error) = result {
+                panic!("[{}] {}", node.address.ip, error);
+            }
+        }
     }
 
     for generate in generates.iter() {
+        if let Some(ref node) = generate.object.node {
+            let result = ping::ping(&node.address.ip);
+            if let Err(error) = result {
+                panic!("[{}] {}", node.address.ip, error);
+            }
+        }
+    }
+
+    info!("Health check complete. All systems green");
+}
+
+pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+    for store in stores.iter() {
+        if let Some(ref manager) = store.object.docker_manager {
+            for (_, container) in manager.containers.iter() {
+                let network = &container.config.network;
+                if network.is_empty() {
+                    break;
+                } 
+
+                let existing_networks = docker::get_networks();
+                if !existing_networks.contains(network) {
+                    let result = docker::create_network(network);
+                    if let Err(error) = result {
+                        panic!("Unable to create docker network. {}", error);
+                    }
+                }
+            }
+        }
+    }
+
+    for process in processes.iter() {
+        if let Some(ref manager) = process.object.docker_manager {
+            for (_, container) in manager.containers.iter() {
+                let network = &container.config.network;
+                if network.is_empty() {
+                    break;
+                } 
+
+                let existing_networks = docker::get_networks();
+                if !existing_networks.contains(network) {
+                    let result = docker::create_network(network);
+                    if let Err(error) = result {
+                        panic!("Unable to create docker network. {}", error);
+                    }
+                }
+            }
+        }
+    }
+
+    for generate in generates.iter() {
+        if let Some(ref manager) = generate.object.docker_manager {
+            for (_, container) in manager.containers.iter() {
+                let network = &container.config.network;
+                if network.is_empty() {
+                    break;
+                } 
+
+                let existing_networks = docker::get_networks();
+                if !existing_networks.contains(network) {
+                    let result = docker::create_network(network);
+                    if let Err(error) = result {
+                        panic!("Unable to create docker network. {}", error);
+                    }
+                }
+            }
+        }
     }
 }
 
 pub fn cleanup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+    info!("Performing cleanup");
 
+    for _store in stores.iter() {
+    }
+
+    for _process in processes.iter() {
+    }
+
+    for _generate in generates.iter() {
+    }
+
+    info!("Cleanup complete");
 }

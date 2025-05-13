@@ -208,6 +208,7 @@ impl Default for Config {
                                     dependency: None
                                 }
                             ),
+                            ansible: Some(String::from("scripts/ansible/ansible-setup.yaml"))
                         }
                     }
                  ), 
@@ -247,6 +248,7 @@ impl Default for Config {
                                     dependency: None
                                 }
                             ),
+                            ansible: Some(String::from("scripts/ansible/ansible-setup.yaml"))
                         }
                     }
                 ), 
@@ -283,6 +285,7 @@ impl Default for Config {
                                     dependency: None
                                 }
                             ),
+                            ansible: Some(String::from("scripts/ansible/ansible-setup.yaml"))
                         },
                         schema: Amount::Single("".to_string()),
                         db_type: None,
@@ -323,6 +326,7 @@ impl Default for Config {
                                     dependency: None
                                 }
                             ),
+                            ansible: Some(String::from("scripts/ansible/ansible-setup.yaml"))
                         },  
                     }
                 )  
