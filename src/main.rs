@@ -185,7 +185,7 @@ fn main() {
         let _ = stdout().flush();
         let _ = stdin().read_line(&mut s);
 
-        match s.as_str() {
+        match s.trim() {
             "nc" | "no-cleanup" => { 
                 do_cleanup = false; 
             }
@@ -201,16 +201,20 @@ fn main() {
             "h" | "help" | _ => {
                 println!(
                     r#"
-    DataOrchestra   |
-    ----------------|
+    ____        __        ____            __              __                
+   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _          |\      _,,,---,,_
+  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/    ZZZzz /,`.-'`'    -.  ;-;;,_
+ / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
+/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
 
-    short   | long          | explanation 
-    -------------------------------------------------------------------------
-    h       | help          | Get explanation of possible commands
-    i       | info          | Get info of produced system
-    q       | quit          | Quit programm and perform cleanup
-    nc      | no-cleanup    | Perform no cleanup
-    hc      | health-check  | Perform a health check on remote entities
+short   | long          | parameters    | description 
+-------------------------------------------------------------------------
+h       | help          |               | Get explanation of possible commands
+i       | info          |               | Get info of produced system
+q       | quit          |               | Quit programm and perform cleanup
+k       | kill          | <node>        | Kill a specific node
+nc      | no-cleanup    |               | Perform no cleanup
+hc      | health-check  |               | Perform a health check on remote entities
                     "#
                     );
             }
@@ -240,27 +244,27 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
 
     for store in stores.iter() {
         if let Some(ref node) = store.object.node {
-            let result = ping::ping(&node.address.ip);
+            let result = ping::ping(&node.ip);
             if let Err(error) = result {
-                panic!("[{}] {}", node.address.ip, error);
+                panic!("[{}] {}", node.ip, error);
             }
         }
     }
 
     for process in processes.iter() {
         if let Some(ref node) = process.object.node {
-            let result = ping::ping(&node.address.ip);
+            let result = ping::ping(&node.ip);
             if let Err(error) = result {
-                panic!("[{}] {}", node.address.ip, error);
+                panic!("[{}] {}", node.ip, error);
             }
         }
     }
 
     for generate in generates.iter() {
         if let Some(ref node) = generate.object.node {
-            let result = ping::ping(&node.address.ip);
+            let result = ping::ping(&node.ip);
             if let Err(error) = result {
-                panic!("[{}] {}", node.address.ip, error);
+                panic!("[{}] {}", node.ip, error);
             }
         }
     }

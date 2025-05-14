@@ -22,6 +22,7 @@ pub struct Object {
     pub attach: Amount<Box<Object>>,
     pub ssh: Option<Ssh>,
     pub data: Vec<Data>,
+    pub ansible: String
 }
 
 impl Default for Object {
@@ -39,6 +40,7 @@ impl Default for Object {
             attach: Amount::None, 
             ssh: None,
             data: Vec::new(),
+            ansible: "scripts/ansible/ansible-setup.yml".to_string()
         }
     }
 }

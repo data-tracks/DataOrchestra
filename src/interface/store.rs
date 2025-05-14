@@ -34,6 +34,10 @@ impl ToInternal<Store> for ExtStore {
             store.object.node = Some(node.to_internal());
         }
 
+        if let Some(ansible) = self.general.ansible {
+            store.object.ansible = ansible;
+        }
+
         // Set Container(s) builder
         if let Some(docker) = self.general.docker {
             if docker.compose.is_some() {

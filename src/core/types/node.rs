@@ -7,7 +7,7 @@ use crate::core::adapters::ssh::Ssh;
 #[derive(Debug)]
 pub struct Node {
     pub name: String,
-    pub address: Address,
+    pub ip: IpAddr,
     pub username: String,
     pub password: String,
     pub ssh: Option<Ssh>
@@ -18,7 +18,7 @@ impl Node {
         Node
         {
             name: "Node".to_string(),
-            address: Address { ip: IpAddr::V4(Ipv4Addr::LOCALHOST), port: 5000 },
+            ip: IpAddr::V4(Ipv4Addr::LOCALHOST) ,
             username: "root".to_string(),
             password: "password".to_string(),
             ssh: None
@@ -27,7 +27,7 @@ impl Node {
 
     pub fn load_ssh(&mut self) -> Result<(), String> {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect(&self.address.ip.to_string(), self.get_ssh_port().unwrap(), &self.username, &self.password);
+        let _ = ssh.connect(&self.ip.to_string(), self.get_ssh_port().unwrap(), &self.username, &self.password);
 
         self.ssh = Some(ssh);
         Ok(())

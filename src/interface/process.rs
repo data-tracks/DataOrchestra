@@ -31,6 +31,10 @@ impl ToInternal<Process> for ExtProcess {
             process.object.node = Some(node.to_internal());
         }
 
+        if let Some(ansible) = self.general.ansible {
+            process.object.ansible = ansible;
+        }
+
         // If a process type is given prioritise this over additional docker config
         if let Some(docker) = self.general.docker {
             if docker.compose.is_some() {

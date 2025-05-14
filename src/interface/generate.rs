@@ -39,6 +39,10 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 generate.object.node = Some(node.to_internal());
             } 
 
+            if let Some(ansible) = self.general.ansible.clone() {
+                generate.object.ansible = ansible;
+            }
+
             if let Some(docker) = self.general.docker.clone() {
                 if docker.compose.is_some() {
                     generate.object.docker_group_builder = Some(docker.to_internal());
