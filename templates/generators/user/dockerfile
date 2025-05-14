@@ -1,0 +1,8 @@
+FROM rust:1.67
+
+WORKDIR /usr/sensor
+COPY . .
+
+RUN cargo install --path .
+
+CMD ["cargo run"]

@@ -1,5 +1,6 @@
 use std::env;
 use std::fs::File;
+use std::io::{stdin, stdout, Write};
 use std::path::Path;
 use std::process::exit;
 use std::thread::{self};
@@ -47,6 +48,7 @@ pub fn print_logo() {
 }
 
 fn main() {
+    info!("Starting DataOrchestra");
     viable_check();
 
     print_logo();                                                             
@@ -70,6 +72,7 @@ fn main() {
         docker::stop_all_containers();
         docker::remove_all_containers();
         docker::remove_all_networks();
+        info!("Deleted all docker containers");
     }
 
     // Read config.json
@@ -84,7 +87,7 @@ fn main() {
     let mut processes: Vec<Process> = config.process.to_internal();
     let mut generates: Vec<Generate> = config.generate.to_internal();
  
-    pre_build(&stores, &processes, &generates);
+    health_check(&stores, &processes, &generates);
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
@@ -115,6 +118,8 @@ fn main() {
             });
         }
     });
+
+    pre_setup(&stores, &processes, &generates);
    
     thread::scope(|s| {
         for store in stores.iter_mut() {
@@ -168,7 +173,55 @@ fn main() {
         }
     });
 
-    cleanup(&stores, &processes, &generates);
+    let mut do_cleanup: bool = true;
+
+    info!("Everything deployed. Enabling CLI.");
+
+    // Enter main loop of programm. Infinite loop which allows the user to communicate with
+    // programm and remote entities. 
+    loop {
+        let mut s=String::new();
+        print!("Enter command: ");
+        let _ = stdout().flush();
+        let _ = stdin().read_line(&mut s);
+
+        match s.as_str() {
+            "nc" | "no-cleanup" => { 
+                do_cleanup = false; 
+            }
+            "hc" | "health-check" => {
+                health_check(&stores, &processes, &generates);
+            },
+            "i" | "info" => {
+                println!("Stores: {}", stores.len());
+                println!("Process: {}", processes.len());
+                println!("Generate: {}", generates.len());
+            }
+            "q" | "quit" => break,
+            "h" | "help" | _ => {
+                println!(
+                    r#"
+    DataOrchestra   |
+    ----------------|
+
+    short   | long          | explanation 
+    -------------------------------------------------------------------------
+    h       | help          | Get explanation of possible commands
+    i       | info          | Get info of produced system
+    q       | quit          | Quit programm and perform cleanup
+    nc      | no-cleanup    | Perform no cleanup
+    hc      | health-check  | Perform a health check on remote entities
+                    "#
+                    );
+            }
+        }
+    }
+        
+    if do_cleanup {
+        cleanup(&stores, &processes, &generates);
+    }
+
+    info!("Closing DataOrchestra");
 }
 
 pub fn viable_check() {
@@ -182,7 +235,7 @@ pub fn viable_check() {
     }
 }
 
-pub fn pre_build(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
     info!("Perfoming health check");
 
     for store in stores.iter() {
