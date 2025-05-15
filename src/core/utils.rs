@@ -18,7 +18,7 @@ pub fn start_script(ssh: &Ssh, data: &Data) -> Result<(), String> {
 }
 
 /// Start ansible on remote object
-pub fn start_ansible(port: u16) -> Result<(), String>{
+pub fn start_ansible(ansible: String, port: u16) -> Result<(), String>{
     let script_path = "scripts/ansible/ansible-setup.yml";
     if Path::new(&script_path).is_file() {
         let _ = spawn_command(&format!("ansible-playbook {} -e \"port={}\"", script_path, port)).wait();

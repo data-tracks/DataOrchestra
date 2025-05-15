@@ -1,6 +1,7 @@
 use std::net::IpAddr;
 use serde::{Serialize, Deserialize};
-use crate::{core::types::Node, shared::{Address, ToInternal}};
+use crate::core::types::Node;
+use crate::shared::ToInternal;
 
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

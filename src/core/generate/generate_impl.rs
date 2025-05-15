@@ -5,7 +5,7 @@ use crate::shared::traits::Spawner;
 
 use super::Generate;
 
-impl Spawner<()> for Generate {
+impl Spawner for Generate {
     fn build(&mut self) {
         info!("Building Generate");
 
