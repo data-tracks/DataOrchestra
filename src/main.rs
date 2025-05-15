@@ -200,8 +200,31 @@ fn main() {
             },
             "i" | "info" => {
                 println!("Stores: {}", stores.len());
-                println!("Process: {}", processes.len());
-                println!("Generate: {}", generates.len());
+                for store in stores.iter() {
+                    let mut store_format = String::new();
+                    if let Some(ref node) = store.object.node {
+                        store_format = format!("{store_format}-ip: {}\n", node.ip);
+                    }
+                    println!("{}", store_format);
+                }
+                
+                println!("Processes: {}", processes.len());
+                for process in processes.iter() {
+                    let mut process_format = String::new();
+                    if let Some(ref node) = process.object.node {
+                        process_format = format!("{process_format}-ip: {}\n", node.ip);
+                    }
+                    println!("{}", process_format);
+                }
+
+                println!("Generates: {}", generates.len());
+                for generate in generates.iter() {
+                    let mut generate_format = String::new();
+                    if let Some(ref node) = generate.object.node {
+                        generate_format = format!("{generate_format}-ip: {}\n", node.ip);
+                    }
+                    println!("{}", generate_format);
+                }
             }
             "q" | "quit" => break,
             "h" | "help" | _ => {
@@ -218,7 +241,7 @@ short   | long          | parameters    | description
 h       | help          |               | Get explanation of possible commands
 i       | info          |               | Get info of produced system
 q       | quit          |               | Quit programm and perform cleanup
-k       | kill          | <node>        | Kill a specific node
+k       | kill          | <node|docker> | Kill a specific node
 nc      | no-cleanup    |               | Perform no cleanup
 hc      | health-check  |               | Perform a health check on remote entities
                     "#
@@ -234,6 +257,11 @@ hc      | health-check  |               | Perform a health check on remote entit
     info!("Closing DataOrchestra");
 }
 
+/// Check if programm is able to fully run. 
+///
+/// # Checks
+///
+/// - In an ansible enviroment
 pub fn viable_check() {
     match env::var("VIRTUAL_ENV") {
         Ok(_val) => {
@@ -245,6 +273,7 @@ pub fn viable_check() {
     }
 }
 
+/// Perform health check on all remote nodes by ping
 pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
     info!("Perfoming health check");
 
@@ -284,7 +313,7 @@ pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<
             for (_, container) in manager.containers.iter() {
                 let network = &container.config.network;
                 if network.is_empty() {
-                    break;
+                    continue;
                 } 
 
                 let existing_networks = docker::get_all_networks();
@@ -303,7 +332,7 @@ pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<
             for (_, container) in manager.containers.iter() {
                 let network = &container.config.network;
                 if network.is_empty() {
-                    break;
+                    continue;
                 } 
 
                 let existing_networks = docker::get_all_networks();
@@ -322,7 +351,7 @@ pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<
             for (_, container) in manager.containers.iter() {
                 let network = &container.config.network;
                 if network.is_empty() {
-                    break;
+                    continue;
                 } 
 
                 let existing_networks = docker::get_all_networks();

@@ -6,7 +6,7 @@ use crate::shared::traits::Spawner;
 
 use super::Process;
 
-impl Spawner<()> for Process {
+impl Spawner for Process {
     fn build(&mut self) {
         info!("Building Process");
        

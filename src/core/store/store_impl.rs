@@ -5,7 +5,7 @@ use crate::shared::traits::Spawner;
 
 use super::Store;
 
-impl Spawner<()> for Store {
+impl Spawner for Store {
     fn build(&mut self) {
         info!("Building Store");
 

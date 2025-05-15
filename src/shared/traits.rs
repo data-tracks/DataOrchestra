@@ -1,6 +1,6 @@
 use super::Amount;
 
-pub trait Spawner<T> {
+pub trait Spawner {
     fn build(&mut self);
     fn setup(&mut self);
     fn deploy(&mut self);
