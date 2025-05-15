@@ -34,7 +34,11 @@ struct Args {
 
     /// Generate a valid config file 
     #[arg(long = "generate_valid_json", default_value_t = false)]
-    generate_valid_json: bool
+    generate_valid_json: bool,
+
+    /// Skip the portainer manager setup
+    #[arg(long = "no_portainer", default_value_t = false)]
+    no_portainer: bool
 }
 
 pub fn print_logo() {
@@ -79,7 +83,7 @@ fn main() {
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
-    let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
+    let mut config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     // Parse to internal structure
@@ -88,6 +92,8 @@ fn main() {
     let mut generates: Vec<Generate> = config.generate.to_internal();
  
     health_check(&stores, &processes, &generates);
+
+    config.portainer.build(); 
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
@@ -281,7 +287,7 @@ pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<
                     break;
                 } 
 
-                let existing_networks = docker::get_networks();
+                let existing_networks = docker::get_all_networks();
                 if !existing_networks.contains(network) {
                     let result = docker::create_network(network);
                     if let Err(error) = result {
@@ -300,7 +306,7 @@ pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<
                     break;
                 } 
 
-                let existing_networks = docker::get_networks();
+                let existing_networks = docker::get_all_networks();
                 if !existing_networks.contains(network) {
                     let result = docker::create_network(network);
                     if let Err(error) = result {
@@ -319,7 +325,7 @@ pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<
                     break;
                 } 
 
-                let existing_networks = docker::get_networks();
+                let existing_networks = docker::get_all_networks();
                 if !existing_networks.contains(network) {
                     let result = docker::create_network(network);
                     if let Err(error) = result {

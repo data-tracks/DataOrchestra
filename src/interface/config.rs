@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use log::debug;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use crate::core::adapters::portainer::portainer::Portainer;
 use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
 use crate::core::process::types::Kafka;
 use crate::shared::{Amount, File};
@@ -16,6 +17,7 @@ use super::docker::ExtDocker;
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Config {
+    pub portainer: Portainer,
     #[serde(default)]
     pub variables: HashMap<String, String>,
     #[serde(default)]
