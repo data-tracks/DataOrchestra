@@ -8,7 +8,7 @@ use crate::shared::ToInternal;
 #[serde(rename_all="camelCase")]
 pub struct ExtNode {
     pub name: Option<String>,
-    pub ip: Option<IpAddr>,
+    pub host: Option<IpAddr>,
     pub username: Option<String>,
     pub password: Option<String>
 }
@@ -21,8 +21,8 @@ impl ToInternal<Node> for ExtNode {
             node.name = name;
         }
 
-        if let Some(ip) = self.ip {
-            node.ip = ip
+        if let Some(ip) = self.host {
+            node.host = ip
         }
 
         if let Some(user) = self.username {

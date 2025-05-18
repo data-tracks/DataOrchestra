@@ -1,2 +1,2 @@
 pub mod portainer;
-pub mod api;
+pub use portainer::*;

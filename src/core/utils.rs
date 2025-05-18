@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use std::path::Path;
 use super::adapters::command::command_func::spawn_command;
 use super::adapters::docker::{Container, DockerManager};
-use super::adapters::Executor;
+use super::adapters::{ContainerType, Runner, Uploader};
 use super::types::Data;
 use super::adapters::ssh::Ssh;
 
@@ -18,7 +19,7 @@ pub fn start_script(ssh: &Ssh, data: &Data) -> Result<(), String> {
 }
 
 /// Start ansible on remote object
-pub fn start_ansible(ansible: String, port: u16) -> Result<(), String>{
+pub fn start_ansible(port: u16) -> Result<(), String>{
     let script_path = "scripts/ansible/ansible-setup.yml";
     if Path::new(&script_path).is_file() {
         let _ = spawn_command(&format!("ansible-playbook {} -e \"port={}\"", script_path, port)).wait();
@@ -56,8 +57,22 @@ pub fn iter_combine_data<'a>(manager: &'a DockerManager, data: &'a Vec<Data>) ->
     }
     else 
     {
+        let mut mapped_all_containers = HashMap::<&String, &Container>::new();
+        for (_, item) in manager.containers.iter() {
+            match item {
+                ContainerType::Compose(compose) => {
+                    for container in compose.containers.iter() {
+                        mapped_all_containers.insert(container.config.name.as_ref().unwrap(), container);
+                    } 
+                }
+                ContainerType::Container(container) => {
+                    mapped_all_containers.insert(container.config.name.as_ref().unwrap(), container);
+                }
+            }
+        }
+
         for d in data {
-            if let Some(ref mut container) = manager.containers.get(&d.name) {
+            if let Some(ref mut container) = mapped_all_containers.get(&d.name) {
                 vec_container.push(container);
                 vec_data.push(d);
             }
@@ -80,7 +95,7 @@ pub fn upload_data(manager: &DockerManager, vec_data: &Vec<Data>) -> Result<(), 
 
             if let Some(ref dependency) = data.dependency {
                 let dependency_path= Path::new(dependency);
-                ssh.exec("mkdir /scripts")?;
+                ssh.exec("mkdir /scripts".to_string())?;
                 ssh.upload_file(dependency_path, Path::new(&format!("/scripts/{}", &dependency_path.file_name().unwrap().to_str().unwrap())))?;
                 ssh.exec(format!("sh /scripts/{}", dependency_path.file_name().unwrap().to_str().unwrap()))?;
             }

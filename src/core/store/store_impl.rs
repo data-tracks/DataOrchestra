@@ -1,5 +1,6 @@
 use log::{info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
+use crate::core::adapters::{manager, ContainerType, Runner};
 use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
@@ -8,6 +9,8 @@ use super::Store;
 impl Spawner for Store {
     fn build(&mut self) {
         info!("Building Store");
+
+        let mut manager = DockerManager::new();
 
         // Create default config of specified database type `StoreType` if none was
         // specified
@@ -19,8 +22,8 @@ impl Spawner for Store {
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
         if let Some(group) = self.object.docker_group_builder.take() {
             info!("Setting up docker compose");
-            let compose_group = group.build();
-            self.object.docker_group = Some(compose_group); 
+            let compose = group.build();  
+            manager.add("",ContainerType::Compose(compose));
         }  
         // Take ownership of ContainerBuilder out of object to prevent partial move
         else if let Some(mut container) = self.object.docker_container_builder.take() {
@@ -37,8 +40,16 @@ impl Spawner for Store {
                 }
             }
 
-            let container = container.build();
-            self.object.docker_container = Some(container);
+            let mut container = container.build();
+            if let Some(ref node) = self.object.node {
+                let ssh: Option<Box<dyn Runner + Send>> = match &node.ssh {
+                    Some(item) => Some(Box::new(item.clone())),
+                    None => panic!()
+                };
+
+                container.runner = ssh;
+            }
+            manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));
         }
 
         info!("Finished building Store");
@@ -51,16 +62,8 @@ impl Spawner for Store {
 
         // Start containers and move to manager
         if let Some(ref mut manager) = self.object.docker_manager {
-            if let Some(mut compose) = self.object.docker_group.take() {
-                let _result = compose.run();
-                for container in compose.containers {
-                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
-                }
-            }
-
-            if let Some(mut container) = self.object.docker_container.take() {
-                let _result = container.run();
-                manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+            for (_, item) in manager.containers.iter_mut() {
+                let result = item.run();
             }
 
             // Run ansible setup script on all containers

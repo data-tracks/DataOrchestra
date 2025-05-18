@@ -1,5 +1,9 @@
+use core::panic;
+use std::net::{IpAddr, Ipv4Addr};
+
 use log::{info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
+use crate::core::adapters::{ContainerType, Runner};
 use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
@@ -9,37 +13,85 @@ impl Spawner for Generate {
     fn build(&mut self) {
         info!("Building Generate");
 
-        if let Some(group) = self.object.docker_group_builder.take() {
-            info!("Setting up docker compose");
-            let compose_group = group.build();
-            self.object.docker_group = Some(compose_group);
+        let mut manager = DockerManager::new();
+
+        if let Some(ref mut node) = self.object.node {
+            let result = node.load_ssh();
+            if let Err(error) = result {
+                panic!("Unable to setup ssh for {} {}", node.host, error);
+            }
         }
 
-        else if let Some(container) = self.object.docker_container_builder.take() {
-            info!("Setting up docker container");
-            let container = container.build();
-            self.object.docker_container = Some(container);
+        if let Some(group) = self.object.docker_group_builder.take() {
+            info!("Setting up docker compose");
+            let compose = group.build();
+            //TODO: Key name for compose
+            manager.add("", ContainerType::Compose(compose));
         }
+
+        else if let Some(mut container) = self.object.docker_container_builder.take() {
+            info!("Setting up docker container");
+            let mut container = container.build();
+            // TODO: Add local runner
+            if let Some(ref node) = self.object.node {
+                let ssh: Option<Box<dyn Runner + Send>> = match &node.ssh {
+                    Some(item) => Some(Box::new(item.clone())),
+                    None => panic!()
+                };
+
+                container.runner = ssh;
+
+            }
+            manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));
+        }
+
+        self.object.docker_manager = Some(manager);
 
         info!("Finished building Generate");
     }
 
     fn setup(&mut self) {
         info!("Setting up Generate");
-
-        self.object.docker_manager = Some(DockerManager::new());
-            
         if let Some(ref mut manager) = self.object.docker_manager {
-            if let Some(mut compose) = self.object.docker_group.take() {
-                let _result = compose.run();
-                for container in compose.containers {
-                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+            for (_, item) in manager.containers.iter_mut() {
+                let result = item.run();
+                if let Err(error) = result {
+                    panic!("{}", error);
                 }
-            }
+                match item { 
+                    ContainerType::Compose(compose) => {
+                        for container in compose.containers.iter_mut() {
+                            if let Some(ref node) = self.object.node {
+                                let result = container.load_ssh(node.host);
+                                if let Err(error) = result {
+                                    error!("Unable to load ssh connection for {} {}", node.host, error);
+                                }        
+                            }
+                            else {
+                                let result = container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST));
+                                if let Err(error) = result {
+                                    error!("Unable to load ssh connection for localhost {}", error);
+                                }  
+                            }
+                        }
+                    }
+                    ContainerType::Container(container ) => {
+                        if let Some(ref node) = self.object.node {
+                            let result = container.load_ssh(node.host);
+                            if let Err(error) = result {
+                                error!("Unable to load ssh connection for {} {}", node.host, error);
+                            }    
+                            else {
+                                let result = container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST));
+                                if let Err(error) = result {
+                                    error!("Unable to load ssh connection for localhost {}", error);
+                                } 
+                            }
+                        }
+                    }
+                }
 
-            if let Some(mut container) = self.object.docker_container.take() {
-                let _result = container.run();
-                manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+                
             }
 
             for container in manager.as_vec() {

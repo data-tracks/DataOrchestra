@@ -2,6 +2,7 @@ use core::fmt;
 
 use ssh2::Session;
 
+#[derive(Clone)]
 pub struct Ssh {
     pub session: Session
 }

@@ -7,11 +7,10 @@ use walkdir::{DirEntry, WalkDir};
 use std::{fs, io};
 use log::{debug, error};
 use crate::core::adapters::ssh::ssh::Ssh;
-use crate::core::adapters::Executor;
+use crate::core::adapters::traits::{Runner, Uploader};
 
-
-impl Executor for Ssh {
-    fn new() -> Ssh {
+impl Ssh {
+    pub fn new() -> Ssh {
         Ssh { session: Session::new().unwrap()  }
     }
 
@@ -21,7 +20,7 @@ impl Executor for Ssh {
     /// 
     /// See <https://github.com/libssh2/libssh2/blob/master/include/libssh2.h> for relevant error
     /// codes
-    fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
+    pub fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
         let address: String = format!("{}:{}", host, port);
         debug!("Connecting to Ssh client {} with {}@{}", &address, &username, &password);
         let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
@@ -38,9 +37,15 @@ impl Executor for Ssh {
         if let Err(ref error) = handshake {
             return Err(format!("Unsuccessful handshake {}", error));
         }
-        
-        let authentication: Result<(), ssh2::Error> = self.session.userauth_password(username, password);
+        let authentication: Result<(), ssh2::Error>;
 
+        if true {
+            authentication = self.session.userauth_pubkey_file(username, None, Path::new("/home/mathieu/.ssh/id_ed25519"), None);
+        }
+        else {
+            authentication = self.session.userauth_password(username, password);
+        }
+        
         if let Err(ref error) = authentication {
             return Err(format!("Unsuccessful authentication {}", error));
         }
@@ -51,10 +56,12 @@ impl Executor for Ssh {
 
         Ok(())
     }
+}
 
+
+impl Runner for Ssh {
     /// Execute command over Ssh connection
-    fn exec<T: Into<String>>(&self, command: T) -> Result<String, String> {
-        let command = command.into();
+    fn exec(&self, command: String) -> Result<String, String> {
         debug!("Executing command [{}]", &command);
         let channel: Result<Channel, ssh2::Error> = self.session.channel_session();
 
@@ -83,9 +90,14 @@ impl Executor for Ssh {
 
         Ok(result)
     }
-    
+}   
+
+impl<T, S> Uploader<T, S> for Ssh where 
+    T: AsRef<Path>,
+    S: AsRef<Path>
+{
     /// Upload file to remote server via Ssh
-    fn upload_file<T: AsRef<Path>, S: AsRef<Path>>(&self, file: T, location: S) -> Result<(), String>{
+    fn upload_file(&self, file: T, location: S) -> Result<(), String>{
         let file = file.as_ref();
         let location = location.as_ref();
         assert!(file.is_file());
@@ -117,7 +129,7 @@ impl Executor for Ssh {
     /// # Return
     ///
     /// [`Result`] type with the parent directory of the files on success or error message.
-    fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, destination: S) -> Result<(), String> {
+    fn upload_directory(&self, dir: T, destination: S) -> Result<(), String> {
         let dir = dir.as_ref();
         let destination = destination.as_ref();
         assert!(dir.is_dir());
@@ -136,7 +148,7 @@ impl Executor for Ssh {
                     // Copy to / directory
                     let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
                     if entry.file_type().is_dir() {
-                        let _ = self.exec(format!("mkdir /{}", remote_path).as_str());
+                        let _ = self.exec(format!("mkdir /{}", remote_path));
                     }
                     else {
                         let result = self.upload_file(entry.path(), &Path::new(&remote_path));

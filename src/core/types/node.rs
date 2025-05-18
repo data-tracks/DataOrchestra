@@ -1,13 +1,11 @@
 use std::net::{IpAddr, Ipv4Addr};
 
-use crate::core::adapters::Executor;
-use crate::shared::address::Address;
 use crate::core::adapters::ssh::Ssh;
 
 #[derive(Debug)]
 pub struct Node {
     pub name: String,
-    pub ip: IpAddr,
+    pub host: IpAddr,
     pub username: String,
     pub password: String,
     pub ssh: Option<Ssh>
@@ -18,7 +16,7 @@ impl Node {
         Node
         {
             name: "Node".to_string(),
-            ip: IpAddr::V4(Ipv4Addr::LOCALHOST) ,
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST) ,
             username: "root".to_string(),
             password: "password".to_string(),
             ssh: None
@@ -27,7 +25,7 @@ impl Node {
 
     pub fn load_ssh(&mut self) -> Result<(), String> {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect(&self.ip.to_string(), self.get_ssh_port().unwrap(), &self.username, &self.password);
+        let _ = ssh.connect(&self.host.to_string(), self.get_ssh_port().unwrap(), &self.username, &self.password);
 
         self.ssh = Some(ssh);
         Ok(())

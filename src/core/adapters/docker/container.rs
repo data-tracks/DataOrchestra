@@ -4,9 +4,9 @@ use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
 use log::{debug, error};
-use crate::core::adapters::command::command_func::{output_command, spawn_command, status_command};
 use crate::core::adapters::ssh::Ssh;
-use crate::core::adapters::{Executor, OsSystems};
+use crate::core::adapters::traits::Runner;
+use crate::core::adapters::OsSystems;
 
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
@@ -34,6 +34,8 @@ pub struct Container {
     pub config: ContainerConfig,
     /// Container creation source
     pub source: DockerSource,
+    /// Local or remote command runner 
+    pub runner: Option<Box<dyn Runner + Send>>
 }
 
 #[derive(Debug)]
@@ -97,6 +99,11 @@ impl ContainerBuilder {
         self
     }
 
+    pub fn set_expose(&mut self, expose: bool) -> &mut Self {
+        self.containerconfig.set_expose(expose);
+        self
+    }
+
     pub fn build(self) -> Container {
         Container 
         {
@@ -107,7 +114,8 @@ impl ContainerBuilder {
             source: self.dockersource.build(),
             is_running: false,
             publish_ports: Vec::new(),
-            ssh: None
+            ssh: None,
+            runner: None
         }
     }
 } 
@@ -122,8 +130,9 @@ impl Container {
             publish_ports: Vec::new(), 
             is_running: false, 
             ssh: None,
+            runner: None,
             config, 
-            source 
+            source,
         }
     }
 
@@ -207,9 +216,6 @@ impl Run for Container {
         // Install ssh server
         let _ = self.install_ssh();
 
-        // Set ssh client
-        let _ = self.load_ssh();
-
         Ok(())     
     }
 }
@@ -217,11 +223,16 @@ impl Run for Container {
 impl Container {
     fn build_from_dockerfile(&mut self) {
         if let Some(ref name) = self.source.image {
-            let mut building_args = String::new();
-            for (key, value) in self.source.build_args.iter() {
-                building_args = format!("{building_args} {key}={value}");
+            if let Some(ref runner) = self.runner {
+                let mut building_args = String::new();
+                for (key, value) in self.source.build_args.iter() {
+                    building_args = format!("{building_args} {key}={value}");
+                }
+                runner.exec(format!("docker build -t {name} --build-arg {building_args}"));
             }
-            output_command(format!("docker build -t {name} --build-arg {building_args}"));
+            else {
+                panic!("No runner availible for docker container");
+            }
         }
         else {
             panic!("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} ");
@@ -229,39 +240,54 @@ impl Container {
     }
     fn build_from_image(&mut self) {
         // Create image
-        let id = output_command(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));
-        self.set_id(id.trim().to_string().replace("\n", ""));
+        if let Some(ref runner) = self.runner {
+            let id = runner.exec(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));
+            match id {
+                Ok(id) => self.set_id(id.trim().to_string().replace("\n", "")),
+                Err(error) => error!("{}", error)
+            }
+        }
+        else {
+            panic!("No runner availible for docker container");
+        }
     }
 
     pub fn load_ip(&mut self) -> Result<(), String> {
-        let ip = output_command(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()));
-        let ip = ip.replace("\n", "").trim().to_string();
-        let ip = Ipv4Addr::from_str(ip.as_str());
-        if let Ok(ip) = ip {
-            self.ip = Some(IpAddr::V4(ip));
-        }
-        else if let Err(err) = ip {
-            return Err(err.to_string());
+        if let Some(ref runner) = self.runner {
+            let ip = runner.exec(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()))?;
+            let ip = ip.replace("\n", "").trim().to_string();
+            let ip = Ipv4Addr::from_str(ip.as_str());
+            if let Ok(ip) = ip {
+                self.ip = Some(IpAddr::V4(ip));
+            }
+            else if let Err(err) = ip {
+                return Err(err.to_string());
+            }
         }
         
         Ok(()) 
     }
 
     pub fn load_ports(&mut self) -> Result<(), String> {
-        let ports = output_command(format!("docker port {}", self.id.as_ref().unwrap()));
-        for port in ports.split("\n").filter(|x| !x.is_empty()) {
-            let (int, ext) = port.split_once("/").unwrap();
-            let int = int.parse::<u16>().unwrap();
-            let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
-            self.add_port_mapping(ext, int);
+        if let Some(ref runner) = self.runner {
+            let ports = runner.exec(format!("docker port {}", self.id.as_ref().unwrap()))?;
+            for port in ports.split("\n").filter(|x| !x.is_empty()) {
+                let (int, ext) = port.split_once("/").unwrap();
+                let int = int.parse::<u16>().unwrap();
+                let ext = ext.split(":").last().unwrap().parse::<u16>().unwrap();
+                self.add_port_mapping(ext, int);
+            }
+        }
+        else {
+            panic!("No runner availible for docker container");
         }
 
         Ok(())
     }
 
-    pub fn load_ssh(&mut self) -> Result<(), String> {
+    pub fn load_ssh(&mut self, host: IpAddr) -> Result<(), String> {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect(&"127.0.0.1".to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
+        let _ = ssh.connect(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
 
         self.ssh = Some(ssh);
         Ok(())
@@ -269,21 +295,26 @@ impl Container {
 
     /// Get os system of container
     pub fn load_os(&mut self) -> Result<(), String> {
-        let result = output_command(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()));
-        let keys = result.split("\n");
-        for entry in keys {
-            let pair = entry.split_once("=").unzip();
-            if let (Some(key), Some(value)) = pair {
-                if key.eq("ID") {
-                    let os = OsSystems::from_str(value);
-                    if let Ok(os) = os {
-                        self.os = Some(os);
-                    }
-                    else {
-                        error!("Unable to get os for container {}", self.config.name.as_ref().unwrap());
-                    }
+        if let Some(ref runner) = self.runner {
+            let result = runner.exec(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()))?;
+            let keys = result.split("\n");
+            for entry in keys {
+                let pair = entry.split_once("=").unzip();
+                if let (Some(key), Some(value)) = pair {
+                    if key.eq("ID") {
+                        let os = OsSystems::from_str(value);
+                        if let Ok(os) = os {
+                            self.os = Some(os);
+                        }
+                        else {
+                            error!("Unable to get os for container {}", self.config.name.as_ref().unwrap());
+                        }
+                    } 
                 } 
-            } 
+            }
+        }
+        else {
+            panic!("No runner availible for docker container");
         }
 
         Ok(()) 
@@ -293,21 +324,21 @@ impl Container {
         debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
 
         // Set correct install script for different distros
-        if let Some(ref os) = self.os {
+        if let (Some(ref os), Some(ref runner)) = (&self.os, &self.runner) {
             match os {
                 OsSystems::Debian => {
                     let script = String::from("apt_ssh_setup.sh");
 
                     // Reformat sh script for linux distro
                     if cfg!(target_os = "windows") {
-                        spawn_command(&format!("dos2unix scripts/docker/{}", script));
+                        let result = runner.exec(format!("dos2unix scripts/docker/{}", script));
                     }
 
-                    let _ = spawn_command(&format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap())).wait();
-                    let _ = status_command(&format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script));
+                    let _ = runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()));
+                    let _ = runner.exec(format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script));
                     
                     // Start ssh server
-                    let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
+                    let _ = runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()));
 
                 },
                 OsSystems::Alpine => {
@@ -315,17 +346,20 @@ impl Container {
 
                     // Reformat sh script for alpine distro
                     if cfg!(target_os = "windows") {
-                        spawn_command(&format!("dos2unix scripts/docker/{}", script));
+                        runner.exec(format!("dos2unix scripts/docker/{}", script));
                     }
                     
-                    let _ = spawn_command(&format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap())).wait();
-                    let _ = status_command(&format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script));
+                    let _ = runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()));
+                    let _ = runner.exec(format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script));
                     
                     // Start ssh server
-                    let _ = spawn_command(&format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap())).wait();
+                    let _ = runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()));
                 }
                 _ => ()
             };
+        }
+        else if self.runner.is_none() {
+            panic!("No runner availible for docker container");
         }
         
         

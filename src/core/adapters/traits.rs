@@ -1,9 +1,10 @@
-use std::path::Path;
+use std::fmt::Debug;
 
-pub trait Executor {
-    fn new() -> Self;
-    fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String>;
-    fn upload_file<T: AsRef<Path>, S: AsRef<Path>>(&self, file: T, destination: S) -> Result<(), String>;
-    fn upload_directory<T: AsRef<Path>, S: AsRef<Path>>(&self, dir: T, destination: S) -> Result<(), String>;
-    fn exec<T: Into<String>>(&self, command: T) -> Result<String, String>;
+pub trait Runner: Debug {
+    fn exec(&self, command: String) -> Result<String, String>;
+}
+
+pub trait Uploader<T, S>: Debug {
+    fn upload_file(&self, file: T, destination: S) -> Result<(), String>;
+    fn upload_directory(&self, dir: T, destination: S) -> Result<(), String>;
 }

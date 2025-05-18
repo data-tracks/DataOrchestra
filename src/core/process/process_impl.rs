@@ -1,6 +1,6 @@
 use log::{info, debug, error};
 use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager, Run};
-use crate::core::process::process_types::ProcessTypeConfig;
+use crate::core::adapters::{ContainerType, Runner};
 use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
@@ -9,7 +9,9 @@ use super::Process;
 impl Spawner for Process {
     fn build(&mut self) {
         info!("Building Process");
-       
+        
+        let mut manager = DockerManager::new();
+
         if let Some(ref process) = self.process_type {
             debug!("Setting up {:?} enviroment", process);
 
@@ -21,19 +23,27 @@ impl Spawner for Process {
 
             let mut compose = ComposeGroupBuilder::new();
             config.setup_container(&mut compose);
-            self.object.docker_group_builder = Some(compose);
         }
 
         // Take ownership of ContainerBuilder out of object to prevent partial move
         if let Some(group) = self.object.docker_group_builder.take() {
             info!("Setting up docker compose");
-            let compose_group = group.build();
-            self.object.docker_group = Some(compose_group); 
+            let compose = group.build();
+            manager.add("", ContainerType::Compose(compose));
         }
         else if let Some(container) = self.object.docker_container_builder.take() {
             info!("Setting up docker container");
-            let container = container.build();
-            self.object.docker_container = Some(container); 
+            let mut container = container.build();
+
+            if let Some(ref node) = self.object.node {
+                let ssh: Option<Box<dyn Runner + Send>> = match &node.ssh {
+                    Some(item) => Some(Box::new(item.clone())),
+                    None => panic!()
+                };
+
+                container.runner = ssh;
+            }
+            manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));
         }
 
         info!("Finished building Process");
@@ -46,16 +56,11 @@ impl Spawner for Process {
 
         // Start containers and move to manager
         if let Some(ref mut manager) = self.object.docker_manager {
-            if let Some(mut compose) = self.object.docker_group.take() {
-                let _result = compose.run();
-                for container in compose.containers {
-                    manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
+            for (_, item) in manager.containers.iter_mut() {
+                let result = item.run();
+                if let Err(error) = result {
+                    panic!("{}", error);
                 }
-            }
-
-            if let Some(mut container) = self.object.docker_container.take() {
-                let _result = container.run();
-                manager.add_container(container.config.name.as_ref().unwrap().clone(), container);
             }
 
             // Run ansible setup script on all containers
@@ -74,6 +79,7 @@ impl Spawner for Process {
                 panic!("Unable to upload data {}", error);
             }
 
+            /*
             if let Some(ref config) = self.config {
                 match config {
                     ProcessTypeConfig::Kafka(kafka) => {
@@ -87,6 +93,7 @@ impl Spawner for Process {
                     _ => ()
                 }
             }
+            */
         }
 
         info!("Finished setting up Process");

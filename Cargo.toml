@@ -8,8 +8,17 @@ edition = "2021"
 log = "0.4"
 env_logger = "0.11.7"
 
+# Builder
+bon = "3.6"
+
 # Console argument parser
 clap = { version = "4.5.37", features = ["derive"] }
+
+# HTTP(s) request
+reqwest = { version = "0.12", features = ["json"] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
 
 # Json parser
 serde = { version = "1.0.219", features = ["derive"] }
@@ -18,8 +27,11 @@ serde_json = "1.0.140"
 # Yaml parser
 yaml-rust = "0.4"
 
+# Ssh library
 ssh2 = "0.9.5"
 
+# CMD colors
 ansi_term = "0.12.1"
 
+# Dir traverser
 walkdir = "2.5.0"

@@ -77,7 +77,6 @@ impl Run for ComposeGroup {
                 .peekable();
             if has_ssh.peek().is_some() { 
                 let _result = container.install_ssh();
-                let _result = container.load_ssh();
             }
             else {
                 warn!("No ssh port exposed for {}. Additional functionality is lost. Consider adding the ssh port <external>:22 to the published ports", container.config.name.as_ref().unwrap());

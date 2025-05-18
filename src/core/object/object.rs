@@ -12,8 +12,6 @@ use crate::core::types::Node;
 pub struct Object {
     pub docker_group_builder: Option<ComposeGroupBuilder>,
     pub docker_container_builder: Option<ContainerBuilder>,
-    pub docker_group: Option<ComposeGroup>,
-    pub docker_container: Option<Container>,
     pub docker_manager: Option<DockerManager>,
     pub start: Option<String>,
     pub node: Option<Node>,
@@ -30,8 +28,6 @@ impl Default for Object {
         Object { 
             docker_group_builder: None,
             docker_container_builder: None, 
-            docker_group: None,
-            docker_container: None,
             docker_manager: None,
             start: None, 
             node: None, 

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use super::Container;
+use super::{Container, ContainerType};
 
 #[derive(Debug)]
 pub struct DockerManager {
-    pub containers: HashMap<String ,Container>
+    pub containers: HashMap<String , ContainerType>
 }
 
 impl DockerManager {
@@ -29,7 +29,7 @@ impl DockerManager {
     }
 
     /// Add a container to the manager
-    pub fn add_container<S: Into<String>>(&mut self, key: S, value: Container) -> &mut Self {
+    pub fn add<S: Into<String>>(&mut self, key: S, value: ContainerType) -> &mut Self {
         self.containers.insert(key.into(), value);
         self
     }
@@ -37,8 +37,15 @@ impl DockerManager {
     /// Get Containers of manager as a reference vector
     pub fn as_vec(&self) -> Vec<&Container> {
         let mut vec = Vec::new();
-        for (_, container) in &self.containers {
-            vec.push(container);
+        for (_, container_type) in &self.containers {
+            match container_type {
+                ContainerType::Container(container) => vec.push(container),
+                ContainerType::Compose(compose) => {
+                    for container in compose.containers.iter() {
+                        vec.push(container);
+                    }              
+                }
+            }
         } 
 
         vec

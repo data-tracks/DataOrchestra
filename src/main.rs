@@ -3,19 +3,23 @@ use std::fs::File;
 use std::io::{stdin, stdout, Write};
 use std::path::Path;
 use std::process::exit;
+use std::sync::OnceLock;
 use std::thread::{self};
-use data_orchestra::core::adapters::ping;
+use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Portainer};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
+use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::Config;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
-use log::{info, warn, LevelFilter};
+use log::{info, warn, error, LevelFilter};
 
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
 
 use clap::Parser;
+
+static ARGS: OnceLock<Args> = OnceLock::new();
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -38,7 +42,11 @@ struct Args {
 
     /// Skip the portainer manager setup
     #[arg(long = "no_portainer", default_value_t = false)]
-    no_portainer: bool
+    no_portainer: bool,
+
+    // Authorized ssh key for remote connections
+    //#[arg(short, long)]
+    //ssh_key: String 
 }
 
 pub fn print_logo() {
@@ -59,7 +67,7 @@ fn main() {
 
     // Read starting arguments
     let args: Args = Args::parse();
-
+    
     if args.generate_valid_json {
         println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
         exit(-1);
@@ -73,9 +81,9 @@ fn main() {
 
     if args.remove_all {
         info!("Removing and deleting all docker containers");
-        docker::stop_all_containers();
-        docker::remove_all_containers();
-        docker::remove_all_networks();
+        //docker::stop_all_containers();
+        //docker::remove_all_containers();
+        //docker::remove_all_networks();
         info!("Deleted all docker containers");
     }
 
@@ -83,17 +91,23 @@ fn main() {
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
-    let mut config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
+    let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
-    // Parse to internal structure
+    let result = ARGS.set(args);
+    if result.is_err() {
+        panic!("Unable to setup CLI arguments as global static");
+    }
+
+    // Parse to internal structure and move everything out of config
     let mut stores: Vec<Store> = config.store.to_internal();
     let mut processes: Vec<Process> = config.process.to_internal();
     let mut generates: Vec<Generate> = config.generate.to_internal();
- 
+    let mut portainer = config.portainer;
+
     health_check(&stores, &processes, &generates);
 
-    config.portainer.build(); 
+    portainer.build(); 
 
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
@@ -125,7 +139,7 @@ fn main() {
         }
     });
 
-    pre_setup(&stores, &processes, &generates);
+    pre_setup(&portainer, &stores, &processes, &generates);
    
     thread::scope(|s| {
         for store in stores.iter_mut() {
@@ -203,7 +217,7 @@ fn main() {
                 for store in stores.iter() {
                     let mut store_format = String::new();
                     if let Some(ref node) = store.object.node {
-                        store_format = format!("{store_format}-ip: {}\n", node.ip);
+                        store_format = format!("{store_format}-ip: {}\n", node.host);
                     }
                     println!("{}", store_format);
                 }
@@ -212,7 +226,7 @@ fn main() {
                 for process in processes.iter() {
                     let mut process_format = String::new();
                     if let Some(ref node) = process.object.node {
-                        process_format = format!("{process_format}-ip: {}\n", node.ip);
+                        process_format = format!("{process_format}-ip: {}\n", node.host);
                     }
                     println!("{}", process_format);
                 }
@@ -221,7 +235,7 @@ fn main() {
                 for generate in generates.iter() {
                     let mut generate_format = String::new();
                     if let Some(ref node) = generate.object.node {
-                        generate_format = format!("{generate_format}-ip: {}\n", node.ip);
+                        generate_format = format!("{generate_format}-ip: {}\n", node.host);
                     }
                     println!("{}", generate_format);
                 }
@@ -279,27 +293,27 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
 
     for store in stores.iter() {
         if let Some(ref node) = store.object.node {
-            let result = ping::ping(&node.ip);
+            let result = ping::ping(&node.host);
             if let Err(error) = result {
-                panic!("[{}] {}", node.ip, error);
+                panic!("[{}] {}", node.host, error);
             }
         }
     }
 
     for process in processes.iter() {
         if let Some(ref node) = process.object.node {
-            let result = ping::ping(&node.ip);
+            let result = ping::ping(&node.host);
             if let Err(error) = result {
-                panic!("[{}] {}", node.ip, error);
+                panic!("[{}] {}", node.host, error);
             }
         }
     }
 
     for generate in generates.iter() {
         if let Some(ref node) = generate.object.node {
-            let result = ping::ping(&node.ip);
+            let result = ping::ping(&node.host);
             if let Err(error) = result {
-                panic!("[{}] {}", node.ip, error);
+                panic!("[{}] {}", node.host, error);
             }
         }
     }
@@ -307,62 +321,68 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
     info!("Health check complete. All systems green");
 }
 
-pub fn pre_setup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
-    for store in stores.iter() {
-        if let Some(ref manager) = store.object.docker_manager {
-            for (_, container) in manager.containers.iter() {
+pub fn setup_docker_networks(manager: &DockerManager) {
+    for (_, item) in manager.containers.iter() {
+        match item {
+            ContainerType::Container(container) => {
                 let network = &container.config.network;
                 if network.is_empty() {
                     continue;
                 } 
 
-                let existing_networks = docker::get_all_networks();
-                if !existing_networks.contains(network) {
-                    let result = docker::create_network(network);
-                    if let Err(error) = result {
-                        panic!("Unable to create docker network. {}", error);
+                if let Some(ref runner) = container.runner {
+                    let existing_networks = docker::api::get_networks(Some(runner));
+                    if let Err(ref error) = existing_networks {
+                        error!("{}", error);
+                    }
+                    let existing_networks = existing_networks.unwrap();
+
+                    if !existing_networks.contains(network) {
+                        let result = docker::api::create_network(network, Some(runner));
+                    }
+                }
+                else {
+                    let existing_networks = docker::api::get_networks(None);
+                    if let Err(ref error) = existing_networks {
+                        error!("{}", error);
+                    }
+                    let existing_networks = existing_networks.unwrap();
+
+                    if !existing_networks.contains(network) {
+                        let result = docker::api::create_network(network, None);
                     }
                 }
             }
+            _ => ()
+        } 
+    }
+}
+
+pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+    info!("Performing pre setup");
+
+    info!("Copying necessary scripts");
+    for store in stores.iter() {
+        if let Some(ref manager) = store.object.docker_manager {
+            setup_docker_networks(manager); 
         }
     }
 
     for process in processes.iter() {
         if let Some(ref manager) = process.object.docker_manager {
-            for (_, container) in manager.containers.iter() {
-                let network = &container.config.network;
-                if network.is_empty() {
-                    continue;
-                } 
-
-                let existing_networks = docker::get_all_networks();
-                if !existing_networks.contains(network) {
-                    let result = docker::create_network(network);
-                    if let Err(error) = result {
-                        panic!("Unable to create docker network. {}", error);
-                    }
-                }
-            }
+            setup_docker_networks(manager); 
         }
     }
 
     for generate in generates.iter() {
         if let Some(ref manager) = generate.object.docker_manager {
-            for (_, container) in manager.containers.iter() {
-                let network = &container.config.network;
-                if network.is_empty() {
-                    continue;
-                } 
-
-                let existing_networks = docker::get_all_networks();
-                if !existing_networks.contains(network) {
-                    let result = docker::create_network(network);
-                    if let Err(error) = result {
-                        panic!("Unable to create docker network. {}", error);
-                    }
-                }
-            }
+            setup_docker_networks(manager); 
         }
+    }
+    
+    let nodes = get_nodes(stores, processes, generates);
+    for node in nodes {
+        portainer.create_agent(node);
     }
 }
 
@@ -379,4 +399,34 @@ pub fn cleanup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Ge
     }
 
     info!("Cleanup complete");
+}
+
+pub fn get_nodes<'a>(stores: &'a Vec<Store>, processes: &'a Vec<Process>, generates: &'a Vec<Generate>) -> Vec<&'a Node> {
+    let mut nodes = Vec::<&'a Node>::new();
+
+    for store in stores.iter() {
+        if let Some(ref node) = store.object.node {
+            if nodes.iter().any(|x| x.host.eq(&node.host)) {
+                nodes.push(node);
+            }
+        }
+    }
+
+    for process in processes.iter() {
+        if let Some(ref node) = process.object.node {
+            if nodes.iter().any(|x| x.host.eq(&node.host)) {
+                nodes.push(node);
+            }
+        }
+    }
+
+    for generate in generates.iter() {
+        if let Some(ref node) = generate.object.node {
+            if nodes.iter().any(|x| x.host.eq(&node.host)) {
+                nodes.push(node);
+            }
+        }
+    } 
+
+    nodes
 }

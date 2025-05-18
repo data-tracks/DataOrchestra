@@ -7,7 +7,8 @@ pub struct ContainerConfig {
     pub enviroment: HashMap<String, String>,
     pub mount: Vec<String>,
     pub publish: Vec<u16>,
-    pub publish_all: bool
+    pub publish_all: bool,
+    pub expose: bool 
 }
 
 impl ContainerConfig {
@@ -20,6 +21,10 @@ impl ContainerConfig {
         // Parse name variable
         if let Some(ref name) = self.name {
             command = format!("{command} --name={}", name);
+        }
+
+        if self.expose {
+            command = format!("{command} --expose");
         }
     
         if self.publish_all {
@@ -62,7 +67,8 @@ impl ContainerConfigBuilder {
                 enviroment: HashMap::new(), 
                 mount: Vec::new(), 
                 publish: Vec::new(),
-                publish_all: false 
+                publish_all: false,
+                expose: false
             }
         }
     }
@@ -94,6 +100,11 @@ impl ContainerConfigBuilder {
 
     pub fn set_publish_all(&mut self, publish_all: bool) -> &mut Self {
         self.containerconfig.publish_all = publish_all;
+        self
+    }
+
+    pub fn set_expose(&mut self, expose: bool) -> &mut Self {
+        self.containerconfig.expose = expose;
         self
     }
 
