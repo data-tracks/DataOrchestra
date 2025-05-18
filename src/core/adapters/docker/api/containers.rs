@@ -15,8 +15,32 @@ pub fn delete_containers(runner: Option<&Box<dyn Runner + Send>>) -> Result<(), 
     Ok(())
 }
 
+pub fn delete_container<T: Into<String>>(name: T, runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+    let command = format!("docker rm {}", name.into());
+    if let Some(runner) = runner {
+        runner.exec(command.to_string())?;
+    }
+    else {
+        output_command(command);
+    }
+
+    Ok(())
+}
+
 pub fn stop_containers(runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
     let command = "docker stop $(docker container ls -a -q)";
+    if let Some(runner) = runner {
+        runner.exec(command.to_string())?;
+    }
+    else {
+        output_command(command);
+    }
+
+    Ok(())
+}
+
+pub fn stop_container<T: Into<String>>(name: T, runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+    let command = format!("docker stop {}", name.into());
     if let Some(runner) = runner {
         runner.exec(command.to_string())?;
     }

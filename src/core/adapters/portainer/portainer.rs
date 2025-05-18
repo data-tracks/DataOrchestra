@@ -1,4 +1,4 @@
-use std::{net::IpAddr, thread, time::Duration};
+use std::{collections::HashMap, net::IpAddr, thread, time::Duration};
 
 use log::{error, info, warn};
 use reqwest::Client;
@@ -77,7 +77,7 @@ impl Portainer {
         let containers = containers.unwrap();
 
         if containers.contains(&String::from("portainer")) {
-            error!("Portainer container already exists");
+            info!("Portainer container already exists");
         }
         else {
             info!("Setting up portainer");
@@ -110,19 +110,20 @@ impl Portainer {
             }
             // Extra sleep for proper cert setup
             thread::sleep(Duration::from_secs(1));
-
-            let rt = tokio::runtime::Runtime::new().unwrap(); 
-            let _ = rt.block_on(self.create_account());
-            let _ = rt.block_on(self.authenticate_account());
-
-            info!("Finished setting up portainer");
         }
+
+        let rt = tokio::runtime::Runtime::new().unwrap(); 
+        let _ = rt.block_on(self.create_account());
+        let _ = rt.block_on(self.authenticate_account());
+
+        info!("Finished setting up portainer");
     }
 
     /// Create a remote portainer agent
     pub fn create_agent(&self, node: &Node) {
+        info!("Creating portainer agent on {}", node.host);
         if let Some(ref ssh) = node.ssh {
-            let _ = ssh.exec(
+            let result = ssh.exec(
                 "docker run -d \
                 -p 9001:9001 \
                 --name portainer_agent \
@@ -132,9 +133,41 @@ impl Portainer {
                 -v /:/host \
                 portainer/agent:2.27.6".to_string()
             );
+            if let Err(error) = result {
+                error!("{}", error);    
+            } 
         }
         else {
             error!("Unable to setup portainer on node {} due to no availible ssh client", node.host);
+        }
+
+        thread::sleep(Duration::from_secs(2));
+    }
+
+    /// Add agent enviroment to portainer
+    pub async fn add_agent(&self, node: &Node) {
+        info!("Adding portainer agent");
+
+        let mut params = HashMap::<String, String>::new();
+        params.insert("Name".to_string(), format!("node-{}", node.host));
+        params.insert("URL".to_string(), format!("tcp://{}:9001", node.host));
+        params.insert("EndpointCreationType".to_string(), "2".to_string());
+        params.insert("TLS".to_string(), true.to_string());
+        params.insert("TLSSkipVerify".to_string(), true.to_string());
+        params.insert("TLSSkipClientVerify".to_string(), true.to_string());
+       
+        let client = Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build().unwrap();
+
+        let response = client
+            .post(format!("https://{}:{}/api/endpoints", self.host, self.port))
+            .bearer_auth(self.jwt.clone())
+            .form(&params)
+            .send().await;
+
+        if let Err(error) = response {
+            error!("{}", error);
         }
     }
 
@@ -193,20 +226,5 @@ impl Portainer {
         }
 
         
-    }
-
-    /// Create a portainer enviroment
-    pub fn create_enviroment(&self, name: String, ip: IpAddr, port: u16) {
-        let _result = output_command(
-            format!(
-                "http --verify=no --form POST https://{}:{}/api/endpoints \
-                \"Authorization: Bearer {}\" \
-                Name=\"{name}\" \
-                URL=\"tcp://{ip}:{port}\" \
-                EndpointCreationType=1",
-                self.host,
-                self.port,
-                self.jwt,
-            ));
     }
 }

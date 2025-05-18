@@ -1,11 +1,13 @@
 use std::env;
 use std::fs::File;
 use std::io::{stdin, stdout, Write};
+use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::process::exit;
+use std::str::FromStr;
 use std::sync::OnceLock;
 use std::thread::{self};
-use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Portainer};
+use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Portainer, Runner};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
@@ -204,8 +206,22 @@ fn main() {
         print!("Enter command: ");
         let _ = stdout().flush();
         let _ = stdin().read_line(&mut s);
+        s = s.replace("\n", "");
+        let mut command = s.trim();
+        let mut parameters = "";
 
-        match s.trim() {
+        // If command containes whitespace after trim, it holds parameters
+        if command.contains(" ") {
+            let result = s.split_once(" ");
+
+            if result.is_none() {
+                continue;
+            }
+
+            (command, parameters) = result.unwrap();
+        }
+
+        match command {
             "nc" | "no-cleanup" => { 
                 do_cleanup = false; 
             }
@@ -239,6 +255,32 @@ fn main() {
                     }
                     println!("{}", generate_format);
                 }
+            },
+            "k" | "kill" => {
+                if parameters.is_empty() {
+                    warn!("Please provide node ip and docker name to kill docker process");
+                    continue;
+                }
+                let parameters = parameters.split_once(" ");
+                if parameters.is_none() {
+                    warn!("Please provide node ip and docker name to kill docker process");
+                    continue;
+                }
+                
+                let (host, docker) = parameters.unwrap();
+                let nodes = get_nodes(&stores, &processes, &generates);
+                for node in nodes {
+                    if node.host.eq(&IpAddr::V4(Ipv4Addr::from_str(host).unwrap())) {
+                        if let Some(ref ssh) = node.ssh {
+                            let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                            let result = docker::api::stop_container(docker, Some(&runner));
+                            if let Err(error) = result {
+                                error!("{}", error);
+                            }
+                        }
+                    }
+                }
+
             }
             "q" | "quit" => break,
             "h" | "help" | _ => {
@@ -250,14 +292,14 @@ fn main() {
  / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
 /_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
 
-short   | long          | parameters    | description 
+short   | long          | parameters                | description 
 -------------------------------------------------------------------------
-h       | help          |               | Get explanation of possible commands
-i       | info          |               | Get info of produced system
-q       | quit          |               | Quit programm and perform cleanup
-k       | kill          | <node|docker> | Kill a specific node
-nc      | no-cleanup    |               | Perform no cleanup
-hc      | health-check  |               | Perform a health check on remote entities
+h       | help          |                           | Get explanation of possible commands
+i       | info          |                           | Get info of produced system
+q       | quit          |                           | Quit programm and perform cleanup
+k       | kill          | <node ip> <docker name>   | Kill a specific docker container
+nc      | no-cleanup    |                           | Perform no cleanup
+hc      | health-check  |                           | Perform a health check on remote entities
                     "#
                     );
             }
@@ -297,6 +339,7 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
             if let Err(error) = result {
                 panic!("[{}] {}", node.host, error);
             }
+            info!("Node-{} fully operational", node.host);
         }
     }
 
@@ -306,6 +349,7 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
             if let Err(error) = result {
                 panic!("[{}] {}", node.host, error);
             }
+            info!("Node-{} fully operational", node.host);
         }
     }
 
@@ -315,6 +359,7 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
             if let Err(error) = result {
                 panic!("[{}] {}", node.host, error);
             }
+            info!("Node-{} fully operational", node.host);
         }
     }
 
@@ -339,6 +384,9 @@ pub fn setup_docker_networks(manager: &DockerManager) {
 
                     if !existing_networks.contains(network) {
                         let result = docker::api::create_network(network, Some(runner));
+                        if let Err(error) = result {
+                            error!("{}", error);
+                        }
                     }
                 }
                 else {
@@ -350,6 +398,9 @@ pub fn setup_docker_networks(manager: &DockerManager) {
 
                     if !existing_networks.contains(network) {
                         let result = docker::api::create_network(network, None);
+                        if let Err(error) = result {
+                            error!("{}", error);
+                        }
                     }
                 }
             }
@@ -379,10 +430,30 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
             setup_docker_networks(manager); 
         }
     }
-    
+   
+    info!("Deploying portainer agent on nodes");
     let nodes = get_nodes(stores, processes, generates);
+
+    
+
     for node in nodes {
+        if ARGS.get().unwrap().remove_all {
+            if let Some(ssh) = node.ssh.as_ref() {
+                let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                info!("Removing all docker containers from {}", node.host);
+                let result = docker::api::stop_containers(Some(&runner));
+                if let Err(error) = result {
+                    error!("{}", error);
+                }
+                let result = docker::api::delete_containers(Some(&runner));
+                if let Err(error) = result {
+                    error!("{}", error);
+                }
+            }
+        }
         portainer.create_agent(node);
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _ = rt.block_on(portainer.add_agent(node));
     }
 }
 
@@ -406,7 +477,7 @@ pub fn get_nodes<'a>(stores: &'a Vec<Store>, processes: &'a Vec<Process>, genera
 
     for store in stores.iter() {
         if let Some(ref node) = store.object.node {
-            if nodes.iter().any(|x| x.host.eq(&node.host)) {
+            if !nodes.iter().any(|x| x.host.eq(&node.host)) {
                 nodes.push(node);
             }
         }
@@ -414,7 +485,7 @@ pub fn get_nodes<'a>(stores: &'a Vec<Store>, processes: &'a Vec<Process>, genera
 
     for process in processes.iter() {
         if let Some(ref node) = process.object.node {
-            if nodes.iter().any(|x| x.host.eq(&node.host)) {
+            if !nodes.iter().any(|x| x.host.eq(&node.host)) {
                 nodes.push(node);
             }
         }
@@ -422,7 +493,7 @@ pub fn get_nodes<'a>(stores: &'a Vec<Store>, processes: &'a Vec<Process>, genera
 
     for generate in generates.iter() {
         if let Some(ref node) = generate.object.node {
-            if nodes.iter().any(|x| x.host.eq(&node.host)) {
+            if !nodes.iter().any(|x| x.host.eq(&node.host)) {
                 nodes.push(node);
             }
         }

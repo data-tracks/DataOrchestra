@@ -3,7 +3,7 @@ use std::net::{IpAddr, Ipv4Addr};
 
 use log::{info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
-use crate::core::adapters::{ContainerType, Runner};
+use crate::core::adapters::{ContainerType, Runner, Uploader};
 use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
@@ -52,6 +52,15 @@ impl Spawner for Generate {
 
     fn setup(&mut self) {
         info!("Setting up Generate");
+        if let Some(ref node) = self.object.node {
+            if let Some(ref ssh) = node.ssh {
+                let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
+                if let Err(error) = result {
+                    error!("{}", error);
+                }
+            }
+        }
+
         if let Some(ref mut manager) = self.object.docker_manager {
             for (_, item) in manager.containers.iter_mut() {
                 let result = item.run();
@@ -81,12 +90,12 @@ impl Spawner for Generate {
                             if let Err(error) = result {
                                 error!("Unable to load ssh connection for {} {}", node.host, error);
                             }    
-                            else {
-                                let result = container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST));
-                                if let Err(error) = result {
-                                    error!("Unable to load ssh connection for localhost {}", error);
-                                } 
-                            }
+                        }
+                        else {
+                            let result = container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST));
+                            if let Err(error) = result {
+                                error!("Unable to load ssh connection for localhost {}", error);
+                            } 
                         }
                     }
                 }
