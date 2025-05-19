@@ -5,7 +5,6 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
-use std::sync::OnceLock;
 use std::thread::{self};
 use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Portainer, Runner};
 use data_orchestra::core::generate::Generate;
@@ -14,42 +13,11 @@ use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::Config;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
-use log::{info, warn, error, LevelFilter};
-
+use data_orchestra::shared::arguments::{Arguments, ARGS};
+use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
-
 use clap::Parser;
-
-static ARGS: OnceLock<Args> = OnceLock::new();
-
-#[derive(Parser, Debug)]
-#[command(version, about)]
-struct Args {
-    /// Config file location
-    #[arg(short, long)]
-    file: Option<String>,
-
-    /// Logging level
-    #[arg(short, long, default_value_t = LevelFilter::Info)]
-    level: LevelFilter,
-
-    /// Remove all running and stopped docker containers aswell as all networks
-    #[arg(long = "remove_all", default_value_t = false)]
-    remove_all: bool,
-
-    /// Generate a valid config file 
-    #[arg(long = "generate_valid_json", default_value_t = false)]
-    generate_valid_json: bool,
-
-    /// Skip the portainer manager setup
-    #[arg(long = "no_portainer", default_value_t = false)]
-    no_portainer: bool,
-
-    // Authorized ssh key for remote connections
-    //#[arg(short, long)]
-    //ssh_key: String 
-}
 
 pub fn print_logo() {
     println!(r#"
@@ -68,7 +36,7 @@ fn main() {
     print_logo();                                                             
 
     // Read starting arguments
-    let args: Args = Args::parse();
+    let args: Arguments = Arguments::parse();
     
     if args.generate_valid_json {
         println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
@@ -418,8 +386,6 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
     info!("Deploying portainer agent on nodes");
     let nodes = get_nodes(stores, processes, generates);
 
-    
-
     for node in nodes {
         if ARGS.get().unwrap().remove_all {
             if let Some(ssh) = node.ssh.as_ref() {
@@ -444,13 +410,13 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
 pub fn cleanup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
     info!("Performing cleanup");
 
-    for _store in stores.iter() {
-    }
+    let nodes = get_nodes(stores, processes, generates);
 
-    for _process in processes.iter() {
-    }
+    for node in nodes {
+        if let Some(ref ssh) = node.ssh {
+            let result = ssh.exec("rm -rf /home/ubuntu/".to_string());
 
-    for _generate in generates.iter() {
+        } 
     }
 
     info!("Cleanup complete");

@@ -8,6 +8,7 @@ use std::{fs, io};
 use log::{debug, error};
 use crate::core::adapters::ssh::ssh::Ssh;
 use crate::core::adapters::traits::{Runner, Uploader};
+use crate::shared::arguments::ARGS;
 
 impl Ssh {
     pub fn new() -> Ssh {
@@ -39,8 +40,8 @@ impl Ssh {
         }
         let authentication: Result<(), ssh2::Error>;
 
-        if true {
-            authentication = self.session.userauth_pubkey_file(username, None, Path::new("/home/mathieu/.ssh/id_ed25519"), None);
+        if let Some(ssh_key) = ARGS.get().unwrap().ssh_key.as_ref() {
+            authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key), None);
         }
         else {
             authentication = self.session.userauth_password(username, password);
