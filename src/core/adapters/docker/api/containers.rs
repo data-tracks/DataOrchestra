@@ -1,57 +1,37 @@
 use std::{thread, time::Duration};
 use std::time;
 
-use crate::core::adapters::{command_func::output_command, Runner};
+use crate::core::adapters::Runner;
 
-pub fn delete_containers(runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = "docker rm $(docker container ls -a -q)";
-    if let Some(runner) = runner {
-        runner.exec(command.to_string())?;
-    }
-    else {
-        output_command(command);
-    }
+    runner.exec(command.to_string())?;
 
     Ok(())
 }
 
-pub fn delete_container<T: Into<String>>(name: T, runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = format!("docker rm {}", name.into());
-    if let Some(runner) = runner {
-        runner.exec(command.to_string())?;
-    }
-    else {
-        output_command(command);
-    }
+    runner.exec(command.to_string())?;
 
     Ok(())
 }
 
-pub fn stop_containers(runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+pub fn stop_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = "docker stop $(docker container ls -a -q)";
-    if let Some(runner) = runner {
-        runner.exec(command.to_string())?;
-    }
-    else {
-        output_command(command);
-    }
+    runner.exec(command.to_string())?;
 
     Ok(())
 }
 
-pub fn stop_container<T: Into<String>>(name: T, runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = format!("docker stop {}", name.into());
-    if let Some(runner) = runner {
-        runner.exec(command.to_string())?;
-    }
-    else {
-        output_command(command);
-    }
+    runner.exec(command.to_string())?;
 
     Ok(())
 }
 
-pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: Option<&Box<dyn Runner + Send>>) -> Result<(), String> {
+pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let name = name.into();
     let start = time::Instant::now();
     let timout = Duration::from_secs(timout);
@@ -59,14 +39,9 @@ pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: Option<&Box
     let command = format!("docker inspect {} -f {{{{.State.Status}}}}", name);
     
     loop {
-
         let result: String;
-        if let Some(runner) = runner {
-            result = runner.exec(command.clone())?;
-        }
-        else {
-            result = output_command(&command);
-        }
+        result = runner.exec(command.clone())?;
+        
 
         let result = result.replace("\n", "");
         let result = result.trim();
@@ -82,16 +57,10 @@ pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: Option<&Box
     }
 }
 
-pub fn get_container_names(runner: Option<&Box<dyn Runner + Send>>) -> Result<Vec<String>, String> {
+pub fn get_container_names(runner: &Box<dyn Runner + Send>) -> Result<Vec<String>, String> {
     let command = "docker container ls --format {{.Names}}";
     let output: String;
-
-    if let Some(runner) = runner {
-        output = runner.exec(command.to_string())?;
-    }
-    else {
-        output = output_command(command);
-    }
+    output = runner.exec(command.to_string())?;
 
     let containers: Vec<String> = output
         .split("\n")

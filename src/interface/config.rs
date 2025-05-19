@@ -182,7 +182,8 @@ impl Default for Config {
                 port: portainer::default_port(),
                 username: portainer::default_username(),
                 password: portainer::default_password(),
-                jwt: "".to_string() 
+                jwt: "".to_string(),
+                runner: portainer::default_runner()
             },
             variables: HashMap::new(),
             generate: Amount::Single

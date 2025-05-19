@@ -1,6 +1,6 @@
 use log::{info, error};
 use crate::core::adapters::docker::{DockerManager, Run};
-use crate::core::adapters::{manager, ContainerType, Runner};
+use crate::core::adapters::{ContainerType, Runner};
 use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
@@ -42,12 +42,10 @@ impl Spawner for Store {
 
             let mut container = container.build();
             if let Some(ref node) = self.object.node {
-                let ssh: Option<Box<dyn Runner + Send>> = match &node.ssh {
-                    Some(item) => Some(Box::new(item.clone())),
-                    None => panic!()
-                };
-
-                container.runner = ssh;
+                if let Some(ref ssh) = node.ssh {
+                    let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                    container.runner = runner;
+                } 
             }
             manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));
         }
@@ -69,7 +67,7 @@ impl Spawner for Store {
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
                 if container.ssh.is_some() {
-                    let result = start_ansible(container.get_ssh_port().unwrap()); 
+                    let result = start_ansible(container.ssh.as_ref().unwrap(), container.get_ssh_port().unwrap()); 
                     if let Err(error) = result {
                         error!("{}", error);
                     }

@@ -1,15 +1,17 @@
 use std::path::Path;
 use std::fs::{self};
-use log::{debug, warn};
+use log::{debug, error, warn};
 use yaml_rust::YamlLoader;
-use crate::core::adapters::command::command_func::{output_command, spawn_command};
+use crate::core::adapters::{Local, Runner};
+
 use super::container::ContainerBuilder;
 use super::{Container, Run};
 
 #[derive(Debug)]
 pub struct ComposeGroup {
     pub compose: Option<String>,
-    pub containers: Vec<Container>
+    pub containers: Vec<Container>,
+    pub runner: Box<dyn Runner + Send>
 }
 
 impl ComposeGroup {
@@ -43,7 +45,10 @@ impl Run for ComposeGroup {
 
     fn run(&mut self) -> Result<(), String> {
         if let Some(ref compose) = self.compose {
-            let _ = spawn_command(format!("docker compose -f {} up -d --build", compose)).wait();
+            let result = self.runner.exec(format!("docker compose -f {} up -d --build", compose));
+            if let Err(error) = result {
+                error!("{}", error);
+            }
         }
         else {
             panic!("No compose to execute");
@@ -54,7 +59,11 @@ impl Run for ComposeGroup {
         let names: Vec<String> = self.get_names();
         for name in names {
             let mut container = ContainerBuilder::new().build();
-            let id = output_command(format!("docker ps -aqf \"name={}\"", name));
+            let result = self.runner.exec(format!("docker ps -aqf \"name={}\"", name));
+            if let Err(ref error) = result {
+                error!("{}", error);
+            }
+            let id = result.unwrap();
             container.set_name(name);
             container.set_id(id.replace("\n", ""));
             self.containers.push(container);
@@ -99,7 +108,8 @@ impl ComposeGroupBuilder {
             composegroup:  ComposeGroup 
             { 
                 compose: None, 
-                containers: Vec::new() 
+                containers: Vec::new(),
+                runner: Box::new(Local::new())
             }
         }
     }

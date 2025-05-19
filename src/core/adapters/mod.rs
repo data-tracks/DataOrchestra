@@ -4,9 +4,6 @@ pub use ping::*;
 pub mod docker;
 pub use docker::*;
 
-pub mod command;
-pub use command::*;
-
 pub mod ssh;
 pub use ssh::*;
 
@@ -18,3 +15,6 @@ pub use ossystems::*;
 
 pub mod traits;
 pub use traits::*;
+
+pub mod local;
+pub use local::*;

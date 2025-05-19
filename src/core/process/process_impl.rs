@@ -36,12 +36,10 @@ impl Spawner for Process {
             let mut container = container.build();
 
             if let Some(ref node) = self.object.node {
-                let ssh: Option<Box<dyn Runner + Send>> = match &node.ssh {
-                    Some(item) => Some(Box::new(item.clone())),
-                    None => panic!()
-                };
-
-                container.runner = ssh;
+                if let Some(ref ssh) = node.ssh {
+                    let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                    container.runner = runner;
+                }
             }
             manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));
         }
@@ -66,7 +64,7 @@ impl Spawner for Process {
             // Run ansible setup script on all containers
             for container in manager.as_vec() {
                 if container.ssh.is_some() {
-                    let result = start_ansible(container.get_ssh_port().unwrap()); 
+                    let result = start_ansible(container.ssh.as_ref().unwrap(), container.get_ssh_port().unwrap()); 
                     if let Err(error) = result {
                         error!("{}", error);
                     }

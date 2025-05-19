@@ -273,7 +273,7 @@ fn main() {
                     if node.host.eq(&IpAddr::V4(Ipv4Addr::from_str(host).unwrap())) {
                         if let Some(ref ssh) = node.ssh {
                             let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
-                            let result = docker::api::stop_container(docker, Some(&runner));
+                            let result = docker::api::stop_container(docker, &runner);
                             if let Err(error) = result {
                                 error!("{}", error);
                             }
@@ -375,32 +375,16 @@ pub fn setup_docker_networks(manager: &DockerManager) {
                     continue;
                 } 
 
-                if let Some(ref runner) = container.runner {
-                    let existing_networks = docker::api::get_networks(Some(runner));
-                    if let Err(ref error) = existing_networks {
-                        error!("{}", error);
-                    }
-                    let existing_networks = existing_networks.unwrap();
-
-                    if !existing_networks.contains(network) {
-                        let result = docker::api::create_network(network, Some(runner));
-                        if let Err(error) = result {
-                            error!("{}", error);
-                        }
-                    }
+                let existing_networks = docker::api::get_networks(&container.runner);
+                if let Err(ref error) = existing_networks {
+                    error!("{}", error);
                 }
-                else {
-                    let existing_networks = docker::api::get_networks(None);
-                    if let Err(ref error) = existing_networks {
-                        error!("{}", error);
-                    }
-                    let existing_networks = existing_networks.unwrap();
+                let existing_networks = existing_networks.unwrap();
 
-                    if !existing_networks.contains(network) {
-                        let result = docker::api::create_network(network, None);
-                        if let Err(error) = result {
-                            error!("{}", error);
-                        }
+                if !existing_networks.contains(network) {
+                    let result = docker::api::create_network(network, &container.runner);
+                    if let Err(error) = result {
+                        error!("{}", error);
                     }
                 }
             }
@@ -441,11 +425,11 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
             if let Some(ssh) = node.ssh.as_ref() {
                 let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
                 info!("Removing all docker containers from {}", node.host);
-                let result = docker::api::stop_containers(Some(&runner));
+                let result = docker::api::stop_containers(&runner);
                 if let Err(error) = result {
                     error!("{}", error);
                 }
-                let result = docker::api::delete_containers(Some(&runner));
+                let result = docker::api::delete_containers(&runner);
                 if let Err(error) = result {
                     error!("{}", error);
                 }

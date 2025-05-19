@@ -1,10 +1,10 @@
-use std::{collections::HashMap, net::IpAddr, thread, time::Duration};
+use std::{collections::HashMap, thread, time::Duration};
 
 use log::{error, info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::core::{adapters::{command::command_func::output_command, docker, traits::Runner}, types::Node};
+use crate::core::{adapters::{docker, traits::Runner, Local}, types::Node};
 
 /// Portainer struct. Holds general configuration of the local portainer container
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,6 +26,10 @@ pub struct Portainer {
     /// JWT Token for authentication with API
     #[serde(skip)]
     pub jwt: String,
+
+    #[serde(skip)]
+    #[serde(default = "default_runner")]
+    pub runner: Box<dyn Runner + Send>
 }
 
 /// Temporary struct to easily deserialize the jwt token
@@ -54,6 +58,10 @@ pub fn default_password() -> String {
     "portaineradmin".to_string()
 }
 
+pub fn default_runner() -> Box<dyn Runner + Send> {
+    Box::new(Local::new())
+}
+
 impl Default for Portainer {
     fn default() -> Self {
         Portainer 
@@ -63,14 +71,15 @@ impl Default for Portainer {
             port: default_port(), 
             username: default_username(), 
             password: default_password(), 
-            jwt: String::new() 
+            jwt: String::new(),
+            runner: default_runner()
         }
     }
 }
 
 impl Portainer {
     pub fn build(&mut self) {
-        let containers = docker::api::get_container_names(None);
+        let containers = docker::api::get_container_names(&self.runner);
         if let Err(error) = containers {
             panic!("{}", error);
         }
@@ -82,17 +91,17 @@ impl Portainer {
         else {
             info!("Setting up portainer");
 
-            let volumes = docker::api::get_all_volumes(None);
+            let volumes = docker::api::get_all_volumes(&self.runner);
             if let Err(error) = volumes {
                 panic!("{}", error);
             }
             let volumes = volumes.unwrap();
 
             if !volumes.contains(&String::from("portainer_data")) {
-                let result = output_command("docker volume create portainer_data");
+                let result = self.runner.exec("docker volume create portainer_data".to_string());
             }
 
-            let result = output_command
+            let result = self.runner.exec 
                 (
                     "docker run -d \
                     -p 8000:8000 \
@@ -100,11 +109,11 @@ impl Portainer {
                     --name portainer \
                     --restart=always \
                     -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v portainer_data:/data portainer/portainer-ce:lts"
+                    -v portainer_data:/data portainer/portainer-ce:lts".to_string()
                 );
 
             // poll docker container
-            let result = docker::api::poll_container("portainer", 30, None);
+            let result = docker::api::poll_container("portainer", 30, &self.runner);
             if let Err(error) = result {
                 panic!("{}", error);
             }

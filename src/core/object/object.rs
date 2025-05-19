@@ -1,5 +1,5 @@
 use crate::core::adapters::docker::container::ContainerBuilder;
-use crate::core::adapters::docker::{ComposeGroup, ComposeGroupBuilder, Container, DockerManager};
+use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::attach::attach_types::AttachType;
 use crate::core::types::Data;

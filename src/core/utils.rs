@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
-use super::adapters::command::command_func::spawn_command;
+use log::error;
+
 use super::adapters::docker::{Container, DockerManager};
 use super::adapters::{ContainerType, Runner, Uploader};
 use super::types::Data;
@@ -19,10 +20,13 @@ pub fn start_script(ssh: &Ssh, data: &Data) -> Result<(), String> {
 }
 
 /// Start ansible on remote object
-pub fn start_ansible(port: u16) -> Result<(), String>{
+pub fn start_ansible(ssh: &Ssh, port: u16) -> Result<(), String>{
     let script_path = "scripts/ansible/ansible-setup.yml";
     if Path::new(&script_path).is_file() {
-        let _ = spawn_command(&format!("ansible-playbook {} -e \"port={}\"", script_path, port)).wait();
+        let result = ssh.exec(format!("ansible-playbook {} -e \"port={}\"", script_path, port));
+        if let Err(error) = result {
+            error!("{}", error);
+        } 
     }
     else {
         return Err(format!("Unable to find file {}", script_path));
