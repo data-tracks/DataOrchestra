@@ -1,11 +1,5 @@
 {
   "generate": {
-    "node": {
-      "name": "sensor",
-      "ip": "10.34.64.161",
-      "username": "ubuntu",
-      "password": ""
-    },
     "sensor": {
       "stream_processor": "kafka",
       "address": "broker:29092",

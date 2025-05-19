@@ -1,7 +1,7 @@
 use crate::core::adapters::Runner;
 
 pub fn get_networks(runner: &Box<dyn Runner + Send>) -> Result<Vec<String>, String> {
-    let command = "docker network ls -a --format {{.Name}}";
+    let command = "docker network ls --format {{.Name}}";
 
     let output: String;
 
