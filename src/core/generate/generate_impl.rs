@@ -1,10 +1,9 @@
 use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
 
-use log::{info, error};
+use log::{debug, error, info};
 use crate::core::adapters::docker::{DockerManager, Run};
 use crate::core::adapters::{ContainerType, Runner, Uploader};
-use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
 use super::Generate;
@@ -29,7 +28,7 @@ impl Spawner for Generate {
             manager.add("", ContainerType::Compose(compose));
         }
 
-        else if let Some(mut container) = self.object.docker_container_builder.take() {
+        else if let Some(container) = self.object.docker_container_builder.take() {
             info!("Setting up docker container");
             let mut container = container.build();
             // TODO: Add local runner
@@ -59,7 +58,8 @@ impl Spawner for Generate {
         }
 
         if let Some(ref mut manager) = self.object.docker_manager {
-            for (_, item) in manager.containers.iter_mut() {
+            for (name, item) in manager.containers.iter_mut() {
+                debug!("Running docker {}", name);
                 let result = item.run();
                 if let Err(error) = result {
                     panic!("{}", error);
@@ -96,24 +96,18 @@ impl Spawner for Generate {
                         }
                     }
                 }
-
-                
             }
+        }
 
-            for container in manager.as_vec() {
-                if container.ssh.is_some() {
-                    let result = start_ansible(container.ssh.as_ref().unwrap(), container.get_ssh_port().unwrap()); 
-                    if let Err(error) = result {
-                        error!("{}", error);
-                    }
-                }
-            }
+        let result = self.object.start_ansible();
+        if let Err(error) = result {
+            panic!("Unable to start ansible {}", error);
+        }
 
-            // Upload data to docker containers
-            let result = upload_data(&manager,&self.object.data);
-            if let Err(error) = result {
-                panic!("Unable to upload data {}", error);
-            }
+        // Upload data to docker containers
+        let result = self.object.upload_data();
+        if let Err(error) = result {
+            panic!("Unable to upload data {}", error);
         }
 
         info!("Finished setting up Generate");
@@ -123,19 +117,9 @@ impl Spawner for Generate {
     fn deploy(&mut self) {
         info!("Deploying Generate");
         
-        if let Some(ref manager) = self.object.docker_manager {
-            for (container, data) in iter_combine_data(manager, &self.object.data) {
-                if let Some(ref ssh) = container.ssh {
-                    info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
-                    let result = start_script(ssh, data);
-                    if let Err(error) = result {
-                        error!("Unable to start script {} | {}", data.start, error);
-                    }
-                }
-                else {
-                    panic!("Ssh client unavailable");
-                }
-            }
+        let result = self.object.start_script();
+        if let Err(error) = result {
+            error!("{}", error);
         }
 
         info!("Finished deploying Generate");

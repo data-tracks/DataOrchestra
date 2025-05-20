@@ -57,7 +57,7 @@ fn main() {
         info!("Deleted all docker containers");
     }
 
-    // Read config.json
+    // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");

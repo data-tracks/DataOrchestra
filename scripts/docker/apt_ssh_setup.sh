@@ -1,5 +1,6 @@
 #!/bin/bash
 apt-get update
+apt-get install -y --no-install-recommends apt-utils
 apt-get install -y openssh-server
 apt-get install -y python3.11
 mkdir /var/run/sshd

@@ -72,7 +72,7 @@ impl Runner for Ssh {
 
         let mut channel = channel.unwrap();
         let exec: Result<(), ssh2::Error> = channel.exec(&command);
-        
+
         if let Err(ref error) = exec {
             error!("Unable to execute command {}", error);
         }

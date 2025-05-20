@@ -1,7 +1,6 @@
 use log::{info, debug, error};
 use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager, Run};
 use crate::core::adapters::{ContainerType, Runner};
-use crate::core::utils::{iter_combine_data, start_ansible, start_script, upload_data};
 use crate::shared::traits::Spawner;
 
 use super::Process;
@@ -11,6 +10,7 @@ impl Spawner for Process {
         info!("Building Process");
         
         let mut manager = DockerManager::new();
+        dbg!(&self);
 
         if let Some(ref process) = self.process_type {
             debug!("Setting up {:?} enviroment", process);
@@ -23,13 +23,14 @@ impl Spawner for Process {
 
             let mut compose = ComposeGroupBuilder::new();
             config.setup_container(&mut compose);
+            self.object.docker_group_builder = Some(compose);
         }
 
         // Take ownership of ContainerBuilder out of object to prevent partial move
         if let Some(group) = self.object.docker_group_builder.take() {
             info!("Setting up docker compose");
             let compose = group.build();
-            manager.add("", ContainerType::Compose(compose));
+            manager.add("group", ContainerType::Compose(compose));
         }
         else if let Some(container) = self.object.docker_container_builder.take() {
             info!("Setting up docker container");
@@ -44,37 +45,23 @@ impl Spawner for Process {
             manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));
         }
 
+        self.object.docker_manager = Some(manager);
+        dbg!(&self.object.docker_manager);
+
         info!("Finished building Process");
     } 
 
     fn setup(&mut self) {
         info!("Setting up Process");
 
-        self.object.docker_manager = Some(DockerManager::new());
-
         // Start containers and move to manager
         if let Some(ref mut manager) = self.object.docker_manager {
-            for (_, item) in manager.containers.iter_mut() {
+            for (name, item) in manager.containers.iter_mut() {
+                debug!("Running docker {}", name);
                 let result = item.run();
                 if let Err(error) = result {
                     panic!("{}", error);
                 }
-            }
-
-            // Run ansible setup script on all containers
-            for container in manager.as_vec() {
-                if container.ssh.is_some() {
-                    let result = start_ansible(container.ssh.as_ref().unwrap(), container.get_ssh_port().unwrap()); 
-                    if let Err(error) = result {
-                        error!("{}", error);
-                    }
-                }
-            }
-
-            // Upload data to docker containers
-            let result = upload_data(&manager,&self.object.data);
-            if let Err(error) = result {
-                panic!("Unable to upload data {}", error);
             }
 
             /*
@@ -94,25 +81,26 @@ impl Spawner for Process {
             */
         }
 
+        let result = self.object.start_ansible();
+        if let Err(error) = result {
+            panic!("Unable to start ansible {}", error);
+        }
+
+        // Upload data to docker containers
+        let result = self.object.upload_data();
+        if let Err(error) = result {
+            panic!("Unable to upload data {}", error);
+        }
+
         info!("Finished setting up Process");
     }
 
     fn deploy(&mut self) {
         info!("Deploying Process");
 
-        if let Some(ref manager) = self.object.docker_manager {
-            for (container, data) in iter_combine_data(manager, &self.object.data) {
-                if let Some(ref ssh) = container.ssh {
-                    info!("Starting {} for {}", data.path, container.config.name.as_ref().unwrap());
-                    let result = start_script(ssh, data);
-                    if let Err(error) = result {
-                        error!("Unable to start script {} | {}", data.start, error);
-                    }
-                }
-                else {
-                    panic!("Ssh client unavailable");
-                }
-            }
+        let result = self.object.start_script();
+        if let Err(error) = result {
+            error!("{}", error);
         }
 
         info!("Finished deploying Process");

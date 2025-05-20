@@ -209,12 +209,21 @@ impl Run for Container {
         }
 
         let _ = self.load_os();
+        if let Err(error) = result {
+            error!("Unable to get os from container {} {}", self.config.name.as_ref().unwrap(), error);
+        }
 
         // get and set port mappings
-        let _ = self.load_ports();
-
+        let result = self.load_ports();
+        if let Err(error) = result {
+            error!("Unable to get ports from container {} {}", self.config.name.as_ref().unwrap(), error);
+        } 
+        
         // Install ssh server
-        let _ = self.install_ssh();
+        let result = self.install_ssh();
+        if let Err(error) = result {
+            error!("Unable to install ssh server on container {} {}", self.config.name.as_ref().unwrap(), error);
+        }
 
         Ok(())     
     }
@@ -310,14 +319,14 @@ impl Container {
 
                     // Reformat sh script for linux distro
                     if cfg!(target_os = "windows") {
-                        self.runner.exec(format!("dos2unix scripts/docker/{}", script))?;
+                        self.runner.exec(format!("dos2unix scripts/docker/{}", script));
                     }
 
-                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
-                    self.runner.exec(format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script))?;
+                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()));
+                    self.runner.exec(format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script));
                     
                     // Start ssh server
-                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()))?;
+                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()));
 
                 },
                 OsSystems::Alpine => {
@@ -328,18 +337,18 @@ impl Container {
                         self.runner.exec(format!("dos2unix scripts/docker/{}", script));
                     }
                     
-                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
-                    self.runner.exec(format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script))?;
+                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()));
+                    self.runner.exec(format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script));
                     
                     // Start ssh server
-                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()))?;
+                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()));
                 }
                 _ => ()
             };
         }
         
         // Sleep to wait for ssh server to properly start
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(2));
 
         Ok(())
     }
