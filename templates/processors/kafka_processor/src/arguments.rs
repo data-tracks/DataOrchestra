@@ -10,8 +10,11 @@ pub struct Args {
     #[arg(short = 'i', long)]
     pub interval: u64,
 
-    #[arg(short = 't', long)]
-    pub topic: Vec<String>,
+    #[arg(short, long)]
+    pub input_topic: Vec<String>,
+
+    #[arg(short, long)]
+    pub output_topic: Vec<String>,
 
     #[arg(short = 'a', long, value_name = "HOST:PORT")]
     pub consumer: String,

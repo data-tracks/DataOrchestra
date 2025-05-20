@@ -29,10 +29,7 @@ impl ToInternal<Node> for ExtNode {
             node.username = user;
         }
 
-        if let Some(password) = self.password {
-            node.password = password;
-        }
-
+        node.password = self.password;
 
         node
     }

@@ -3,7 +3,7 @@
     "sensor": {
       "stream_processor": "kafka",
       "address": "broker:29092",
-      "topics": ["words"]
+      "topics": ["words_in"]
     },
     "docker": {
       "image": "python",
@@ -12,13 +12,40 @@
     }
   },
   "process": {
-    "type": "kafka",
     "kafka": {
-      "topics": ["words"]
+      "topics": ["words_in", "words_out"]
     }
   },
+  "object":
+  [
+    {
+      "file": {
+        "name": "processor",
+        "path": "templates/processor/kafka_processor",
+        "destination": "/processor",
+        "start": "cd && cargo run -- --input_topic words_in --output_topic words_out"
+      },
+      "docker": {
+        "name": "processor",
+        "image": "rust",
+        "network": "trackbenchrs_kafka-network"
+      }
+    },
+    {
+      "file": {
+        "name": "consumer",
+        "path": "templates/consumers/kafka_consumer",
+        "destination": "/consumer",
+        "start": "cd && cargo run -- -t words_out"
+      },
+      "docker": {
+        "name": "consumer",
+        "image": "rust",
+        "network": "trackbenchrs_kafka-network"
+      }
+    }
+  ],
   "store": {
-    "type": "postgres",
     "schema": "examples/word_count/store/schema.sql",
     "postgres": {
       "postgres_db": "store"
@@ -29,7 +56,6 @@
       "destination": "/store",
       "start": "/store/setup.sh"
     },
-
     "docker": {
       "name": "store",
       "network": "trackbenchrs_kafka-network"

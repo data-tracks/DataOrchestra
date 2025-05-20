@@ -35,3 +35,6 @@ ansi_term = "0.12.1"
 
 # Dir traverser
 walkdir = "2.5.0"
+
+# Proper error handling
+thiserror = "2"

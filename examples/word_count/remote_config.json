@@ -1,5 +1,9 @@
 {
   "generate": {
+    "node": {
+      "host": "10.34.64.161",
+      "username": "ubuntu"
+    },
     "sensor": {
       "stream_processor": "kafka",
       "address": "broker:29092",
@@ -7,9 +11,12 @@
     },
     "docker": {
       "image": "rust",
-      "name": "generate",
-      "network": "trackbenchrs_kafka-network"
+      "name": "generate"
     }
+  },
+  "node": {
+    "host": "10.34.64.162",
+    "username": "ubuntu"
   },
   "process": {
     "type": "kafka",
@@ -18,6 +25,10 @@
     }
   },
   "store": {
+    "node": {
+      "host": "10.34.64.163",
+      "username": "ubuntu"
+    },
     "type": "postgres",
     "schema": "examples/word_count/store/schema.sql",
     "postgres": {

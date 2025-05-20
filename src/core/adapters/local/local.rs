@@ -32,7 +32,7 @@ impl Runner for Local {
         }
 
         if let Ok(result ) = output {
-            if !result.stderr.is_empty() {
+            if !result.status.success() {
                 return Err(String::from_utf8(result.stderr).unwrap());
             }
             return Ok(String::from_utf8(result.stdout).unwrap());

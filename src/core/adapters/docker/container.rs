@@ -143,30 +143,30 @@ impl Container {
 
 impl Container {
     /// Get host ssh port mapping from docker container
-    pub fn get_ssh_port(&self) -> Result<u16, String> {
+    pub fn get_ssh_port(&self) -> Option<u16> {
         self.get_external_port(22)     
     }
 
     /// Get the internal port mapped to the `host` port
-    pub fn get_internal_port(&self, host: u16) -> Result<u16, String> {
+    pub fn get_internal_port(&self, host: u16) -> Option<u16> {
         for portmap in &self.publish_ports {
             if portmap.get_host() == host {
-                return Ok(portmap.get_internal());
+                return Some(portmap.get_internal());
             }
         };
 
-        return Err(String::from("Unable to find given host port"));
+        return None;
     }
    
     /// Get the host port mapped to the `internal` port
-    pub fn get_external_port(&self, internal: u16) -> Result<u16, String> {
+    pub fn get_external_port(&self, internal: u16) -> Option<u16> {
         for portmap in &self.publish_ports {
             if portmap.get_internal() == internal {
-                return Ok(portmap.get_host());
+                return Some(portmap.get_host());
             }
         };
 
-        return Err(String::from("Unable to find given internal port"));
+        return None;
     }
 
     pub fn add_port_mapping(&mut self, ext: u16, int: u16) {
@@ -280,7 +280,7 @@ impl Container {
 
     pub fn load_ssh(&mut self, host: IpAddr) -> Result<(), String> {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
+        let _ = ssh.connect(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), Some(&"password".to_string()));
 
         self.ssh = Some(ssh);
         Ok(())

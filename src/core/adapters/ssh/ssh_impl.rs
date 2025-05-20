@@ -21,9 +21,9 @@ impl Ssh {
     /// 
     /// See <https://github.com/libssh2/libssh2/blob/master/include/libssh2.h> for relevant error
     /// codes
-    pub fn connect(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
+    pub fn connect(&mut self, host: &String, port: u16, username: &String, password: Option<&String>) -> Result<(), String> {
         let address: String = format!("{}:{}", host, port);
-        debug!("Connecting to Ssh client {} with {}@{}", &address, &username, &password);
+        debug!("Connecting to Ssh client {} with {}@{}", &address, &username, password.unwrap_or(&String::new()));
         let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
     
         if let Err(ref error) = tcp {
@@ -40,11 +40,14 @@ impl Ssh {
         }
         let authentication: Result<(), ssh2::Error>;
 
-        if let Some(ssh_key) = ARGS.get().unwrap().ssh_key.as_ref() {
+        if let Some(password) = password {
+            authentication = self.session.userauth_password(username, password);
+        }
+        else if let Some(ssh_key) = ARGS.get().unwrap().ssh_key.as_ref() {
             authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key), None);
         }
         else {
-            authentication = self.session.userauth_password(username, password);
+            panic!("No valid connection type given. Either provide a ssh key or a password");
         }
         
         if let Err(ref error) = authentication {
@@ -56,6 +59,11 @@ impl Ssh {
         } 
 
         Ok(())
+    }
+
+    pub fn to_box_runner(&self) -> Box<dyn Runner + Send> {
+        let runner = Box::new(self.clone()) as Box<dyn Runner + Send>;
+        runner
     }
 }
 
@@ -162,10 +170,7 @@ impl<T, S> Uploader<T, S> for Ssh where
         }
         
         Ok(())
-    }
-
-
-    
+    } 
 }
 
 /// Ignore a directory entry based on predefined filtering for folders and files
