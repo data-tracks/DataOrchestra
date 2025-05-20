@@ -248,7 +248,6 @@ fn main() {
                         }
                     }
                 }
-
             }
             "q" | "quit" => break,
             "h" | "help" | _ => {
@@ -409,15 +408,6 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
 
 pub fn cleanup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
     info!("Performing cleanup");
-
-    let nodes = get_nodes(stores, processes, generates);
-
-    for node in nodes {
-        if let Some(ref ssh) = node.ssh {
-            let result = ssh.exec("rm -rf /home/ubuntu/".to_string());
-
-        } 
-    }
 
     info!("Cleanup complete");
 }
