@@ -1,6 +1,7 @@
-use std::env;
+use std::{env, fs};
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{stdin, stdout, Write};
+use std::io::{stdin, stdout, Read, Write};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::process::exit;
@@ -18,6 +19,7 @@ use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
+use serde::{Deserialize, Serialize};
 
 pub fn print_logo() {
     println!(r#"
@@ -53,7 +55,35 @@ fn main() {
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
     let config_file = File::open(config_path).expect("Unable to open config file");
-    let config: Config = serde_json::from_reader(config_file).expect("Unable to parse config to struct");
+    let config_str = fs::read_to_string(config_path);
+    if let Err(error) = config_str {
+        panic!("{}", error);
+    }
+
+    let mut config_str = config_str.unwrap();
+
+
+    #[derive(Debug, Deserialize, Serialize)]
+    struct Variables {
+        #[serde(default)]
+        variables: HashMap<String, String>
+    }
+
+    let variables: Variables = serde_json::from_str(config_str.as_str()).expect("Unable to parse config to struct");
+
+    set_variables(variables, &mut config_str);
+
+    fn set_variables(variables: Variables, config: &mut str) {
+        let variables = variables.variables;
+        for (key, value) in variables {
+            let matches = config.find(key.as_str());
+            if let Some(matches) = matches {
+                
+            }
+        }
+    }
+
+    let config: Config = serde_json::from_str(config_str.as_str()).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     let result = ARGS.set(args);

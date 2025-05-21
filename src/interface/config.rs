@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use log::debug;
 use serde::{Deserialize, Deserializer, Serialize};
+use serde::de::Error;
 use serde_json::Value;
 use crate::core::adapters::portainer;
 use crate::core::adapters::portainer::portainer::Portainer;
@@ -20,8 +21,7 @@ use super::docker::ExtDocker;
 pub struct Config {
     #[serde(default)]
     pub portainer: Portainer,
-    #[serde(default)]
-    pub variables: HashMap<String, String>,
+
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_generate")]
     pub generate: Amount<ExtGenerate>,
@@ -64,7 +64,7 @@ where
         }  
     }
 
-    Err(serde::de::Error::custom(
+    Err(Error::custom(
         "Could not deserialize into either a single store or a list of them",
     ))
 }
@@ -97,7 +97,7 @@ where
         }  
     }
 
-    Err(serde::de::Error::custom(
+    Err(Error::custom(
         "Could not deserialize into either a single process or a list of them",
     ))
 }

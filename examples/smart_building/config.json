@@ -9,5 +9,21 @@
       "name": "rust",
       "image": "rust"
     }
-  }
+  },
+
+  "store": [
+    {
+      "node": {
+        
+      },
+      "postgres": {
+
+      }
+    },
+    {
+      "mongodb": {
+
+      }
+    }
+  ]
 }
