@@ -32,25 +32,8 @@ impl Spawner for Store {
     fn setup(&mut self) {
         info!("Setting up Store");
 
-        let result = self.object.start_containers();
-        if let Err(error) = result {
-            // Unable to start containers is breaking.
-            panic!("{}", error);
-        }
-
-        let result = self.object.start_ansible();
-        if let Err(error) = result {
-            // Unable to load ansible is not breaking. May fail if no ssh port is specified but that
-            // may be a desired effect
-            warn!("Unable to start ansible {}", error);
-        }
+        self.object.setup();
         
-        let result = self.object.upload_data();
-        if let Err(error) = result {
-            // Unable to upload data, scripts etc is breaking
-            panic!("Unable to upload data {}", error);
-        }
-
         info!("Finished setting up Store");
     }
 

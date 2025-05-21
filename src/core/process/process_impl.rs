@@ -32,16 +32,10 @@ impl Spawner for Process {
     fn setup(&mut self) {
         info!("Setting up Process");
 
+        self.object.setup();
+        
         // Start containers and move to manager
         if let Some(ref mut manager) = self.object.docker_manager {
-            for (name, item) in manager.containers.iter_mut() {
-                debug!("Running docker {}", name);
-                let result = item.run();
-                if let Err(error) = result {
-                    panic!("{}", error);
-                }
-            }
-
             if let Some(ref config) = self.config {
                 match config {
                     ProcessTypeConfig::Kafka(kafka) => {
@@ -62,17 +56,6 @@ impl Spawner for Process {
                     _ => ()
                 }
             }
-        }
-
-        let result = self.object.start_ansible();
-        if let Err(error) = result {
-            error!("Unable to start ansible {}", error);
-        }
-
-        // Upload data to docker containers
-        let result = self.object.upload_data();
-        if let Err(error) = result {
-            panic!("Unable to upload data {}", error);
         }
 
         info!("Finished setting up Process");

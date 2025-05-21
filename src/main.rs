@@ -296,37 +296,33 @@ pub fn viable_check() {
     }
 }
 
+pub fn ping_node(node: &Node) {
+    let result = ping::ping(&node.host);
+    if let Err(error) = result {
+        panic!("[{}] {}", node.host, error);
+    }
+    info!("Node-{} fully operational", node.host);
+}
+
 /// Perform health check on all remote nodes by ping
 pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
     info!("Perfoming health check");
 
     for store in stores.iter() {
         if let Some(ref node) = store.object.node {
-            let result = ping::ping(&node.host);
-            if let Err(error) = result {
-                panic!("[{}] {}", node.host, error);
-            }
-            info!("Node-{} fully operational", node.host);
+            ping_node(node);
         }
     }
 
     for process in processes.iter() {
         if let Some(ref node) = process.object.node {
-            let result = ping::ping(&node.host);
-            if let Err(error) = result {
-                panic!("[{}] {}", node.host, error);
-            }
-            info!("Node-{} fully operational", node.host);
+            ping_node(node);
         }
     }
 
     for generate in generates.iter() {
         if let Some(ref node) = generate.object.node {
-            let result = ping::ping(&node.host);
-            if let Err(error) = result {
-                panic!("[{}] {}", node.host, error);
-            }
-            info!("Node-{} fully operational", node.host);
+            ping_node(node);
         }
     }
 
