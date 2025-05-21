@@ -1,0 +1,11 @@
+{
+  "variables": {
+    "DOCKER": {
+      "image": "rust",
+      "name": "rust-docker"
+    }
+  },
+  "object": {
+    "docker": "${DOCKER}"
+  }
+}

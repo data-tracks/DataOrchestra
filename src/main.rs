@@ -1,7 +1,5 @@
 use std::{env, fs};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{stdin, stdout, Read, Write};
+use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::process::exit;
@@ -15,11 +13,11 @@ use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::Config;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
 use data_orchestra::shared::arguments::{Arguments, ARGS};
+use data_orchestra::variables::{set_variables, Variables};
 use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
-use serde::{Deserialize, Serialize};
 
 pub fn print_logo() {
     println!(r#"
@@ -54,34 +52,12 @@ fn main() {
     // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
-    let config_file = File::open(config_path).expect("Unable to open config file");
-    let config_str = fs::read_to_string(config_path);
-    if let Err(error) = config_str {
-        panic!("{}", error);
-    }
+    let config_str = fs::read_to_string(config_path).expect("Unable to read config file");
 
-    let mut config_str = config_str.unwrap();
-
-
-    #[derive(Debug, Deserialize, Serialize)]
-    struct Variables {
-        #[serde(default)]
-        variables: HashMap<String, String>
-    }
-
+    // Read only variables from config into struct and transform config string to replace variables
+    // with actual values before parsing the modified string to the config struct
     let variables: Variables = serde_json::from_str(config_str.as_str()).expect("Unable to parse config to struct");
-
-    set_variables(variables, &mut config_str);
-
-    fn set_variables(variables: Variables, config: &mut str) {
-        let variables = variables.variables;
-        for (key, value) in variables {
-            let matches = config.find(key.as_str());
-            if let Some(matches) = matches {
-                
-            }
-        }
-    }
+    let config_str = set_variables(variables, config_str);
 
     let config: Config = serde_json::from_str(config_str.as_str()).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
