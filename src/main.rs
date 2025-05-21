@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::thread::{self};
-use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Portainer, Runner};
+use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Local, Portainer, Runner};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
@@ -47,14 +47,6 @@ fn main() {
 
     if args.file == None {
         panic!("No config file specified. Please specify config with -f <path> argument");
-    }
-
-    if args.remove_all {
-        info!("Removing and deleting all docker containers");
-        //docker::stop_all_containers();
-        //docker::remove_all_containers();
-        //docker::remove_all_networks();
-        info!("Deleted all docker containers");
     }
 
     // Read config
@@ -240,7 +232,7 @@ fn main() {
                 for node in nodes {
                     if node.host.eq(&IpAddr::V4(Ipv4Addr::from_str(host).unwrap())) {
                         if let Some(ref ssh) = node.ssh {
-                            let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                            let runner = ssh.to_box_runner();
                             let result = docker::api::stop_container(docker, &runner);
                             if let Err(error) = result {
                                 error!("{}", error);
@@ -381,10 +373,10 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
     info!("Deploying portainer agent on nodes");
     let nodes = get_nodes(stores, processes, generates);
 
-    for node in nodes {
-        if ARGS.get().unwrap().remove_all {
+    if ARGS.get().unwrap().remove_all {
+        for node in nodes {
             if let Some(ssh) = node.ssh.as_ref() {
-                let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                let runner = ssh.to_box_runner();
                 info!("Removing all docker containers from {}", node.host);
                 let result = docker::api::stop_containers(&runner);
                 if let Err(error) = result {
@@ -395,10 +387,20 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
                     error!("{}", error);
                 }
             }
+            portainer.create_agent(node);
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let _ = rt.block_on(portainer.add_agent(node));
         }
-        portainer.create_agent(node);
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let _ = rt.block_on(portainer.add_agent(node));
+
+        let runner = Local::new().to_box_runner();
+        let result = docker::api::stop_containers(&runner);
+        if let Err(error) = result {
+            error!("{}", error);
+        }
+        let result = docker::api::delete_containers(&runner);
+        if let Err(error) = result {
+            error!("{}", error);
+        }
     }
 }
 

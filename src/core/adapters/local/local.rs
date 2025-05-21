@@ -1,13 +1,22 @@
 use std::process::{Command, Stdio};
 use log::debug;
-use crate::core::adapters::Runner;
+use crate::core::adapters::{Runner, Ssh};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Local {}
 
 impl Local {
     pub fn new() -> Self {
         Local {}
+    }
+
+    pub fn new_box() -> Box<Self> {
+        Box::new(Local::new())
+    }
+
+    /// Wrap [`Local`] clone in [`Box`] and cast to `dyn Runner + Send`
+    pub fn to_box_runner(&self) -> Box<dyn Runner + Send>  {
+        Box::new(self.clone()) as Box<dyn Runner + Send>
     }
 }
 

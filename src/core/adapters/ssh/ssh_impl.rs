@@ -61,9 +61,9 @@ impl Ssh {
         Ok(())
     }
 
+    /// Wrap [`Ssh`] clone in [`Box`] and cast to `dyn Runner + Send`
     pub fn to_box_runner(&self) -> Box<dyn Runner + Send> {
-        let runner = Box::new(self.clone()) as Box<dyn Runner + Send>;
-        runner
+        Box::new(self.to_owned()) as Box<dyn Runner + Send>
     }
 }
 

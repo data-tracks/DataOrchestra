@@ -71,7 +71,7 @@ impl Spawner for Object {
             // TODO: Add local runner
             if let Some(ref node) = self.node {
                 if let Some(ref ssh) = node.ssh {
-                    let runner = Box::new(ssh.clone()) as Box<dyn Runner + Send>;
+                    let runner = ssh.to_box_runner();
                     container.runner = runner;
                 }
             }
@@ -194,11 +194,13 @@ impl Object {
                     let command = format!("ansible-playbook {} -e \"port={}\"", script_path, port);
 
                     if let Some(ref node) = self.node {
-                        let runner = Box::new(node.ssh.as_ref().unwrap().clone()) as Box<dyn Runner + Send>;
-                        runner.exec(command)?;
+                        if let Some(ref ssh) = node.ssh {
+                            let runner = ssh.to_box_runner();
+                            runner.exec(command)?;
+                        }
                     }
                     else {
-                        let runner = Box::new(Local::new()) as Box<dyn Runner + Send>;
+                        let runner = Local::new().to_box_runner();
                         runner.exec(command)?;
                     }
                 }

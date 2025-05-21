@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::ComposeGroupBuilder;
@@ -13,14 +14,15 @@ pub enum ProcessType {
     Storm
 }
 
-impl ToString for ProcessType {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for ProcessType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             ProcessType::Flink => String::from("Flink"),
             ProcessType::Kafka => String::from("Kafka"),
             ProcessType::Spark => String::from("Spark"),
             ProcessType::Storm => String::from("Storm")
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 

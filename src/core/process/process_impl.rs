@@ -1,6 +1,6 @@
 use log::{info, debug, error};
 use crate::core::adapters::docker::{ComposeGroupBuilder, Run};
-use crate::core::adapters::ContainerType;
+use crate::core::adapters::{ContainerType, Runner};
 use crate::core::process::process_types::ProcessTypeConfig;
 use crate::shared::traits::Spawner;
 
@@ -11,7 +11,7 @@ impl Spawner for Process {
         info!("Building Process");
         
         if let Some(ref process) = self.process_type {
-            debug!("Setting up {:?} enviroment", process);
+            debug!("Setting up {} enviroment", process);
 
             if self.config.is_none() {
                 info!("No config was provided. Setting up default config");

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
+use crate::core::adapters::Ssh;
 
-pub trait Runner: Debug {
+pub trait Runner: Debug where Self: 'static {
     fn exec(&self, command: String) -> Result<String, String>;
 }
 
