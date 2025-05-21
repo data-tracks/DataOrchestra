@@ -14,10 +14,7 @@ impl Local {
         Box::new(Local::new())
     }
 
-    /// Wrap [`Local`] clone in [`Box`] and cast to `dyn Runner + Send`
-    pub fn to_box_runner(&self) -> Box<dyn Runner + Send>  {
-        Box::new(self.clone()) as Box<dyn Runner + Send>
-    }
+
 }
 
 impl Runner for Local {

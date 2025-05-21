@@ -156,18 +156,6 @@ impl Spawner for Object {
     }
 }
 
-// TODO: Check if this is actually viably maintainable or just a pain
-use thiserror::Error;
-#[derive(Debug, Error)]
-pub enum SshError {
-    #[error("No ssh port available. {0}")]
-    NoSshPort(String),
-    #[error("No ssh session available. {0}")]
-    NoSshSession(String),
-    #[error("Error with ssh session. {0}")]
-    Error(String)
-}
-
 impl Object {
     pub fn start_containers(&mut self) -> Result<(), String> {
         // Start containers and move to manager

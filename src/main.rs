@@ -40,13 +40,13 @@ fn main() {
     
     if args.generate_valid_json {
         println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
-        exit(-1);
+        exit(0);
     }
    
     init_logger(args.level);
 
     if args.file == None {
-        panic!("No config file specified. Please specify config with -f <path> argument");
+        panic!("No config file specified. Please specify config with -f | --file  <path> argument");
     }
 
     // Read config
@@ -389,7 +389,7 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
             }
             portainer.create_agent(node);
             let rt = tokio::runtime::Runtime::new().unwrap();
-            let _ = rt.block_on(portainer.add_agent(node));
+            rt.block_on(portainer.add_agent(node));
         }
 
         let runner = Local::new().to_box_runner();
