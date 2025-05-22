@@ -1,0 +1,58 @@
+mod tests {
+    use rstest::rstest;
+    use data_orchestra::variables::{set_variables, Variables};
+
+    #[rstest]
+    #[case(r#"{ "variables": { "NAME": "someone" } }"#, r#"{ "name": "${NAME}" }"#, r#"{ "name": "someone" }"#)]
+    #[case(r#"{ "variables": { "NAME": "someone", "COUNTRY": "CH" } }"#, r#"{ "name": "${NAME}", "country": "${COUNTRY}" }"#, r#"{ "name": "someone", "country": "CH" }"#)]
+    pub fn single_variable(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = set_variables(variables, config.to_string());
+
+        let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
+        let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
+
+        assert_eq!(actual_json, expected_json);
+    }
+
+    #[rstest]
+    #[case(r#"{ "variables": { "NAMES": ["someone", "someone else"] } }"#, r#"{ "names": "${NAMES}" }"#, r#"{ "names": ["someone", "someone else"] }"#)]
+    #[case(r#"{ "variables": { "NAMES": ["someone", "someone else"], "COUNTRIES": ["CH", "NL"] } }"#, r#"{ "names": "${NAMES}", "countries": "${COUNTRIES}" }"#, r#"{ "names": ["someone", "someone else"], "countries": ["CH", "NL"] }"#)]
+    pub fn array_variable(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = set_variables(variables, config.to_string());
+
+        let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
+        let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
+
+        assert_eq!(actual_json, expected_json);
+    }
+
+    #[rstest]
+    #[case(r#"{ "variables": { "PERSON": { "name": "someone", "country": "CH" } } }"#, r#"{ "person": "${PERSON}" }"#, r#"{ "person": { "name": "someone", "country": "CH" } }"#)]
+    #[case(r#"{ "variables": { "PERSON": { "name": "someone", "country": "CH" }, "COUNTRY": { "short": "CH", "long": "Switzerland" } } }"#, r#"{ "person": "${PERSON}", "country": "${COUNTRY}" }"#, r#"{ "person": { "country": "CH", "name": "someone" }, "country": { "short": "CH", "long": "Switzerland" } }"#)]
+    pub fn structure_variable(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = set_variables(variables, config.to_string());
+
+        let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
+        let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
+
+        assert_eq!(actual_json, expected_json);
+    }
+
+    #[rstest]
+    #[case(r#"{ "variables": { "NAME": "someone", "COUNTRIES": ["CH", "NL"] } }"#, r#"{ "name": "${NAME}", "countries": "${COUNTRIES}" }"#, r#"{ "name": "someone", "countries": ["CH", "NL"] }"#)]
+    #[case(r#"{ "variables": { "NAME": "someone", "PERSON": { "name": "someone", "country": "CH" } } }"#, r#"{ "name": "${NAME}", "person": "${PERSON}" }"#, r#"{ "name": "someone", "person": { "name": "someone", "country": "CH" } }"#)]
+    #[case(r#"{ "variables": { "COUNTRIES": ["CH", "NL"], "PERSON": { "name": "someone", "country": "CH" } } }"#, r#"{ "countries": "${COUNTRIES}", "person": "${PERSON}" }"#, r#"{ "countries": ["CH", "NL"], "person": { "name": "someone", "country": "CH" } }"#)]
+    #[case(r#"{ "variables": { "NAME": "someone", "COUNTRIES": ["CH", "NL"], "PERSON": { "name": "someone", "country": "CH" } } }"#, r#"{ "name": "${NAME}", "countries": "${COUNTRIES}", "person": "${PERSON}" }"#, r#"{ "name": "someone", "countries": ["CH", "NL"], "person": { "name": "someone", "country": "CH" } }"#)]
+    pub fn different_variables(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = set_variables(variables, config.to_string());
+
+        let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
+        let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
+
+        assert_eq!(actual_json, expected_json);
+    }
+}

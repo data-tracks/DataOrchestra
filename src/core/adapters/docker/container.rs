@@ -13,7 +13,7 @@ use super::source::DockerSourceBuilder;
 use super::{ContainerConfig, DockerSource, PortMapping};
 use super::Run;
 
-/// The docker `ContainerData` type. Represents the general information tied to the creation of a
+/// The docker `Container` type. Represents the general information tied to the creation of a
 /// docker container.
 #[derive(Debug)]
 pub struct Container {

@@ -1,52 +1,24 @@
 use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Variables {
     #[serde(default)]
-    variables: HashMap<String, ValueType>
+    variables: HashMap<String, Value>
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum ValueType {
-    Single(String),
-    Structured(HashMap<String, ValueType>)
-}
-
-impl ValueType {
-    pub fn is_single(&self) -> bool {
-        matches!(self, Self::Single(_))
-    }
-
-    pub fn is_structured(&self) -> bool {
-        matches!(self, Self::Structured(_))
-    }
-}
-
-impl ToString for ValueType {
-    fn to_string(&self) -> String {
-        match self {
-            ValueType::Single(value) => value.to_string(),
-            ValueType::Structured(values) => serde_json::to_string(values).unwrap()
-        }
-    }
-}
-
+/// Replace all variables in string with true value.
+///
+/// Variables are defined as `${<variable>}`. The variable can either be a simple string, array or hashmap.
 pub fn set_variables(variables: Variables, mut config: String) -> String {
     let variables = variables.variables;
     for (key, value) in variables {
-        let variable: String;
-        if value.is_single() {
-            variable = format!("${{{}}}", &key);
-        } 
-        else {
-            variable = format!("\"${{{}}}\"", &key); 
-        }
+        // "${var}" -> "val" or val or or [ ... ] or { ... }
+        let variable = format!("\"${{{}}}\"", &key);
+        // Replace all mentions of the `variable`
         while config.contains(&variable) {
-            config = config.replace(&variable, &value.to_string().as_str());
-
+            config = config.replace(&variable, value.to_string().as_str());
         }
     }
 

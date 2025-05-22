@@ -68,7 +68,6 @@ impl Spawner for Object {
             info!("Setting up docker container");
             let mut container = container.build();
 
-            // TODO: Add local runner
             if let Some(ref node) = self.node {
                 if let Some(ref ssh) = node.ssh {
                     let runner = ssh.to_box_runner();

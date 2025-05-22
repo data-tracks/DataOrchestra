@@ -45,7 +45,7 @@ fn main() {
    
     init_logger(args.level);
 
-    if args.file == None {
+    if args.file.is_none() {
         panic!("No config file specified. Please specify config with -f | --file  <path> argument");
     }
 

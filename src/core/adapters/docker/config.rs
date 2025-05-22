@@ -56,21 +56,27 @@ pub struct ContainerConfigBuilder {
     containerconfig: ContainerConfig,
 }
 
-impl ContainerConfigBuilder {
-    pub fn new() -> Self {
-        ContainerConfigBuilder 
-        { 
-            containerconfig: ContainerConfig 
-            { 
-                name: None, 
-                network: String::from("orchestra"), 
-                enviroment: HashMap::new(), 
-                mount: Vec::new(), 
+impl Default for ContainerConfigBuilder {
+    fn default() -> Self {
+        ContainerConfigBuilder
+        {
+            containerconfig: ContainerConfig
+            {
+                name: None,
+                network: String::from("orchestra"),
+                enviroment: HashMap::new(),
+                mount: Vec::new(),
                 publish: Vec::new(),
                 publish_all: false,
                 expose: false
             }
         }
+    }
+}
+
+impl ContainerConfigBuilder {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
