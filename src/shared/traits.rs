@@ -18,7 +18,7 @@ pub trait ToInternalVec<T> {
 }
 
 
-// ToInternal implementation for the Amount enum to get Vec<S -> T>
+/// ToInternal implementation for the Amount enum to get Vec<S -> T>
 impl<T, S> ToInternal<Vec<T>> for Amount<S> 
 where 
     S: ToInternal<T>
@@ -43,8 +43,8 @@ where
 
 
 
-// ToInternal implementation for the Amount enum to get Vec<S -> Vec<T>>. This is specifically for
-// objects which implement the ToInternalVec
+/// ToInternal implementation for the Amount enum to get Vec<S -> Vec<T>>. This is specifically for
+/// objects which implement the ToInternalVec
 impl<T, S> ToInternalVec<T> for Amount<S> 
 where 
     S: ToInternalVec<T>,

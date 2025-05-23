@@ -1,6 +1,5 @@
-use log::{error, info, warn};
-use crate::core::adapters::docker::DockerManager;
-use crate::core::adapters::{ContainerBuilder, ContainerType, Runner};
+use log::info;
+use crate::core::adapters::{ContainerBuilder, Runner};
 use crate::shared::traits::Spawner;
 
 use super::Store;

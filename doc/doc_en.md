@@ -1,4 +1,4 @@
-# Heterogenous Data Orchester
+# Data Orchestra
 
 
 
@@ -15,7 +15,7 @@ cargo run -- <parameters>
 The logging level can be set via
 
 ```sh
--l <level>
+-l | --level <level>
 ```
 
 with different the different level hierarchies [`debug`, `error`, `warn`, `info`, `trace`, `off`].
@@ -25,7 +25,7 @@ with different the different level hierarchies [`debug`, `error`, `warn`, `info`
 The startup config file can be set via
 
 ```sh
--f <path>
+-f | --file <path>
 ```
 
 Where the starting path point is the root of the repository.
@@ -45,6 +45,25 @@ A sample json can be generated with the flag
 ```
 
 ## Config
+
+### Variables
+
+The config file allows for variable setting. Non-recursive variables are allowed, where the variables can be a simple `value`, an `array` or a `map`. The variables can defined inside the map related to the key `variables` inside the config file.
+
+```json
+{
+  "variables": {
+    "SIMPLE_VARIABLE": "VALUE",
+    "ARRAY_VALUE": ["VALUE_1", "VALUE_2"],
+    "MAP_VALUE": {
+      "VARIABLE_1": "VALUE_1",
+      "VARIABLE_2": "VALUE_2"
+    }
+  }
+}
+```
+
+The variables can then be used anywhere else inside the config with the pattern `${VARIABLE}`. The variable patterns are replaced with the true value defined inside the `variables` map through string matching.
 
 ### Object
 

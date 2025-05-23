@@ -99,6 +99,9 @@ impl Portainer {
 
             if !volumes.contains(&String::from("portainer_data")) {
                 let result = self.runner.exec("docker volume create portainer_data".to_string());
+                if let Err(error) = result {
+                    error!("{}", error);
+                }
             }
 
             let result = self.runner.exec 
@@ -111,6 +114,9 @@ impl Portainer {
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     -v portainer_data:/data portainer/portainer-ce:lts".to_string()
                 );
+            if let Err(error) = result {
+                error!("{}", error);
+            }
 
             // poll docker container
             let result = docker::api::poll_container("portainer", 30, &self.runner);
@@ -122,8 +128,8 @@ impl Portainer {
         }
 
         let rt = tokio::runtime::Runtime::new().unwrap(); 
-        let _ = rt.block_on(self.create_account());
-        let _ = rt.block_on(self.authenticate_account());
+        rt.block_on(self.create_account());
+        rt.block_on(self.authenticate_account());
 
         info!("Finished setting up portainer");
     }
@@ -153,7 +159,7 @@ impl Portainer {
         thread::sleep(Duration::from_secs(2));
     }
 
-    /// Add agent enviroment to portainer
+    /// Add agent environment to portainer
     pub async fn add_agent(&self, node: &Node) {
         info!("Adding portainer agent");
 
@@ -233,7 +239,5 @@ impl Portainer {
         else if let Err(response) = response {
             error!("{:?}", response);
         }
-
-        
     }
 }

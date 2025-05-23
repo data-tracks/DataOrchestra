@@ -3,6 +3,7 @@ use std::time;
 
 use crate::core::adapters::Runner;
 
+/// Delete all running containers running on the location of the runner
 pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = "docker rm $(docker container ls -a -q)";
     runner.exec(command.to_string())?;
@@ -10,6 +11,7 @@ pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> 
     Ok(())
 }
 
+/// Delete specific container running on the location of the runner
 pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = format!("docker rm {}", name.into());
     runner.exec(command.to_string())?;
@@ -17,6 +19,7 @@ pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send
     Ok(())
 }
 
+/// Delete all running containers running on the location of the runner
 pub fn stop_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = "docker stop $(docker container ls -a -q)";
     runner.exec(command.to_string())?;
@@ -24,6 +27,7 @@ pub fn stop_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     Ok(())
 }
 
+/// Stop specific running container running on the location of the runner
 pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = format!("docker stop {}", name.into());
     runner.exec(command.to_string())?;
@@ -31,6 +35,7 @@ pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>)
     Ok(())
 }
 
+/// Check if container is running by continously polling its status every second until `timeout`
 pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let name = name.into();
     let start = time::Instant::now();
@@ -57,6 +62,7 @@ pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Ru
     }
 }
 
+/// Get all container names running on location of runner
 pub fn get_container_names(runner: &Box<dyn Runner + Send>) -> Result<Vec<String>, String> {
     let command = "docker container ls --format {{.Names}}";
     let output: String;

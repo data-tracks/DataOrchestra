@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::ComposeGroupBuilder;

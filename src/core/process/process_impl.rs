@@ -1,5 +1,5 @@
-use log::{info, debug, error};
-use crate::core::adapters::docker::{ComposeGroupBuilder, Run};
+use log::{info, debug};
+use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::{ContainerType, Runner};
 use crate::core::process::process_types::ProcessTypeConfig;
 use crate::shared::traits::Spawner;

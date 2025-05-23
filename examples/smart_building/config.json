@@ -1,26 +1,53 @@
 {
-  "generate": {
-    "node": {
-      "name": "161",
+  "variables": {
+    "NODE161": {
+      "name": "node-161",
       "host": "10.34.64.161",
       "username": "ubuntu"
     },
-    "docker": {
-      "name": "rust",
-      "image": "rust"
+    "NODE162": {
+      "name": "node-162",
+      "host": "10.34.64.162",
+      "username": "ubuntu"
+    },
+    "NODE163": {
+      "name": "node-163",
+      "host": "10.34.64.163",
+      "username": "ubuntu"
     }
   },
+  "generate":
+  [
+    {
+      "node": "${NODE161}",
+      "sensor": {
+        "stream_processor": "kafka",
+        "address": "10.34.64.161:9092"
+      }
+    },
+    {
+
+    }
+  ],
+  "process":
+  [
+    {
+      "node": "${NODE162}",
+      "kafka": {
+        "topics": ["HeatSensor_In", "HeatSensor_Out"]
+      }
+    }
+  ],
 
   "store": [
     {
-      "node": {
-        
-      },
+      "node": "${NODE163}",
       "postgres": {
 
       }
     },
     {
+      "node": "${NODE163}",
       "mongodb": {
 
       }

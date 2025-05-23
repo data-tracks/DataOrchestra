@@ -1,6 +1,6 @@
 use std::process::{Command, Stdio};
 use log::debug;
-use crate::core::adapters::{Runner, Ssh};
+use crate::core::adapters::Runner;
 
 #[derive(Debug, Clone)]
 pub struct Local {}
