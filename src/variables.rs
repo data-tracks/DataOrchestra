@@ -7,6 +7,22 @@ pub struct Variables {
     variables: Map<String, Value>
 }
 
+// TODO: Try to see if this improvent is possible / viable
+/*
+impl Variables {
+    pub fn parse(&self, config: String) {
+        let mut tree: Tree<String, Value> = Tree::new(Some("variables"));
+        tree.add_node(Node::new("variables", Some(serde_json::Value(self.variables.clone()))), None);
+    }
+
+    fn create_tree() {
+    
+    }
+
+
+}
+*/
+
 /// Replace all variables in string with true value.
 ///
 /// Variables are defined as `${<variable>}`. The variable can either be a simple string, array or map.
@@ -28,10 +44,6 @@ pub fn set_variables(variables: Variables, mut config: String) -> String {
     }
 
     config
-}
-
-fn map_recursion(mut config: String, map: Map<String, Value>) {
-     
 }
 
 fn replace_variables(mut config: String, variable: &String, value: &String) -> String {

@@ -206,7 +206,8 @@ impl Default for Config {
                                         image: Some("".to_string()),
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
-                                        compose: Some("".to_string())
+                                        compose: Some("".to_string()),
+                                        names: None
                                     }
                                 ),
                             node: None,
@@ -246,7 +247,8 @@ impl Default for Config {
                                         image: Some("".to_string()),
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
-                                        compose: Some("".to_string())
+                                        compose: Some("".to_string()),
+                                        names: None
                                     }
                                 ),
                             node: None,
@@ -283,7 +285,8 @@ impl Default for Config {
                                         image: Some("".to_string()),
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
-                                        compose: Some("".to_string())
+                                        compose: Some("".to_string()),
+                                        names: None
                                     }
                                 ),
                             node: None,
@@ -324,7 +327,8 @@ impl Default for Config {
                                         image: Some("".to_string()),
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
-                                        compose: Some("".to_string())
+                                        compose: Some("".to_string()),
+                                        names: None
                                     }
                                 ),
                             node: None,

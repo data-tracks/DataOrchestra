@@ -312,9 +312,10 @@ impl Container {
         debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
 
         // Set correct install script for different distros
+        dbg!(&self.os);
         if let Some(ref os) = &self.os {
             match os {
-                OsSystems::Debian => {
+                OsSystems::Debian | OsSystems::Ubuntu => {
                     let script = String::from("apt_ssh_setup.sh");
 
                     // Reformat sh script for linux distro

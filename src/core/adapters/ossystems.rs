@@ -4,7 +4,8 @@ use std::str::FromStr;
 pub enum OsSystems {
     Debian,
     Alpine,
-    RedHatEnterprise
+    RedHatEnterprise,
+    Ubuntu
 }
 
 impl FromStr for OsSystems {
@@ -17,6 +18,9 @@ impl FromStr for OsSystems {
         }
         else if s.contains("debian") {
             return Ok(OsSystems::Debian);
+        }
+        else if s.contains("ubuntu") {
+            return Ok(OsSystems::Ubuntu);
         }
         else if s.contains("rhel") {
             return Ok(OsSystems::RedHatEnterprise);

@@ -33,5 +33,7 @@ ansi_term = "0.12.1"
 # Dir traverser
 walkdir = "2.5.0"
 
+tree-ds = "0.1.6"
+
 [dev-dependencies]
 rstest = "0.25.0"

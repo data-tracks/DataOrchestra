@@ -23,7 +23,6 @@ pub fn default_amount() -> usize {
 impl ToInternalVec<Generate> for ExtGenerate {
     fn to_internal(self) -> Vec<Generate> {
         let mut vec_generate = Vec::<Generate>::new();
-        
         for _i in 0..self.amount {
             let mut generate = Generate::default();
 
@@ -44,7 +43,7 @@ impl ToInternalVec<Generate> for ExtGenerate {
             }
 
             if let Some(docker) = self.general.docker.clone() {
-                if docker.compose.is_some() {
+                if docker.compose.is_some() || docker.names.is_some() {
                     generate.object.docker_group_builder = Some(docker.to_internal());
                 }
                 else 

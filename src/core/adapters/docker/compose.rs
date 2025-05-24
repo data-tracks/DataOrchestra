@@ -1,7 +1,4 @@
-use std::path::Path;
-use std::fs::{self};
 use log::{debug, error, warn};
-use yaml_rust::YamlLoader;
 use crate::core::adapters::{Local, Runner};
 
 use super::container::ContainerBuilder;
@@ -10,33 +7,9 @@ use super::{Container, Run};
 #[derive(Debug)]
 pub struct ComposeGroup {
     pub compose: Option<String>,
+    pub names: Vec<String>,
     pub containers: Vec<Container>,
     pub runner: Box<dyn Runner + Send>
-}
-
-impl ComposeGroup {
-    pub fn get_names(&self) -> Vec<String>{
-        let mut vec_names = Vec::<String>::new();
-        let compose = Path::new(self.compose.as_ref().unwrap());
-        let yaml = fs::read_to_string(compose).expect("Unable to read compose");
-        let yaml = YamlLoader::load_from_str(yaml.as_str());
-        if let Ok(yaml) = yaml {
-            let doc = &yaml[0]["services"]; 
-            if let Some(yaml) = doc.as_hash() {
-                for key in yaml.keys() {
-                    let container = &yaml[key];
-                    if !container["container_name"].is_badvalue() {
-                        vec_names.push(container["container_name"].as_str().unwrap().to_string().replace("\n", ""));
-                    }
-                    else {
-                        vec_names.push(key.as_str().unwrap().to_string().replace("\n", ""));
-                    }
-                }
-            }
-        }
-
-        vec_names
-    }
 }
 
 impl Run for ComposeGroup {
@@ -56,8 +29,8 @@ impl Run for ComposeGroup {
 
         // Set id of containers.
         // As the containers here are non specific yet, we can arbitrarily set the id(s)
-        let names: Vec<String> = self.get_names();
-        for name in names {
+        dbg!(&self);
+        for name in self.names.clone() {
             let mut container = ContainerBuilder::new().build();
             let result = self.runner.exec(format!("docker ps -aqf \"name={}\"", name));
             if let Err(ref error) = result {
@@ -109,7 +82,8 @@ impl ComposeGroupBuilder {
             { 
                 compose: None, 
                 containers: Vec::new(),
-                runner: Box::new(Local::new())
+                runner: Box::new(Local::new()),
+                names: Vec::new()
             }
         }
     }
@@ -121,6 +95,11 @@ impl ComposeGroupBuilder {
 
     pub fn add_container(&mut self, container: Container) -> &mut Self {
         self.composegroup.containers.push(container);
+        self
+    }
+
+    pub fn add_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+        self.composegroup.names.push(name.into());
         self
     }
 

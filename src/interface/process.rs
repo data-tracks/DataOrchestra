@@ -37,7 +37,7 @@ impl ToInternal<Process> for ExtProcess {
 
         // If a process type is given prioritise this over additional docker config
         if let Some(docker) = self.general.docker {
-            if docker.compose.is_some() {
+            if docker.compose.is_some() || docker.names.is_some() {
                 process.object.docker_group_builder = Some(docker.to_internal());
             }
             else 

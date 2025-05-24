@@ -11,7 +11,7 @@ impl Storm {
     }
 
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
-        docker.set_compose("lib/TrackBench.rs/compose-storm.yaml");
+        docker.set_compose("images/compose-storm.yaml");
     }
 }
 

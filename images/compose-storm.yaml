@@ -1,0 +1,51 @@
+services:
+  zookeeper:
+    image: zookeeper
+    container_name: zookeeper
+    restart: always
+
+  nimbus:
+    image: storm:2.8.0-jre17
+    container_name: nimbus
+    command: storm nimbus
+    depends_on:
+      - zookeeper
+    links:
+      - zookeeper
+    restart: always
+    ports:
+      - "6627:6627"
+    volumes:
+      - ./topologies:/topologies  # Mount local dir with your JAR
+#    entrypoint: ["/bin/bash", "/topologies/start.sh"]
+    #  sh start.sh
+
+  supervisor:
+    image: storm:2.8.0-jre17
+    container_name: supervisor
+    command: storm supervisor
+    depends_on:
+      - nimbus
+      - zookeeper
+    links:
+      - nimbus
+      - zookeeper
+    #volumes:
+    #  - ./logs:/logs
+    ports:
+      - "9393:9393"
+      - "9494:9494"
+    restart: always
+  ui:
+    image: storm:2.8.0-jre17
+    container_name: ui
+    command: storm ui
+    depends_on:
+      - nimbus
+      - zookeeper
+    links:
+      - nimbus
+      - zookeeper
+    restart: always
+    ports:
+      - "6680:8080"

@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
+use std::process::exit;
 use crate::core::adapters::docker::container::ContainerBuilder;
-use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
+use crate::core::adapters::docker::{self, ComposeGroupBuilder, DockerManager};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::attach::attach_types::AttachType;
@@ -60,7 +61,26 @@ impl Spawner for Object {
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
         if let Some(group) = self.docker_group_builder.take() {
             info!("Setting up docker compose");
-            let compose = group.build();
+            let mut compose = group.build();
+            if let Some(ref node) = self.node {
+                if let Some(ref ssh) = node.ssh {
+                    let runner = ssh.to_box_runner();
+                    compose.runner = runner;
+
+                    ssh.exec("mkdir docker/".to_string());
+                    let local_path = compose.compose.clone().unwrap(); 
+                    if let Some(file_name) = Path::new(compose.compose.as_ref().unwrap())
+                            .file_name()
+                            .and_then(|name| name.to_str()) 
+                    {
+                        compose.compose = Some(format!("docker/{}", file_name));
+                    }
+                    let result = ssh.upload_file(local_path, compose.compose.as_ref().unwrap());
+                    if let Err(error) = result {
+                        panic!("Unable to upload dockerfile {}", error);
+                    }
+                }
+            }
             manager.add("compose", ContainerType::Compose(compose));
         }
         // Take ownership of ContainerBuilder out of object to prevent partial move
@@ -72,6 +92,22 @@ impl Spawner for Object {
                 if let Some(ref ssh) = node.ssh {
                     let runner = ssh.to_box_runner();
                     container.runner = runner;
+    
+                    if let Some(dockerfile) = container.source.dockerfile.as_mut() {
+                        ssh.exec("mkdir docker/".to_string());
+                        let local_path = dockerfile.clone(); 
+                        if let Some(file_name) = Path::new(dockerfile)
+                                .file_name()
+                                .and_then(|name| name.to_str()) 
+                        {
+                            *dockerfile = format!("docker/{}", file_name);
+                        }
+                        let result = ssh.upload_file(local_path, dockerfile);
+                        if let Err(error) = result {
+                            panic!("Unable to upload dockerfile {}", error);
+                        }
+
+                    }
                 }
             }
             manager.add(container.config.name.clone().unwrap(), ContainerType::Container(container));

@@ -1,0 +1,27 @@
+services:
+  jobmanager:
+    image: flink:java21
+    ports:
+      - "8077:8081"
+      - "8383:8383"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+    #command: bash -c "flink run -c com.datatracks.Main /topologies/flink.jar && jobmanager"
+    volumes:
+      - ./topologies:/topologies  # Mount local dir with your JAR
+      #- ./logs:/logs
+
+  taskmanager:
+    image: flink:java21
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2

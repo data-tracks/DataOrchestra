@@ -15,7 +15,7 @@ impl Kafka {
     }
 
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
-        docker.set_compose("lib/TrackBench.rs/compose-kafka.yaml");
+        docker.set_compose("images/compose-kafka.yaml");
     }
 
     pub fn create_topic(&self, id: &String, runner: &Box<dyn Runner + Send>) {

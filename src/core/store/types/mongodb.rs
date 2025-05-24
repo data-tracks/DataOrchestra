@@ -42,8 +42,9 @@ impl MongoDB {
     }
     
     pub fn setup_container(&self, docker: &mut ContainerBuilder) {
-        docker.set_image("mongo");
+        docker.set_image("mongo:4.4.6");
         docker
+            .add_publish(27017)
             .add_env_var("ME_CONFIG_MONGODB_ADMINUSERNAME", self.me_config_mongodb_adminusername.clone())
             .add_env_var("ME_CONFIG_MONGODB_ADMINPASSWORD", self.me_config_mongodb_adminpassword.clone())
             .add_env_var("ME_CONFIG_MONGODB_URL", self.me_config_mongodb_url.clone())

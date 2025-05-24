@@ -75,8 +75,6 @@ fn main() {
 
     health_check(&stores, &processes, &generates);
 
-    portainer.build(); 
-
     // Start different tasks
     // Note: Task not referencable anymore as it is moved into `start`
     info!("Running tasks");
@@ -107,7 +105,29 @@ fn main() {
         }
     });
 
+    if ARGS.get().unwrap().remove_all {
+        kill_containers(&stores, &processes, &generates);
+    }
+
+    portainer.build(); 
+
     pre_setup(&portainer, &stores, &processes, &generates);
+
+    let nodes = get_nodes(&stores, &processes, &generates);
+    for node in nodes {
+        if let Some(ssh) = node.ssh.as_ref() {
+            let result = docker::api::get_networks(&ssh.to_box_runner());
+            if let Ok(networks) = result {
+                if !networks.contains(&"orchestra".to_string()) {
+                    let result = docker::api::create_network("orchestra", &ssh.to_box_runner());
+                    if let Err(error) = result {
+                        error!("{}", error);
+                    }
+                }
+            }
+        }
+    }
+
    
     thread::scope(|s| {
         for store in stores.iter_mut() {
@@ -352,12 +372,42 @@ pub fn setup_docker_networks(manager: &DockerManager) {
             _ => ()
         } 
     }
+
+
+}
+
+pub fn kill_containers(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+    let nodes = get_nodes(stores, processes, generates);
+    for node in nodes {
+        if let Some(ssh) = node.ssh.as_ref() {
+            let runner = ssh.to_box_runner();
+            info!("Removing all docker containers from {}", node.host);
+            let result = docker::api::stop_containers(&runner);
+            if let Err(error) = result {
+                error!("{}", error);
+            }
+            let result = docker::api::delete_containers(&runner);
+            if let Err(error) = result {
+                error!("{}", error);
+            }
+        }
+    }
+
+    let runner = Local::new().to_box_runner();
+    let result = docker::api::stop_containers(&runner);
+    if let Err(error) = result {
+        error!("{}", error);
+    }
+    let result = docker::api::delete_containers(&runner);
+    if let Err(error) = result {
+        error!("{}", error);
+    }
 }
 
 pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
     info!("Performing pre setup");
 
-    info!("Copying necessary scripts");
+    info!("Setting up docker networks");
     for store in stores.iter() {
         if let Some(ref manager) = store.object.docker_manager {
             setup_docker_networks(manager); 
@@ -379,34 +429,10 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
     info!("Deploying portainer agent on nodes");
     let nodes = get_nodes(stores, processes, generates);
 
-    if ARGS.get().unwrap().remove_all {
-        for node in nodes {
-            if let Some(ssh) = node.ssh.as_ref() {
-                let runner = ssh.to_box_runner();
-                info!("Removing all docker containers from {}", node.host);
-                let result = docker::api::stop_containers(&runner);
-                if let Err(error) = result {
-                    error!("{}", error);
-                }
-                let result = docker::api::delete_containers(&runner);
-                if let Err(error) = result {
-                    error!("{}", error);
-                }
-            }
-            portainer.create_agent(node);
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(portainer.add_agent(node));
-        }
-
-        let runner = Local::new().to_box_runner();
-        let result = docker::api::stop_containers(&runner);
-        if let Err(error) = result {
-            error!("{}", error);
-        }
-        let result = docker::api::delete_containers(&runner);
-        if let Err(error) = result {
-            error!("{}", error);
-        }
+    for node in nodes {
+        portainer.create_agent(node);
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(portainer.add_agent(node));
     }
 }
 

@@ -1,29 +1,21 @@
-use std::{thread, time::Duration};
-
+use std::{thread, time::{Duration, SystemTime}};
 use clap::Parser;
-use fake::{Fake, Faker};
-use log::{info, LevelFilter};
+use energy_sensor::{init_logger, Arguments};
+use log::{debug, info, LevelFilter};
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
-use sensor::{arguments::{Args, StreamProcessor}, logger::init_logger};
+use serde_json::json;
+use fake::{Fake, Faker};
 
 #[tokio::main]
 async fn main() {
     init_logger(LevelFilter::Debug);
     info!("Starting");
-    let args: Args = Args::parse();
+    let args: Arguments = Arguments::parse();
 
-    if let Some(ref process_type) = args.stream_processor {
-        match process_type {
-            StreamProcessor::Kafka => 
-            {
-                kafka_producer(args).await;
-            },
-            _ => ()
-        }
-    }
+    kafka_producer(args).await;
 }
 
-pub async fn kafka_producer(args: Args) {
+pub async fn kafka_producer(args: Arguments) {
     info!("Starting kafka producer");
     let producer: &FutureProducer = &ClientConfig::new()
         .set("bootstrap.servers", args.address)
@@ -36,13 +28,23 @@ pub async fn kafka_producer(args: Args) {
 
     let topics: Vec<String> = args.topic.unwrap(); 
 
+    let id = Faker.fake::<u64>();
+
+    let time = SystemTime::now();
+
     loop {
         for topic in topics.iter() {
-            let val: f64 = Faker.fake();
+            let package = json!({
+                "id": id,
+                "value": Faker.fake::<f64>(),
+                "timestamp": time.elapsed().unwrap_or(Duration::from_secs(0))
+            });
+            debug!("Sending package {}", &package);
+
             let delivery_status = producer
                 .send(
                     FutureRecord::to(topic)
-                        .payload(&format!("{}", &val))
+                        .payload(&package.to_string())
                         .key(""),
                     Duration::from_secs(60),
                 )

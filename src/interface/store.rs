@@ -40,7 +40,7 @@ impl ToInternal<Store> for ExtStore {
 
         // Set Container(s) builder
         if let Some(docker) = self.general.docker {
-            if docker.compose.is_some() {
+            if docker.compose.is_some() || docker.names.is_some() {
                 store.object.docker_group_builder = Some(docker.to_internal());
             }
             else 

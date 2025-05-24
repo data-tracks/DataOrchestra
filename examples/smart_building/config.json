@@ -19,22 +19,42 @@
   "generate":
   [
     {
+      "amount": 4,
       "node": "${NODE161}",
-      "sensor": {
-        "stream_processor": "kafka",
-        "address": "10.34.64.161:9092"
+      "file": {
+        "name": "rust",
+        "path": "examples/smart_building/generator/energy_sensor",
+        "destination": "energy_sensor/",
+        "start": "start.sh"
+      },
+      "docker": {
+        "dockerfile": "rust",
+        "name": "rust"
       }
-    },
-    {
-
     }
   ],
   "process":
   [
     {
       "node": "${NODE162}",
+      "file": {
+        "name": "rust",
+        "path": "examples/smart_building/processor/energy_processor",
+        "destination": "energy_processor",
+        "start": "start.sh"
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust"
+      }
+    },
+    {
+      "node": "${NODE162}",
       "kafka": {
-        "topics": ["HeatSensor_In", "HeatSensor_Out"]
+        "topics": ["Energy_In", "Energy_Out"]
+      },
+      "docker": {
+        "names": ["kafka-broker", "kafka-rest"]
       }
     }
   ],
@@ -42,14 +62,10 @@
   "store": [
     {
       "node": "${NODE163}",
-      "postgres": {
+      "type": "mongodb",
 
-      }
-    },
-    {
-      "node": "${NODE163}",
-      "mongodb": {
-
+      "docker": {
+        "name": "mongodb"
       }
     }
   ]

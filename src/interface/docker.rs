@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use env_logger::builder;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::{container::ContainerBuilder, ComposeGroupBuilder};
@@ -25,12 +26,22 @@ pub struct ExtDocker {
     pub dockerfile: Option<String>,
     pub build_args: Option<HashMap<String, String>>,
     pub compose: Option<String>,
+    pub names: Option<Vec<String>>
 }
 
 impl ToInternal<ComposeGroupBuilder> for ExtDocker {
     fn to_internal(self) -> ComposeGroupBuilder {
         let mut builder = ComposeGroupBuilder::new();
-        builder.set_compose(self.compose.unwrap());
+        if let Some(compose) = self.compose {
+            builder.set_compose(compose);
+        }
+
+        if let Some(names) = self.names {
+            for name in names {
+                builder.add_name(name);
+            }
+        }
+
         builder
     }
 }

@@ -8,20 +8,23 @@ use super::Process;
 
 impl Spawner for Process {
     fn build(&mut self) {
+        dbg!(&self);
         info!("Building Process");
-        
-        if let Some(ref process) = self.process_type {
-            debug!("Setting up {} enviroment", process);
 
+        if let Some(process_type) = &self.process_type {
             if self.config.is_none() {
                 info!("No config was provided. Setting up default config");
-                self.config = Some(self.process_type.as_ref().unwrap().new());
+                self.config = Some(process_type.new());
             }
-            let config = self.config.as_ref().unwrap();
+        }
+        
+        // Setup container based on specified config. Default setup if only process_type was provided,
+        // otherwise custom
+        if let Some(process_config) = &self.config {
+            let mut compose = self.object.
+                docker_group_builder.get_or_insert_with(ComposeGroupBuilder::new);
 
-            let mut compose = ComposeGroupBuilder::new();
-            config.setup_container(&mut compose);
-            self.object.docker_group_builder = Some(compose);
+            process_config.setup_container(&mut compose);
         }
 
         self.object.build();
