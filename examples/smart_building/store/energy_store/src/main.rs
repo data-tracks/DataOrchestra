@@ -1,9 +1,7 @@
-use std::env;
-
 use clap::Parser;
 use energy_store::{init_logger, Args};
 use log::{info, warn, LevelFilter};
-use mongodb::{options::{ClientOptions, ResolverConfig}, Client};
+use mongodb::{bson::{doc, Document}, options::ClientOptions, Client};
 use rdkafka::{consumer::{CommitMode, Consumer, StreamConsumer}, message::Headers, ClientConfig, Message};
 
 #[tokio::main]
@@ -16,17 +14,19 @@ async fn main() {
 }
 
 pub async fn kafka_consumer(args: Args) {
-    // Load the MongoDB connection string from an environment variable:
-    let client_uri = "mongodb://root:example@localhost:27017/".to_string();
-    // A Client is needed to connect to MongoDB:
-
-    // An extra line of code to work around a DNS issue on Windows:
-
+    let client_uri = format!("mongodb://{}:{}@{}/?authSource=admin", args.user, args.password, args.mongo_address);
     let options = ClientOptions::parse(&client_uri).await.unwrap();
-
     let client = Client::with_options(options).unwrap();
 
-    // Print the databases in our MongoDB cluster:
+    let db = client.database("testdb");
+    let collection = db.collection::<Document>("testcol");
+
+    let filter = doc! { "name": "Alice" };
+    if let Some(doc) = collection.find_one(filter).await.unwrap() {
+        println!("✅ Found document: {:?}", doc);
+    } else {
+        println!("❌ No document found with that name.");
+    }
 
     println!("Databases:");
     if let Ok(list) = client.list_database_names().await {

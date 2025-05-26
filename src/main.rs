@@ -48,7 +48,7 @@ fn main() {
     if args.file.is_none() {
         panic!("No config file specified. Please specify config with -f | --file  <path> argument");
     }
-
+    let 
     // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
