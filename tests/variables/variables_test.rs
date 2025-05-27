@@ -159,4 +159,40 @@ mod tests {
 
         assert_eq!(actual_json, expected_json);
     }
+
+    #[rstest]
+    #[case(
+        r#"{ "variables": { "NAME": "someone" } }"#, 
+        r#"{ "name": "name is ${NAME}" }"#, 
+        r#"{ "name": "name is someone" }"#
+        )]
+    #[case(
+        r#"{ "variables": { "AGE": 23 } }"#, 
+        r#"{ "age": "age is ${AGE}" }"#, 
+        r#"{ "age": "age is 23" }"#
+        )]
+    #[case(
+        r#"{ "variables": { "AGE": 23.5 } }"#, 
+        r#"{ "age": "age is ${AGE}" }"#, 
+        r#"{ "age": "age is 23.5" }"#
+        )]
+    #[case(
+        r#"{ "variables": { "EXISTS": true } }"#, 
+        r#"{ "exists": "exists? ${EXISTS}" }"#, 
+        r#"{ "exists": "exists? true" }"#
+        )]
+    #[case(
+        r#"{ "variables": { "EXISTS": false } }"#, 
+        r#"{ "exists": "exists? ${EXISTS}" }"#, 
+        r#"{ "exists": "exists? false" }"#
+        )]
+    fn variable_access_inside_string(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = variables.parse(config.to_string());
+        dbg!(&result); 
+        let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
+        let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
+
+        assert_eq!(actual_json, expected_json);
+    }
 }
