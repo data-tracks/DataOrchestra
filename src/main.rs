@@ -13,7 +13,7 @@ use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::Config;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
 use data_orchestra::shared::arguments::{Arguments, ARGS};
-use data_orchestra::variables::{set_variables, Variables};
+use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
@@ -48,18 +48,17 @@ fn main() {
     if args.file.is_none() {
         panic!("No config file specified. Please specify config with -f | --file  <path> argument");
     }
-    let 
     // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
-    let config_str = fs::read_to_string(config_path).expect("Unable to read config file");
+    let config= fs::read_to_string(config_path).expect("Unable to read config file");
 
     // Read only variables from config into struct and transform config string to replace variables
     // with actual values before parsing the modified string to the config struct
-    let variables: Variables = serde_json::from_str(config_str.as_str()).expect("Unable to parse config to struct");
-    let config_str = set_variables(variables, config_str);
+    let variables: Variables = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
+    let config = variables.parse(config);
 
-    let config: Config = serde_json::from_str(config_str.as_str()).expect("Unable to parse config to struct");
+    let config: Config = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     let result = ARGS.set(args);

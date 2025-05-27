@@ -6,9 +6,10 @@ use rdkafka::{consumer::{CommitMode, Consumer, StreamConsumer}, message::Headers
 
 #[tokio::main]
 async fn main() {
-    init_logger(LevelFilter::Debug);
     info!("Starting");
     let args: Args = Args::parse();
+
+    init_logger(args.level);
     
     kafka_consumer(args).await;
 }
@@ -18,20 +19,8 @@ pub async fn kafka_consumer(args: Args) {
     let options = ClientOptions::parse(&client_uri).await.unwrap();
     let client = Client::with_options(options).unwrap();
 
-    let db = client.database("testdb");
-    let collection = db.collection::<Document>("testcol");
-
-    let filter = doc! { "name": "Alice" };
-    if let Some(doc) = collection.find_one(filter).await.unwrap() {
-        println!("✅ Found document: {:?}", doc);
-    } else {
-        println!("❌ No document found with that name.");
-    }
-
-    println!("Databases:");
-    if let Ok(list) = client.list_database_names().await {
-        println!("{:?}", list); 
-    }
+    let db = client.database(&args.database);
+    let collection = db.collection::<Document>(&args.collection);
 
     info!("Setting up consumer");
 

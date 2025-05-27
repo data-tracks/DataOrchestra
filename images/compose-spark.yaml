@@ -42,3 +42,9 @@ services:
 
 volumes:
   spark-events:
+
+networks:
+  sparkpg_network:
+    external: true
+    name: orchestra
+    driver: bridge
