@@ -12,6 +12,21 @@ pub struct ComposeGroup {
     pub runner: Box<dyn Runner + Send>
 }
 
+impl ComposeGroup {
+    pub fn get_container<T: Into<String>>(&self, name: T) -> Option<&Container> {
+        let name = name.into();
+        for container in self.containers.iter() {
+            if let Some(container_name) = container.config.name.as_ref() {
+                if container_name.eq(&name) {
+                    return Some(container);
+                } 
+            }
+        }
+        
+        None
+    }
+}
+
 impl Run for ComposeGroup {
     type Output = ();
     type Error = String;
@@ -29,17 +44,22 @@ impl Run for ComposeGroup {
 
         // Set id of containers.
         // As the containers here are non specific yet, we can arbitrarily set the id(s)
-        dbg!(&self);
         for name in self.names.clone() {
             let mut container = ContainerBuilder::new().build();
+            container.runner = self.runner.clone_box();
             let result = self.runner.exec(format!("docker ps -aqf \"name={}\"", name));
             if let Err(ref error) = result {
                 error!("{}", error);
             }
-            let id = result.unwrap();
-            container.set_name(name);
+            let id = result.unwrap().replace("\n", "");
+            container.set_name(name.clone());
             container.set_id(id.replace("\n", ""));
             self.containers.push(container);
+
+            let result = super::api::poll_container(id, 30, &self.runner);
+            if let Err(error) = result {
+                error!("{}", error);
+            }
         }
 
         for container in self.containers.iter_mut() {
@@ -53,11 +73,7 @@ impl Run for ComposeGroup {
 
             let _result = container.load_os();
             
-            let mut has_ssh= container.publish_ports
-                .iter()
-                .filter(|x| x.get_internal() == 22)
-                .peekable();
-            if has_ssh.peek().is_some() { 
+            if container.get_ssh_port().is_some() { 
                 let _result = container.install_ssh();
             }
             else {

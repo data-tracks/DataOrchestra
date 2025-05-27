@@ -9,7 +9,7 @@ pub struct Args {
     pub database: String,
 
     /// MongoDB collection
-    #[arg(short, long)]
+    #[arg(long)]
     pub collection: String,
 
     /// MongoDB host:port connection

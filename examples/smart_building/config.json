@@ -24,11 +24,12 @@
       "file": {
         "name": "rust",
         "path": "examples/smart_building/generator/energy_sensor",
-        "destination": "energy_sensor/",
-        "start": "start.sh"
+        "destination": "/energy_sensor",
+        "start": "/energy_sensor/start.sh"
       },
       "docker": {
-        "dockerfile": "rust",
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust",
         "name": "rust"
       }
     }
@@ -40,12 +41,13 @@
       "file": {
         "name": "rust",
         "path": "examples/smart_building/processor/energy_processor",
-        "destination": "energy_processor",
-        "start": "start.sh"
+        "destination": "/energy_processor",
+        "start": "/energy_processor/start.sh"
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
-        "image": "rust"
+        "image": "rust",
+        "name": "rust"
       }
     },
     {
@@ -59,13 +61,28 @@
     }
   ],
 
-  "store": [
+  "store":
+  [
     {
       "node": "${NODE163}",
       "type": "mongodb",
 
       "docker": {
         "name": "mongodb"
+      }
+    },
+    {
+      "node": "${NODE163}",
+      "file": {
+        "name": "rust",
+        "path": "examples/smart_building/store/energy_store",
+        "destination": "/energy_store",
+        "start": "/energy_store/start.sh"
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust",
+        "name": "rust"
       }
     }
   ]

@@ -23,7 +23,7 @@ pub fn default_amount() -> usize {
 impl ToInternalVec<Generate> for ExtGenerate {
     fn to_internal(self) -> Vec<Generate> {
         let mut vec_generate = Vec::<Generate>::new();
-        for _i in 0..self.amount {
+        for i in 0..self.amount {
             let mut generate = Generate::default();
 
             if let Some(ref config) = self.config {
@@ -42,12 +42,15 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 generate.object.ansible = ansible;
             }
 
-            if let Some(docker) = self.general.docker.clone() {
+            if let Some(mut docker) = self.general.docker.clone() {
                 if docker.compose.is_some() || docker.names.is_some() {
                     generate.object.docker_group_builder = Some(docker.to_internal());
                 }
                 else 
                 {
+                    if let Some(name) = docker.name {
+                        docker.name = Some(format!("{}-{}", name, i)); 
+                    }
                     generate.object.docker_container_builder = Some(docker.to_internal());
                 } 
             } 

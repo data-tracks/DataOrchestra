@@ -1,3 +1,4 @@
+use log::error;
 use serde::{Deserialize, Serialize};
 use crate::core::types::Data;
 use crate::shared::traits::ToInternal;
@@ -22,6 +23,9 @@ impl ToInternal<Data> for File {
             data.path = path;
         }
         if let Some(destination) = self.destination {
+            if !destination.starts_with("/") {
+                error!("File path doesn't start with /<path>");
+            }
             data.destination = destination;
         }
         if let Some(start) = self.start {

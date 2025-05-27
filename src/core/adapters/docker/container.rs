@@ -7,6 +7,7 @@ use log::{debug, error};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::Runner;
 use crate::core::adapters::{Local, OsSystems};
+use crate::interface::docker;
 
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
@@ -202,6 +203,21 @@ impl Run for Container {
             self.build_from_image();
         }
 
+        if let Some(id) = self.id.as_ref() {
+            let result = super::api::poll_container(id, 30, &self.runner);
+            if let Err(error) = result {
+                panic!("Polling docker container {} timeout after 30 seconds", id);
+            }
+        }
+        else {
+            panic!("No id available for docker container");
+        }
+
+        let result = self.load_name();
+        if let Err(error) = result {
+            error!("Unable to get name of container");
+        }
+
         // get and set ip
         let result = self.load_ip();
         if let Err(error) = result {
@@ -231,12 +247,15 @@ impl Run for Container {
 
 impl Container {
     fn build_from_dockerfile(&mut self) {
-        if let Some(ref name) = self.source.image {
+        if let (Some(dockerfile), Some(image)) = (&self.source.dockerfile, &self.source.image) {
             let mut building_args = String::new();
             for (key, value) in self.source.build_args.iter() {
                 building_args = format!("{building_args} {key}={value}");
             }
-            self.runner.exec(format!("docker build -t {name} --build-arg {building_args}"));
+            let result = self.runner.exec(format!("docker build -f {} --build-arg {building_args} -t {} .", dockerfile, image));
+            if let Err(error) = result {
+                error!("{}", error);
+            }
             
         }
         else {
@@ -250,6 +269,14 @@ impl Container {
             Ok(id) => self.set_id(id.trim().to_string().replace("\n", "")),
             Err(error) => error!("{}", error)
         }
+    }
+
+    pub fn load_name(&mut self) -> Result<(), String> {
+        let name = self.runner.exec(format!("docker inspect -f {{{{.Name}}}} {}", self.id.as_ref().unwrap()))?;
+        let name = name.replace("/", "");
+        self.set_name(name);
+
+        Ok(())
     }
 
     pub fn load_ip(&mut self) -> Result<(), String> {
@@ -296,7 +323,7 @@ impl Container {
                 if key.eq("ID") {
                     let os = OsSystems::from_str(value);
                     if let Ok(os) = os {
-                        self.os = Some(os);
+                        self.os = Some(os)
                     }
                     else {
                         error!("Unable to get os for container {}", self.config.name.as_ref().unwrap());
@@ -312,7 +339,6 @@ impl Container {
         debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
 
         // Set correct install script for different distros
-        dbg!(&self.os);
         if let Some(ref os) = &self.os {
             match os {
                 OsSystems::Debian | OsSystems::Ubuntu => {

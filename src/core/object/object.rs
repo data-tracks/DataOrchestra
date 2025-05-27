@@ -10,7 +10,7 @@ use crate::core::attach::attach_types::AttachType;
 use crate::core::types::Data;
 use crate::shared::{Address, Amount, Spawner};
 use crate::core::types::Node;
-use log::{debug, info, error};
+use log::{debug, error, info, warn};
 
 /// The `Object` type. Acts as a generic component. Implements basic fields that every object
 /// should possess.
@@ -57,7 +57,7 @@ impl Spawner for Object {
                 panic!("Unable to setup ssh for {} {}", node.host, error);
             }
         }
-        
+
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
         if let Some(group) = self.docker_group_builder.take() {
             info!("Setting up docker compose");
@@ -79,6 +79,9 @@ impl Spawner for Object {
                     if let Err(error) = result {
                         panic!("Unable to upload dockerfile {}", error);
                     }
+                }
+                else {
+                    panic!("No runner available for docker compose. Node was provided but ssh connection was not properly loaded");
                 }
             }
             manager.add("compose", ContainerType::Compose(compose));
@@ -140,10 +143,12 @@ impl Spawner for Object {
                     ContainerType::Compose(compose) => {
                         for container in compose.containers.iter_mut() {
                             if let Some(ref node) = self.node {
-                                let result = container.load_ssh(node.host);
-                                if let Err(error) = result {
-                                    error!("Unable to load ssh connection for {} {}", node.host, error);
-                                }        
+                                if container.get_ssh_port().is_some() {
+                                    let result = container.load_ssh(node.host);
+                                    if let Err(error) = result {
+                                        error!("Unable to load ssh connection for {} {}", node.host, error);
+                                    }
+                                }
                             }
                             else {
                                 let result = container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST));
@@ -155,10 +160,12 @@ impl Spawner for Object {
                     }
                     ContainerType::Container(container ) => {
                         if let Some(ref node) = self.node {
-                            let result = container.load_ssh(node.host);
-                            if let Err(error) = result {
-                                error!("Unable to load ssh connection for {} {}", node.host, error);
-                            }    
+                            if container.get_ssh_port().is_some() {
+                                let result = container.load_ssh(node.host);
+                                if let Err(error) = result {
+                                    error!("Unable to load ssh connection for {} {}", node.host, error);
+                                }
+                            }
                         }
                         else {
                             let result = container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST));
@@ -171,9 +178,11 @@ impl Spawner for Object {
             }
         }
 
+        // No panic as ansible depends on a ssh port, where some compose files may not provide
+        // these
         let result = self.start_ansible();
         if let Err(error) = result {
-            panic!("Unable to start ansible {}", error);
+            error!("Unable to start ansible {}", error);
         }
 
         // Upload data to docker containers
@@ -214,9 +223,12 @@ impl Object {
             for container in manager.as_vec() {
                 let ssh_port = container.get_ssh_port();
                 if let Some(port) = ssh_port {
-                    let command = format!("ansible-playbook {} -e \"port={}\"", script_path, port);
+                    let mut command = format!("ansible-playbook {} -e \"port={}\"", script_path, port);
 
                     if let Some(ref node) = self.node {
+                        command = format!("ansible-playbook {} -e \"port={}\" -e \"host={}\"", script_path, port, node.host);
+                    }    
+                    /*
                         if let Some(ref ssh) = node.ssh {
                             let runner = ssh.to_box_runner();
                             runner.exec(command)?;
@@ -226,9 +238,13 @@ impl Object {
                         let runner = Local::new().to_box_runner();
                         runner.exec(command)?;
                     }
+                    */
+
+                    let runner = Local::new().to_box_runner();
+                    runner.exec(command)?;
                 }
                 else {
-                    return Err(format!("No ssh port available for {}. Unable to Configure with ansible", container.config.name.as_ref().unwrap()));
+                    warn!("{}", format!("No ssh port available for {}. Unable to Configure with ansible", container.config.name.as_ref().unwrap()));
                 }
             }
         }
@@ -243,6 +259,10 @@ impl Object {
                 for (container, data) in self.iter_combine_data() {
                     if let Some(ref ssh) = container.ssh {
                         info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
+
+                        let result = ssh.exec(format!("test -f {} && echo \"ok\" || echo \"err\"", data.start));
+                        debug!("{:?}", &result);
+
                         if data.start.ends_with(".sh") {
                             ssh.exec(format!("sh {}", data.start))?;
                         }
@@ -260,6 +280,10 @@ impl Object {
                     for data in self.data.iter() {
                         if let Some(ref ssh) = container.ssh {
                             info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
+
+                            let result = ssh.exec(format!("test -f {} && echo \"ok\" || echo \"err\"", data.start));
+                            debug!("{:?}", &result);
+
                             if data.start.ends_with(".sh") {
                                 ssh.exec(format!("sh {}", data.start))?;
                             }

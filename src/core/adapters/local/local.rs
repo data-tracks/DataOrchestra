@@ -50,4 +50,8 @@ impl Runner for Local {
             return Err("Unable to execute command".to_string());
         }
     }
+
+    fn clone_box(&self) -> Box<dyn Runner + Send> {
+        Box::new(self.clone()) 
+    }
 }

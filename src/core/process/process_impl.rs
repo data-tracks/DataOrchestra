@@ -8,7 +8,6 @@ use super::Process;
 
 impl Spawner for Process {
     fn build(&mut self) {
-        dbg!(&self);
         info!("Building Process");
 
         if let Some(process_type) = &self.process_type {
@@ -42,11 +41,13 @@ impl Spawner for Process {
             if let Some(ref config) = self.config {
                 match config {
                     ProcessTypeConfig::Kafka(kafka) => {
-                        if let Some(broker) = manager.containers.get("kafka-broker") {
+                        if let Some(broker) = manager.containers.get("compose") {
                             match broker {
-                                ContainerType::Container(broker) => {
-                                    if let Some(ssh) = &broker.ssh {
-                                        kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
+                                ContainerType::Compose(group) => {
+                                    if let Some(broker) = group.get_container("kafka-broker") {
+                                        if let Some(ssh) = &broker.ssh {
+                                            kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
+                                        }
                                     }
                                 }
                                 _ => ()

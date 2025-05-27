@@ -2,11 +2,12 @@ use std::fmt::Debug;
 
 pub trait Runner: Debug where Self: 'static {
     fn exec(&self, command: String) -> Result<String, String>;
+    fn clone_box(&self) -> Box<dyn Runner + Send>;
 
     fn to_box_runner<'b>(&'b self) -> Box<dyn Runner + Send>
     where
-    Self: Runner + Send + Clone,
-    Self: 'b + Sync,
+        Self: Runner + Send + Clone,
+        Self: 'b + Sync,
     {
         (Box::new(self.clone()) as Box<dyn Runner + Send>) as _
     }

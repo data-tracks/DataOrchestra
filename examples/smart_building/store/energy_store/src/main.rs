@@ -19,6 +19,8 @@ pub async fn kafka_consumer(args: Args) {
     let options = ClientOptions::parse(&client_uri).await.unwrap();
     let client = Client::with_options(options).unwrap();
 
+    client.
+
     let db = client.database(&args.database);
     let collection = db.collection::<Document>(&args.collection);
 
@@ -48,7 +50,10 @@ pub async fn kafka_consumer(args: Args) {
             Ok(m) => {
                 let payload = match m.payload_view::<str>() {
                     None => "",
-                    Some(Ok(s)) => s,
+                    Some(Ok(s)) => {
+                        info!("{}", s);
+                        s
+                    },
                     Some(Err(e)) => {
                         warn!("Error while deserializing message payload: {:?}", e);
                         ""

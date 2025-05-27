@@ -318,7 +318,7 @@ pub fn ping_node(node: &Node) {
     if let Err(error) = result {
         panic!("[{}] {}", node.host, error);
     }
-    info!("Node-{} fully operational", node.host);
+    info!("Node {} fully operational", node.host);
 }
 
 /// Perform health check on all remote nodes by ping

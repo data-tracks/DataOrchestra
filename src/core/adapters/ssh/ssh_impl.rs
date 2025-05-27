@@ -94,6 +94,10 @@ impl Runner for Ssh {
 
         Ok(result)
     }
+
+    fn clone_box(&self) -> Box<dyn Runner + Send> {
+        Box::new(self.clone()) 
+    }
 }   
 
 impl<T, S> Uploader<T, S> for Ssh where 
@@ -105,7 +109,7 @@ impl<T, S> Uploader<T, S> for Ssh where
         let file = file.as_ref();
         let location = location.as_ref();
         assert!(file.is_file());
-        debug!("Uploading file {}", file.display());
+        debug!("Uploading file {} to {}", file.display(), &location.display());
 
         let mut local_file = File::open(file).unwrap();
         let remote_file: Result<Channel, ssh2::Error> = self.session.scp_send(location, 0o644, fs::metadata(file).unwrap().len(), None);
