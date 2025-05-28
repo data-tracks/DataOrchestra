@@ -97,7 +97,11 @@ impl Spawner for Object {
                     container.runner = runner;
     
                     if let Some(dockerfile) = container.source.dockerfile.as_mut() {
-                        ssh.exec("mkdir docker/".to_string());
+                        let result = ssh.exec("mkdir docker/".to_string());
+                        if let Err(error) = result {
+                            error!("Unable to create docker/ folder on node | {}", error);
+                        }
+
                         let local_path = dockerfile.clone(); 
                         if let Some(file_name) = Path::new(dockerfile)
                                 .file_name()
@@ -123,15 +127,6 @@ impl Spawner for Object {
     }
 
     fn setup(&mut self) {
-        if let Some(ref node) = self.node {
-            if let Some(ref ssh) = node.ssh {
-                let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
-                if let Err(error) = result {
-                    error!("{}", error);
-                }
-            }
-        }
-
         let result = self.start_containers();
         if let Err(error) = result {
             error!("{}", error);

@@ -48,23 +48,47 @@ A sample json can be generated with the flag
 
 ### Variables
 
-The config file allows for variable setting. Non-recursive variables are allowed, where the variables can be a simple `value`, an `array` or a `map`. The variables can defined inside the map related to the key `variables` inside the config file.
-
+The config file allows for variable setting. Variables can be set inside the config file inside the `variables` map. Non-recursive variables are allowed, i.e. variables which themselves do not contain any variables. Variables can be a simple `value`,`array` or `map`, where `map` variables can again contain variables of the same types.
 ```json
 {
   "variables": {
-    "SIMPLE_VARIABLE": "VALUE",
-    "ARRAY_VALUE": ["VALUE_1", "VALUE_2"],
-    "MAP_VALUE": {
-      "VARIABLE_1": "VALUE_1",
-      "VARIABLE_2": "VALUE_2"
+    "LOCAL": {
+      "name": "local-environment",
+      "host": "0.0.0.0"
     }
   }
 }
 ```
-
-The variables can then be used anywhere else inside the config with the pattern `${VARIABLE}`. The variable patterns are replaced with the true value defined inside the `variables` map through string matching.
-
+Variables can then be used inside the config file through the accessing pattern `${<variable>}`.
+```json
+{
+  "object": {
+    "node": "${LOCAL}"
+  }
+}
+```
+Which gets replaced to 
+```json
+{
+  "object": {
+    "node": {
+      "name": "local-environment",
+      "host": "0.0.0.0"
+    }
+  }
+}
+```
+Variables inside a `map` variable can also be accessed to any depth and can be accessed via a simple `.` scheme, `${<variable>.<variable>. ...}`.
+```json
+{
+  "object": {
+    "node": {
+      "name": "localhost",
+      "host": "${LOCAL.host}"
+    }
+  }
+}
+```
 ### Object
 
 An object is a generic component which has no specific capabilities. It acts as the skeleton of other more specialized components and can be used if no object meet ones specification for a component.

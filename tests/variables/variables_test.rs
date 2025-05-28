@@ -29,7 +29,10 @@ mod tests {
         r#"{ "exists": false }"#
         )]
     #[case(
-        r#"{ "variables": { "NAME": "someone", "COUNTRY": "CH" } }"#, r#"{ "name": "${NAME}", "country": "${COUNTRY}" }"#, r#"{ "name": "someone", "country": "CH" }"#)]
+        r#"{ "variables": { "NAME": "someone", "COUNTRY": "CH" } }"#,
+        r#"{ "name": "${NAME}", "country": "${COUNTRY}" }"#,
+        r#"{ "name": "someone", "country": "CH" }"#
+        )]
     pub fn single_variable(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
         let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
         let result = variables.parse(config.to_string());

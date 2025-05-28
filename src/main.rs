@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::thread::{self};
-use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Local, Portainer, Runner};
+use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
@@ -432,6 +432,14 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
         portainer.create_agent(node);
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(portainer.add_agent(node));
+
+        // Upload data to node
+        if let Some(ref ssh) = node.ssh {
+            let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
+            if let Err(error) = result {
+                error!("{}", error);
+            }
+        }
     }
 }
 

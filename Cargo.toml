@@ -21,9 +21,6 @@ tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 
-# Yaml parser
-yaml-rust = "0.4"
-
 # Ssh library
 ssh2 = "0.9.5"
 
