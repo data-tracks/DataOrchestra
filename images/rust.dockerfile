@@ -1,5 +1,18 @@
 FROM rust:1.86
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends apt-utils && \
+    apt-get install -y openssh-server && \
+    apt-get install -y python3.11 && \
+    apt-get install -y curl && \
+    apt-get install -y tmux && \
+    apt-get install -y ca-certificates && \
+    apt-get install -y vim 
+
+RUN mkdir /var/run/sshd
+RUN echo 'root:password' | chpasswd
+RUN echo 'PermitRootLogin yes' >> /etc/ssh/ssh_config
+ 
 # Export cargo reference to bash profile for tmux session
 RUN echo 'export PATH="/usr/local/cargo/bin:$PATH"' >> ~/.bashrc
 RUN echo 'export PATH="/usr/local/cargo/bin/rustup:$PATH"' >> ~/.bashrc

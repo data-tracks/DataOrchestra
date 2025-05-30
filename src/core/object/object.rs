@@ -7,7 +7,7 @@ use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::attach::attach_types::AttachType;
 use crate::core::types::Data;
-use crate::shared::{Address, Amount, Spawner};
+use crate::shared::Spawner;
 use crate::core::types::Node;
 use log::{debug, error, info, warn};
 
@@ -15,16 +15,23 @@ use log::{debug, error, info, warn};
 /// should possess.
 #[derive(Debug)]
 pub struct Object {
+    // Docker builder for compose 
     pub docker_group_builder: Option<ComposeGroupBuilder>,
+    // Docker builder for container
     pub docker_container_builder: Option<ContainerBuilder>,
+    // Docker manager. Manages containers for its object
     pub docker_manager: Option<DockerManager>,
-    pub start: Option<String>,
+    // Node connection
     pub node: Option<Node>,
-    pub remote: Option<Address>,
+    // Type attached object to current object
     pub attach_type: Option<AttachType>,
-    pub attach: Amount<Box<Object>>,
+    // Objects attached to current object
+    pub attach: Vec<Box<Object>>,
+    // Ssh connection to object location
     pub ssh: Option<Ssh>,
+    // Data to be uploaded to object location
     pub data: Vec<Data>,
+    // Ansible script responsible for the setup of the enviroment
     pub ansible: String
 }
 
@@ -34,11 +41,9 @@ impl Default for Object {
             docker_group_builder: None,
             docker_container_builder: None, 
             docker_manager: None,
-            start: None, 
             node: None, 
-            remote: None, 
             attach_type: None, 
-            attach: Amount::None, 
+            attach: Vec::new(), 
             ssh: None,
             data: Vec::new(),
             ansible: "scripts/ansible/ansible-setup.yml".to_string()
@@ -61,6 +66,7 @@ impl Spawner for Object {
         if let Some(group) = self.docker_group_builder.take() {
             info!("Setting up docker compose");
             let mut compose = group.build();
+            // If a node was specified, docker compose file needs to be uploaded to node
             if let Some(ref node) = self.node {
                 if let Some(ref ssh) = node.ssh {
                     let runner = ssh.to_box_runner();
@@ -79,7 +85,7 @@ impl Spawner for Object {
                     }
                     let result = ssh.upload_file(local_path, compose.compose.as_ref().unwrap());
                     if let Err(error) = result {
-                        panic!("Unable to upload dockerfile {}", error);
+                        panic!("Unable to upload compose file {}", error);
                     }
                 }
                 else {
@@ -92,7 +98,7 @@ impl Spawner for Object {
         else if let Some(container) = self.docker_container_builder.take() {
             info!("Setting up docker container");
             let mut container = container.build();
-
+            // If a node was specified, dockerfile needs to be uploaded to node
             if let Some(ref node) = self.node {
                 if let Some(ref ssh) = node.ssh {
                     let runner = ssh.to_box_runner();
@@ -134,6 +140,7 @@ impl Spawner for Object {
             error!("{}", error);
         }
 
+        // Setup ssh connection for all containers
         if let Some(ref mut manager) = self.docker_manager {
             for (_, item) in manager.containers.iter_mut() {
                 match item { 
@@ -211,31 +218,19 @@ impl Object {
     }
 
     pub fn start_ansible(&self) -> Result<(), String> {
-        let script_path = "scripts/ansible/ansible-setup.yml";
-        if !Path::new(script_path).is_file() {
-            return Err(format!("Unable to find file {}", script_path)); 
+        if !Path::new(&self.ansible).is_file() {
+            return Err(format!("Unable to find file {}", &self.ansible)); 
         }
 
         if let Some(ref manager) = self.docker_manager {
             for container in manager.as_vec() {
                 let ssh_port = container.get_ssh_port();
                 if let Some(port) = ssh_port {
-                    let mut command = format!("ansible-playbook {} -e \"port={}\"", script_path, port);
+                    let mut command = format!("ansible-playbook {} -e \"port={}\"", &self.ansible, port);
 
                     if let Some(ref node) = self.node {
-                        command = format!("ansible-playbook {} -e \"port={}\" -e \"host={}\"", script_path, port, node.host);
+                        command = format!("ansible-playbook {} -e \"port={}\" -e \"host={}\"", &self.ansible, port, node.host);
                     }    
-                    /*
-                        if let Some(ref ssh) = node.ssh {
-                            let runner = ssh.to_box_runner();
-                            runner.exec(command)?;
-                        }
-                    }
-                    else {
-                        let runner = Local::new().to_box_runner();
-                        runner.exec(command)?;
-                    }
-                    */
 
                     let runner = Local::new().to_box_runner();
                     runner.exec(command)?;
@@ -360,6 +355,8 @@ impl Object {
         vec_container.into_iter().zip(vec_data)
     }
 
+
+    /// Upload all data specified in the data field of the [`Object`] to docker container
     pub fn upload_data(&self) -> Result<(), String> {
         for (container, data) in self.iter_combine_data() {
             if let Some(ref ssh) = container.ssh {

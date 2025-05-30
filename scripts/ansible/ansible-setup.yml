@@ -22,7 +22,6 @@
       apt:
         name: 
           - curl
-          - git
           - tmux
           - ca-certificates
           - vim

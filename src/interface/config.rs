@@ -207,7 +207,8 @@ impl Default for Config {
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
                                         compose: Some("".to_string()),
-                                        names: None
+                                        names: None,
+                                        interpolation_variables: HashMap::new()
                                     }
                                 ),
                             node: None,
@@ -248,7 +249,8 @@ impl Default for Config {
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
                                         compose: Some("".to_string()),
-                                        names: None
+                                        names: None,
+                                        interpolation_variables: HashMap::new()
                                     }
                                 ),
                             node: None,
@@ -286,7 +288,8 @@ impl Default for Config {
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
                                         compose: Some("".to_string()),
-                                        names: None
+                                        names: None,
+                                        interpolation_variables: HashMap::new()
                                     }
                                 ),
                             node: None,
@@ -328,7 +331,8 @@ impl Default for Config {
                                         dockerfile: Some("".to_string()),
                                         build_args: Some(hashmap.clone()),
                                         compose: Some("".to_string()),
-                                        names: None
+                                        names: None,
+                                        interpolation_variables: HashMap::new()
                                     }
                                 ),
                             node: None,

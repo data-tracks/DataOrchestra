@@ -26,6 +26,7 @@ impl Variables {
     fn insert_variables(parent: usize, value: Map<String, Value>, tree: &mut VariableTree) {
         for (key, value) in value {
             let id = tree.add_child(parent, key, value.clone());
+            // If value itself is a map, repeat recursion 
             if value.is_object() {
                 let map = value.as_object().unwrap().to_owned();
                 Self::insert_variables(id, map, tree);

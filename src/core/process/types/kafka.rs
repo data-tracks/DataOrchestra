@@ -1,24 +1,39 @@
+use std::net::{IpAddr, Ipv4Addr};
+
 use log::{info, error};
 use serde::{Deserialize, Serialize};
 use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::Runner;
 
+
 /// The `Kafka` type. Represents the configurability of the Apache kafka application instance
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Kafka {
-    topics: Vec<String>
+    #[serde(default)]
+    pub topics: Vec<String>,
+    #[serde(default = "default_host")]
+    pub host: IpAddr 
 }
 
+pub fn default_host() -> IpAddr {
+    IpAddr::V4(Ipv4Addr::LOCALHOST)
+}
 
 impl Kafka {
     pub fn new() -> Self {
-        Kafka { topics: Vec::new() }
+        Kafka 
+        { 
+            topics: Vec::new(), 
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST)
+        }
     }
 
     /// Sets up the docker [`ComposeGroupBuilder`] with the configuration specific to the
     /// kafka application
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
-        docker.set_compose("images/compose-kafka.yaml");
+        docker
+            .set_compose("images/compose-kafka.yaml")
+            .add_interpolation_variable("KAFKA_HOST", &self.host.to_string());
     }
 
     /// Create kafka topics for the broker of the [`Kafka`] `topics` field

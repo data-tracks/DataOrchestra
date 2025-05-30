@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use log::{debug, error, warn};
 use crate::core::adapters::{Local, Runner};
 
@@ -6,6 +8,7 @@ use super::{Container, Run};
 
 #[derive(Debug)]
 pub struct ComposeGroup {
+    pub interpolation_variables: HashMap<String, String>,
     pub compose: Option<String>,
     pub names: Vec<String>,
     pub containers: Vec<Container>,
@@ -33,7 +36,11 @@ impl Run for ComposeGroup {
 
     fn run(&mut self) -> Result<(), String> {
         if let Some(ref compose) = self.compose {
-            let result = self.runner.exec(format!("docker compose -f {} up -d --build", compose));
+            let mut interpolation = String::new();
+            for (key, value) in self.interpolation_variables.iter() {
+                interpolation = format!(" {}={}", key, value);
+            }
+            let result = self.runner.exec(format!("{interpolation} docker compose -f {} up -d --build", compose));
             if let Err(error) = result {
                 error!("{}", error);
             }
@@ -99,7 +106,8 @@ impl ComposeGroupBuilder {
                 compose: None, 
                 containers: Vec::new(),
                 runner: Box::new(Local::new()),
-                names: Vec::new()
+                names: Vec::new(),
+                interpolation_variables: HashMap::new()
             }
         }
     }
@@ -119,9 +127,12 @@ impl ComposeGroupBuilder {
         self
     }
 
+    pub fn add_interpolation_variable<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+        self.composegroup.interpolation_variables.insert(key.into(), value.into());
+        self
+    }
+
     pub fn build(self) -> ComposeGroup {
         self.composegroup
     }
 }
-
-

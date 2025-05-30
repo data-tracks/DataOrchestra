@@ -24,7 +24,9 @@ pub struct ExtDocker {
     pub dockerfile: Option<String>,
     pub build_args: Option<HashMap<String, String>>,
     pub compose: Option<String>,
-    pub names: Option<Vec<String>>
+    pub names: Option<Vec<String>>,
+    #[serde(default)]
+    pub interpolation_variables: HashMap<String, String>
 }
 
 impl ToInternal<ComposeGroupBuilder> for ExtDocker {
@@ -38,6 +40,10 @@ impl ToInternal<ComposeGroupBuilder> for ExtDocker {
             for name in names {
                 builder.add_name(name);
             }
+        }
+        
+        for (key, value) in self.interpolation_variables {
+            builder.add_interpolation_variable(key, value);
         }
 
         builder
