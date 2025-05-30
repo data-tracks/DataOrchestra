@@ -19,8 +19,6 @@ pub async fn kafka_consumer(args: Args) {
     let options = ClientOptions::parse(&client_uri).await.unwrap();
     let client = Client::with_options(options).unwrap();
 
-    client.
-
     let db = client.database(&args.database);
     let collection = db.collection::<Document>(&args.collection);
 
@@ -28,6 +26,7 @@ pub async fn kafka_consumer(args: Args) {
 
     let consumer: StreamConsumer = ClientConfig::new()
         .set("bootstrap.servers", args.consumer)
+        .set("group.id", "consumer")
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")

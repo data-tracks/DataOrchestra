@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::Runner;
 
+/// The `Kafka` type. Represents the configurability of the Apache kafka application instance
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Kafka {
     topics: Vec<String>
@@ -14,10 +15,16 @@ impl Kafka {
         Kafka { topics: Vec::new() }
     }
 
+    /// Sets up the docker [`ComposeGroupBuilder`] with the configuration specific to the
+    /// kafka application
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
         docker.set_compose("images/compose-kafka.yaml");
     }
 
+    /// Create kafka topics for the broker of the [`Kafka`] `topics` field
+    ///
+    /// Runner should the executor at the location of the docker deamon due to the `docker exec`
+    /// command execution
     pub fn create_topic(&self, id: &String, runner: &Box<dyn Runner + Send>) {
         info!("Creating kafka topics {:?}", self.topics);
         for topic in &self.topics {

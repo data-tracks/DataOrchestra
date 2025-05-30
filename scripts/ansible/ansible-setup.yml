@@ -25,6 +25,7 @@
           - git
           - tmux
           - ca-certificates
+          - vim
         state: present
 
 - name: Node behaviour

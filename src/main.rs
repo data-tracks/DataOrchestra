@@ -75,7 +75,6 @@ fn main() {
     health_check(&stores, &processes, &generates);
 
     // Start different tasks
-    // Note: Task not referencable anymore as it is moved into `start`
     info!("Running tasks");
     
     thread::scope(|s| {

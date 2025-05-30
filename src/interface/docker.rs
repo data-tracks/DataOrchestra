@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-
-use env_logger::builder;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::{container::ContainerBuilder, ComposeGroupBuilder};

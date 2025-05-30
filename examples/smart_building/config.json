@@ -29,7 +29,7 @@
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
-        "image": "rust",
+        "image": "rust_base",
         "name": "rust"
       }
     }
@@ -46,14 +46,14 @@
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
-        "image": "rust",
+        "image": "rust_base",
         "name": "rust"
       }
     },
     {
       "node": "${NODE162}",
       "kafka": {
-        "topics": ["Energy_In", "Energy_Out"]
+        "topics": ["EnergyIn", "EnergyOut"]
       },
       "docker": {
         "names": ["kafka-broker", "kafka-rest"]
@@ -81,7 +81,7 @@
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
-        "image": "rust",
+        "image": "rust_base",
         "name": "rust"
       }
     }

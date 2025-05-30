@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
-use std::process::exit;
 use crate::core::adapters::docker::container::ContainerBuilder;
-use crate::core::adapters::docker::{self, ComposeGroupBuilder, DockerManager};
+use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::attach::attach_types::AttachType;
@@ -67,7 +66,10 @@ impl Spawner for Object {
                     let runner = ssh.to_box_runner();
                     compose.runner = runner;
 
-                    ssh.exec("mkdir docker/".to_string());
+                    let result = ssh.exec("mkdir docker/".to_string());
+                    if let Err(error) = result {
+                        error!("Unable to create docker/ folder | {}", error);
+                    }
                     let local_path = compose.compose.clone().unwrap(); 
                     if let Some(file_name) = Path::new(compose.compose.as_ref().unwrap())
                             .file_name()
@@ -277,7 +279,15 @@ impl Object {
                             info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
 
                             let result = ssh.exec(format!("test -f {} && echo \"ok\" || echo \"err\"", data.start));
-                            debug!("{:?}", &result);
+                            if let Err(error) = result {
+                                error!("{}", error);
+                            }
+                            else if let Ok(result) = result {
+                                if result.eq("err") {
+                                    error!("Unable to find file {}. Check if the path is correctly formatted", data.start);
+                                }
+                            }
+
 
                             if data.start.ends_with(".sh") {
                                 ssh.exec(format!("sh {}", data.start))?;

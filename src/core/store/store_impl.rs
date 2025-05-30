@@ -1,5 +1,5 @@
 use log::info;
-use crate::core::adapters::{ContainerBuilder, Runner};
+use crate::core::adapters::ContainerBuilder;
 use crate::shared::traits::Spawner;
 
 use super::Store;

@@ -1,4 +1,5 @@
 use core::panic;
+use std::fmt::format;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 use std::thread::sleep;
@@ -7,7 +8,6 @@ use log::{debug, error};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::Runner;
 use crate::core::adapters::{Local, OsSystems};
-use crate::interface::docker;
 
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
@@ -206,7 +206,7 @@ impl Run for Container {
         if let Some(id) = self.id.as_ref() {
             let result = super::api::poll_container(id, 30, &self.runner);
             if let Err(error) = result {
-                panic!("Polling docker container {} timeout after 30 seconds", id);
+                panic!("Polling docker container {} timeout after 30 seconds | {}", id, error);
             }
         }
         else {
@@ -215,30 +215,30 @@ impl Run for Container {
 
         let result = self.load_name();
         if let Err(error) = result {
-            error!("Unable to get name of container");
+            error!("Unable to get name of container | {}", error);
         }
 
         // get and set ip
         let result = self.load_ip();
         if let Err(error) = result {
-            panic!("Unable to get ip of container {}", error);
+            panic!("Unable to get ip of container | {}", error);
         }
 
         let _ = self.load_os();
         if let Err(error) = result {
-            error!("Unable to get os from container {} {}", self.config.name.as_ref().unwrap(), error);
+            error!("Unable to get os from container {} | {}", self.config.name.as_ref().unwrap(), error);
         }
 
         // get and set port mappings
         let result = self.load_ports();
         if let Err(error) = result {
-            error!("Unable to get ports from container {} {}", self.config.name.as_ref().unwrap(), error);
+            error!("Unable to get ports from container {} | {}", self.config.name.as_ref().unwrap(), error);
         } 
         
         // Install ssh server
         let result = self.install_ssh();
         if let Err(error) = result {
-            error!("Unable to install ssh server on container {} {}", self.config.name.as_ref().unwrap(), error);
+            error!("Unable to install ssh server on container {} | {}", self.config.name.as_ref().unwrap(), error);
         }
 
         Ok(())     
@@ -250,9 +250,15 @@ impl Container {
         if let (Some(dockerfile), Some(image)) = (&self.source.dockerfile, &self.source.image) {
             let mut building_args = String::new();
             for (key, value) in self.source.build_args.iter() {
-                building_args = format!("{building_args} {key}={value}");
+                building_args = format!(" {building_args} {key}={value}");
             }
-            let result = self.runner.exec(format!("docker build -f {} --build-arg {building_args} -t {} .", dockerfile, image));
+
+            if !building_args.is_empty() {
+                building_args = format!("--build-arg {building_args}");
+            }
+            
+
+            let result = self.runner.exec(format!("docker build -f {} {building_args} -t {} .", dockerfile, image));
             if let Err(error) = result {
                 error!("{}", error);
             }
@@ -346,14 +352,14 @@ impl Container {
 
                     // Reformat sh script for linux distro
                     if cfg!(target_os = "windows") {
-                        self.runner.exec(format!("dos2unix scripts/docker/{}", script));
+                        self.runner.exec(format!("dos2unix scripts/docker/{}", script))?;
                     }
 
-                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()));
-                    self.runner.exec(format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script));
+                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
+                    self.runner.exec(format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script))?;
                     
                     // Start ssh server
-                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()));
+                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()))?;
 
                 },
                 OsSystems::Alpine => {
@@ -361,14 +367,14 @@ impl Container {
 
                     // Reformat sh script for alpine distro
                     if cfg!(target_os = "windows") {
-                        self.runner.exec(format!("dos2unix scripts/docker/{}", script));
+                        self.runner.exec(format!("dos2unix scripts/docker/{}", script))?;
                     }
                     
-                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()));
-                    self.runner.exec(format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script));
+                    self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
+                    self.runner.exec(format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script))?;
                     
                     // Start ssh server
-                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()));
+                    self.runner.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()))?;
                 }
                 _ => ()
             };

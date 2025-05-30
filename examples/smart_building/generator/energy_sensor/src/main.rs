@@ -1,4 +1,4 @@
-use std::{thread, time::{Duration, SystemTime}};
+use std::{env::args, thread, time::{Duration, SystemTime}};
 use clap::Parser;
 use energy_sensor::{init_logger, Arguments};
 use log::{debug, info, LevelFilter};
@@ -16,6 +16,7 @@ async fn main() {
 }
 
 pub async fn kafka_producer(args: Arguments) {
+    dbg!(&args);
     info!("Starting kafka producer");
     let producer: &FutureProducer = &ClientConfig::new()
         .set("bootstrap.servers", args.address)

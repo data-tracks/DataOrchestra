@@ -18,6 +18,7 @@ pub fn default_auth() -> bool {
     false
 }
 
+/// The `MongoDB` type. Represents the configurability of the MongoDB instance
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "mongodb")]
 pub struct MongoDB {
@@ -40,7 +41,9 @@ impl MongoDB {
             me_config_basicauth: default_auth()
         }
     }
-    
+   
+    /// Sets up the docker [`ContainerBuilder`] with the configuration specific to the MongoDB
+    /// application
     pub fn setup_container(&self, docker: &mut ContainerBuilder) {
         docker.set_image("mongo:4.4.6");
         docker
