@@ -38,7 +38,7 @@ impl Run for ComposeGroup {
         if let Some(ref compose) = self.compose {
             let mut interpolation = String::new();
             for (key, value) in self.interpolation_variables.iter() {
-                interpolation = format!(" {}={}", key, value);
+                interpolation = format!("{interpolation} {}={}", key, value);
             }
             let result = self.runner.exec(format!("{interpolation} docker compose -f {} up -d --build", compose));
             if let Err(error) = result {

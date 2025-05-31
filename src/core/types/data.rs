@@ -19,3 +19,16 @@ impl Default for Data {
         }
     }
 }
+
+impl Data {
+    pub fn new(name: String, path: String, destination: String, start: String, dependency: Option<String>) -> Self {
+        Data 
+        {
+            name,
+            path,
+            destination,
+            start,
+            dependency
+        }
+    }
+}

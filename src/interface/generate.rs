@@ -27,11 +27,11 @@ impl ToInternalVec<Generate> for ExtGenerate {
             let mut generate = Generate::default();
 
             if let Some(ref config) = self.config {
-                generate.object.data.push(config.create());
+                generate.object.docker_data.push(config.create());
             }
             else if let Some(ref generator_type) = self.generate_type {
                 let config = generator_type.new();
-                generate.object.data.push(config.create());
+                generate.object.docker_data.push(config.create());
             }
 
             if let Some(node) = self.general.node.clone() {
@@ -55,7 +55,8 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 } 
             } 
 
-            generate.object.data.extend(self.general.file.clone().to_internal());
+            generate.object.node_data = self.general.node_files.clone().to_internal();
+            generate.object.docker_data.extend(self.general.docker_files.clone().to_internal());
 
             debug!("Finished parsing generate to internal");
 

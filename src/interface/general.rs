@@ -9,7 +9,9 @@ pub struct General {
     pub docker: Option<ExtDocker>, 
     pub node: Option<ExtNode>,
     #[serde(default)]
-    pub file: Amount<File>,
+    pub node_files: Amount<File>,
+    #[serde(default)]
+    pub docker_files: Amount<File>,
     pub ansible: Option<String>
 }
 

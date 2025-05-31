@@ -14,8 +14,14 @@
       "name": "node-163",
       "host": "10.34.64.163",
       "username": "ubuntu"
+    },
+    "NODE164": {
+      "name": "node-164",
+      "host": "10.34.64.164",
+      "username": "ubuntu"
     }
   },
+
   "generate":
   [
     {
@@ -34,29 +40,44 @@
       }
     }
   ],
+
   "process":
   [
     {
       "node": "${NODE162}",
       "file": {
-        "name": "rust",
-        "path": "examples/smart_building/processor/energy_processor",
+        "name": "rust-filter",
+        "path": "examples/smart_building/processor/energy_filter",
         "destination": "/energy_processor",
         "start": "/energy_processor/start.sh"
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "rust"
+        "name": "rust-filter"
       }
     },
     {
       "node": "${NODE162}",
       "kafka": {
-        "topics": ["EnergyIn", "EnergyOut"]
+        "topics": ["EnergyIn", "EnergyFiltered", "EnergyAggregated"]
       },
       "docker": {
         "names": ["kafka-broker", "kafka-rest"]
+      }
+    },
+    {
+      "node": "${NODE162}",
+      "file": {
+        "name": "rust-aggregator",
+        "path": "examples/smart_building/processor/energy_aggregator",
+        "destination": "/energy_aggregator",
+        "start": "/energy_aggregator/start.sh"
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust_base",
+        "name": "rust-aggregator"
       }
     }
   ],
@@ -66,18 +87,27 @@
     {
       "node": "${NODE163}",
       "type": "mongodb",
-
       "docker": {
         "name": "mongodb"
+      }
+    },
+    {
+      "node": "${NODE164}",
+      "schema": "/home/ubuntu/energy.sql",
+      "postgres": {
+        "postgres_db": "energy"
+      },
+      "docker": {
+        "name": "postgres"
       }
     },
     {
       "node": "${NODE163}",
       "file": {
         "name": "rust",
-        "path": "examples/smart_building/store/energy_store",
-        "destination": "/energy_store",
-        "start": "/energy_store/start.sh"
+        "path": "examples/smart_building/store/energy_store_mongodb",
+        "destination": "/energy_store_mongodb",
+        "start": "/energy_store_mongodb/start.sh"
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
@@ -86,9 +116,17 @@
       }
     },
     {
-      "node": "${NODE163}",
-      "postgres": {
-        
+      "node": "${NODE164}",
+      "file": {
+        "name": "rust",
+        "path": "examples/smart_building/store/energy_store_postgres",
+        "destination": "/energy_store_postgres",
+        "start": "/energy_store_postgres/start.sh"
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust_base",
+        "name": "rust"
       }
     }
   ]

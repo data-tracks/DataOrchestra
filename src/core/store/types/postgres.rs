@@ -59,7 +59,7 @@ impl PostGres {
 
     pub fn mount_data(&self, mounts: &Vec<String>, mut docker: &mut ContainerBuilder) {
         for mount in mounts {
-            docker = docker.add_mount(format!("{}:{}", absolute(Path::new(&mount)).unwrap().display().to_string(), format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
+            docker = docker.add_mount(format!("{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
         }
     }
 }

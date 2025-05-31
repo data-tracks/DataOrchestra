@@ -15,7 +15,7 @@ use rdkafka::message::OwnedMessage;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::Message;
 
-use serde_json;
+use serde_json::{self, json};
 
 #[tokio::main]
 async fn main() {
@@ -40,27 +40,28 @@ pub struct Energy {
     pub value: f64
 }
 
-pub fn process_input<'a>(message: OwnedMessage) -> Result<String, PayloadError> {
-    match message.payload_view::<str>() {
-        Some(Ok(payload)) => {
-            let package: Energy = serde_json::from_str(payload).expect("Unable to parse to json"); 
-            debug!("Package received {:?}", &package);
-            let package = serde_json::to_string(&package);
-            if package.is_err() {
-                return Err(PayloadError::InvalidPayload);
-            }
+pub fn process_input<'a>(messages: Vec<OwnedMessage>) -> Result<String, PayloadError> {
+    let mut energy_sum = 0.0;
 
-            return Ok(package.unwrap());
+    for message in messages.iter() {
+        match message.payload_view::<str>() {
+            Some(Ok(payload)) => {
+                let package: Energy = serde_json::from_str(payload).expect("Unable to parse to json"); 
+                debug!("Package received {:?}", &package);
+                energy_sum += package.value;
+            }
+            Some(Err(_)) => { return Err(PayloadError::InvalidPayload); },
+            None => { return Err(PayloadError::NoPayload); },
         }
-        Some(Err(_)) => Err(PayloadError::InvalidPayload),
-        None => Err(PayloadError::NoPayload),
-    }
+    } 
+
+    Ok(json!({ "value": energy_sum / (messages.len() as f64) }).to_string())
 }
 
 pub async fn processor(args: Args) {
     let consumer: StreamConsumer = ClientConfig::new()
         .set("bootstrap.servers", args.consumer)
-        .set("group.id", "energy")
+        .set("group.id", "energy_aggregate")
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")
@@ -81,15 +82,19 @@ pub async fn processor(args: Args) {
         .create()
         .expect("Unable to create producer");
 
-    let stream_processor = consumer.stream().try_for_each(|borrowed_message| {
+    let chunk_stream = consumer.stream().try_ready_chunks(10);
+    let stream_processor = chunk_stream.try_for_each(|borrowed_messages| {
         let producer = producer.clone();
         let output_topic = args.producer_topic.clone();
 
         async move {
-            let owned_message = borrowed_message.detach();
+            let mut owned_messages= Vec::<OwnedMessage>::new();
+            for borrowed_message in borrowed_messages {
+                owned_messages.push(borrowed_message.detach());
+            }
             tokio::spawn(async move {
                 let payload =
-                    tokio::task::spawn_blocking(|| process_input(owned_message))
+                    tokio::task::spawn_blocking(|| process_input(owned_messages))
                         .await
                         .expect("failed to wait for the processing of the input");
 

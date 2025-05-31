@@ -22,11 +22,8 @@ impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();
 
-        let mut data_vec = Vec::<Data>::new();
-        for file in self.general.file.to_vec() {
-            data_vec.push(file.to_internal());
-        }
-        object.data = data_vec;
+        object.node_data = self.general.node_files.to_internal();
+        object.docker_data = self.general.docker_files.to_internal();
 
         object
     } 

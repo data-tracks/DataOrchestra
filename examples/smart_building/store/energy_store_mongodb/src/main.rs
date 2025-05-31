@@ -38,7 +38,7 @@ pub async fn kafka_consumer(args: Args) -> ! {
 
     let consumer: StreamConsumer = ClientConfig::new()
         .set("bootstrap.servers", args.consumer)
-        .set("group.id", "consumer")
+        .set("group.id", "mongodb_consumer")
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")

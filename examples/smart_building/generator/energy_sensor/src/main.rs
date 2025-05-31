@@ -1,7 +1,9 @@
+use core::f64;
 use std::{env::args, thread, time::{Duration, SystemTime}};
 use clap::Parser;
 use energy_sensor::{init_logger, Arguments};
 use log::{debug, info, LevelFilter};
+use rand::{seq::IndexedRandom, Rng};
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
 use serde_json::json;
 use fake::{Fake, Faker};
@@ -31,13 +33,23 @@ pub async fn kafka_producer(args: Arguments) {
 
     let id = Faker.fake::<u16>();
 
-    let time = SystemTime::now();
+    let mut rng = rand::rng();
+    let sign = vec![-1, 1];
 
     loop {
         for topic in topics.iter() {
+            let mut value = Faker.fake::<f64>();
+
+            let number = rng.random_range(0..100);
+
+            if number < 10 {
+                let energy_sign = sign.choose(&mut rng).unwrap().to_owned() as f64;
+                value *= energy_sign * 10.0;
+            }
+
             let package = json!({
                 "id": id,
-                "value": Faker.fake::<f64>()
+                "value": value
             });
             debug!("Sending package {}", &package);
 

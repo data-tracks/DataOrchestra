@@ -46,7 +46,8 @@ impl ToInternal<Process> for ExtProcess {
             } 
         } 
         
-        process.object.data = self.general.file.to_internal();
+        process.object.node_data = self.general.node_files.to_internal();
+        process.object.docker_data = self.general.docker_files.to_internal();
 
         process
     }

@@ -270,6 +270,7 @@ fn main() {
                 for node in nodes {
                     if let Some(ref ssh) = node.ssh {
                         let runner = ssh.to_box_runner();
+                        info!("Stopping all containers on {}", &node.host);
                         let result = docker::api::stop_containers(&runner);
                         if let Err(error) = result {
                             error!("{}", error);

@@ -29,8 +29,10 @@ pub struct Object {
     pub attach: Vec<Box<Object>>,
     // Ssh connection to object location
     pub ssh: Option<Ssh>,
-    // Data to be uploaded to object location
-    pub data: Vec<Data>,
+    // Data to be uploaded to node 
+    pub node_data: Vec<Data>,
+    // Data to be uploaded to docker container 
+    pub docker_data: Vec<Data>,
     // Ansible script responsible for the setup of the enviroment
     pub ansible: String
 }
@@ -45,7 +47,8 @@ impl Default for Object {
             attach_type: None, 
             attach: Vec::new(), 
             ssh: None,
-            data: Vec::new(),
+            node_data: Vec::new(),
+            docker_data: Vec::new(),
             ansible: "scripts/ansible/ansible-setup.yml".to_string()
         }
     }
@@ -86,6 +89,11 @@ impl Spawner for Object {
                     let result = ssh.upload_file(local_path, compose.compose.as_ref().unwrap());
                     if let Err(error) = result {
                         panic!("Unable to upload compose file {}", error);
+                    }
+
+                    let result = ssh.upload_directory("images/", "docker/");
+                    if let Err(error) = result {
+                        error!("{}", error);
                     }
                 }
                 else {
@@ -132,6 +140,28 @@ impl Spawner for Object {
         }
 
         self.docker_manager = Some(manager);
+
+        // Upload all node data to relevant node. This is done before the setup as the
+        // specialization setup may start before object setup, thus data could be missing
+        if let Some(node) = self.node.as_ref() {
+            if let Some(ssh) = node.ssh.as_ref() {
+                for data in self.node_data.iter() {
+                    let path = Path::new(&data.path);
+                    if path.is_dir() {
+                        let result = ssh.upload_directory(path, &data.destination);
+                        if let Err(error) = result {
+                            error!("{}", error);
+                        }
+                    }
+                    else if path.is_file() {
+                        let result = ssh.upload_file(path, &data.destination);
+                        if let Err(error) = result {
+                            error!("{}", error);
+                        }
+                    }
+                } 
+            }
+        }
     }
 
     fn setup(&mut self) {
@@ -269,7 +299,7 @@ impl Object {
             }
             else {
                 if let Some(container) = manager.get_container(){
-                    for data in self.data.iter() {
+                    for data in self.docker_data.iter() {
                         if let Some(ref ssh) = container.ssh {
                             info!("Starting {} for {}", data.start, container.config.name.as_ref().unwrap());
 
@@ -313,7 +343,7 @@ impl Object {
         let mut vec_data = Vec::<&Data>::new();
 
         // Early return for when data contains nothing
-        if self.data.len() == 0 {
+        if self.docker_data.len() == 0 {
             return vec_container.into_iter().zip(vec_data);
         }
 
@@ -321,7 +351,7 @@ impl Object {
             if manager.amount() == 1 {
                 let container = manager.get_container();
                 if let Some(container) = container {
-                    for d in self.data.iter() {
+                    for d in self.docker_data.iter() {
                         vec_container.push(container);
                         vec_data.push(d);
                     }
@@ -343,7 +373,7 @@ impl Object {
                     }
                 }
 
-                for d in self.data.iter() {
+                for d in self.docker_data.iter() {
                     if let Some(ref mut container) = mapped_all_containers.get(&d.name) {
                         vec_container.push(container);
                         vec_data.push(d);

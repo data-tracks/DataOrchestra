@@ -212,7 +212,18 @@ impl Default for Config {
                                     }
                                 ),
                             node: None,
-                            file: Amount::Single
+                            node_files: Amount::Single
+                            (
+                                File 
+                                { 
+                                    name: None, 
+                                    path: None, 
+                                    destination: None, 
+                                    start: None,
+                                    dependency: None
+                                }
+                            ),
+                            docker_files: Amount::Single
                             (
                                 File 
                                 { 
@@ -254,7 +265,18 @@ impl Default for Config {
                                     }
                                 ),
                             node: None,
-                            file: Amount::Single
+                            node_files: Amount::Single
+                            (
+                                File 
+                                { 
+                                    name: None, 
+                                    path: None, 
+                                    destination: None, 
+                                    start: None,
+                                    dependency: None
+                                }
+                            ),
+                            docker_files: Amount::Single
                             (
                                 File 
                                 { 
@@ -293,7 +315,18 @@ impl Default for Config {
                                     }
                                 ),
                             node: None,
-                            file: Amount::Single
+                            node_files: Amount::Single
+                            (
+                                File 
+                                { 
+                                    name: None, 
+                                    path: None, 
+                                    destination: None, 
+                                    start: None,
+                                    dependency: None
+                                }
+                            ),
+                            docker_files: Amount::Single
                             (
                                 File 
                                 { 
@@ -336,7 +369,18 @@ impl Default for Config {
                                     }
                                 ),
                             node: None,
-                            file: Amount::Single
+                            node_files: Amount::Single
+                            (
+                                File 
+                                { 
+                                    name: None, 
+                                    path: None, 
+                                    destination: None, 
+                                    start: None,
+                                    dependency: None
+                                }
+                            ),
+                            docker_files: Amount::Single
                             (
                                 File 
                                 { 

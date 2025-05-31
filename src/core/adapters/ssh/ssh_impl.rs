@@ -156,7 +156,7 @@ impl<T, S> Uploader<T, S> for Ssh where
                     // Copy to / directory
                     let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
                     if entry.file_type().is_dir() {
-                        let _ = self.exec(format!("mkdir /{}", remote_path));
+                        let _ = self.exec(format!("mkdir {}", remote_path));
                     }
                     else {
                         let result = self.upload_file(entry.path(), &Path::new(&remote_path));
