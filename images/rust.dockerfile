@@ -1,5 +1,6 @@
 FROM rust:1.86
 
+# Base installation of applications needed. While DataOrchestra itself also does this, for repeated setup this is quicker as the dependencies do not need to be installed for each startup of the programm
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y openssh-server && \

@@ -36,8 +36,7 @@ pub enum PayloadError {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Energy {
-    pub id: u64,
-    pub timestamp: Duration,
+    pub id: u16,
     pub value: f64
 }
 

@@ -264,6 +264,18 @@ fn main() {
                         }
                     }
                 }
+            },
+            "ka" | "kill-all" => {
+                let nodes = get_nodes(&stores, &processes, &generates);
+                for node in nodes {
+                    if let Some(ref ssh) = node.ssh {
+                        let runner = ssh.to_box_runner();
+                        let result = docker::api::stop_containers(&runner);
+                        if let Err(error) = result {
+                            error!("{}", error);
+                        }
+                    }
+                }                
             }
             "q" | "quit" => break,
             "h" | "help" | _ => {
@@ -281,6 +293,7 @@ h       | help          |                           | Get explanation of possibl
 i       | info          |                           | Get info of produced system
 q       | quit          |                           | Quit programm and perform cleanup
 k       | kill          | <node ip> <docker name>   | Kill a specific docker container
+ka      | kill-all      |                           | Kill all running docker containers
 nc      | no-cleanup    |                           | Perform no cleanup
 hc      | health-check  |                           | Perform a health check on remote entities
                     "#

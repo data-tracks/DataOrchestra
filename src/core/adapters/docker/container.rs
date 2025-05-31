@@ -1,5 +1,4 @@
 use core::panic;
-use std::fmt::format;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 use std::thread::sleep;
@@ -72,6 +71,11 @@ impl ContainerBuilder {
 
     pub fn add_publish(&mut self, port: u16) -> &mut Self {
         self.containerconfig.add_publish(port);
+        self
+    }
+
+    pub fn add_publish_map(&mut self, left: u16, right: u16) -> &mut Self {
+        self.containerconfig.add_publish_map(left, right);
         self
     }
 
@@ -279,7 +283,9 @@ impl Container {
 
     pub fn load_name(&mut self) -> Result<(), String> {
         let name = self.runner.exec(format!("docker inspect -f {{{{.Name}}}} {}", self.id.as_ref().unwrap()))?;
-        let name = name.replace("/", "");
+        let name = name
+            .replace("/", "")
+            .replace("\n", "");
         self.set_name(name);
 
         Ok(())

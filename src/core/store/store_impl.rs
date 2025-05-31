@@ -17,7 +17,7 @@ impl Spawner for Store {
 
         // Setup container based on specified config. Default setup if only db_type was provided,
         // otherwise custom
-        if let Some(db_config) = &self.config {
+        if let Some(db_config) = self.config.as_mut() {
             let mut container = self.object
                 .docker_container_builder
                 .get_or_insert_with(ContainerBuilder::new);

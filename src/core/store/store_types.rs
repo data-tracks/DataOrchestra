@@ -35,7 +35,7 @@ impl StoreType {
 
 impl StoreTypeConfig {
     /// Setup the given docker container with config of specified [`StoreType`]
-    pub fn setup_container(&self, docker: &mut ContainerBuilder) {
+    pub fn setup_container(&mut self, docker: &mut ContainerBuilder) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.setup_container(docker),
             StoreTypeConfig::Redis(redis) => redis.setup_container(docker),

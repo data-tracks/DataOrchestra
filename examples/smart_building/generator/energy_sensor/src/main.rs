@@ -29,7 +29,7 @@ pub async fn kafka_producer(args: Arguments) {
 
     let topics: Vec<String> = args.topic.unwrap(); 
 
-    let id = Faker.fake::<u64>();
+    let id = Faker.fake::<u16>();
 
     let time = SystemTime::now();
 
@@ -37,8 +37,7 @@ pub async fn kafka_producer(args: Arguments) {
         for topic in topics.iter() {
             let package = json!({
                 "id": id,
-                "value": Faker.fake::<f64>(),
-                "timestamp": time.elapsed().unwrap_or(Duration::from_secs(0))
+                "value": Faker.fake::<f64>()
             });
             debug!("Sending package {}", &package);
 

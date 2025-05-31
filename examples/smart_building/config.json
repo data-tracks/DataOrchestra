@@ -84,6 +84,12 @@
         "image": "rust_base",
         "name": "rust"
       }
+    },
+    {
+      "node": "${NODE163}",
+      "postgres": {
+        
+      }
     }
   ]
 }

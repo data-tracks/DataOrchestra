@@ -10,8 +10,6 @@ impl Spawner for Process {
     fn build(&mut self) {
         info!("Building Process");
 
-        dbg!(&self);
-
         if let Some(process_type) = &self.process_type {
             if self.config.is_none() {
                 info!("No config was provided. Setting up default config");
@@ -22,7 +20,6 @@ impl Spawner for Process {
         // Setup container based on specified config. Default setup if only process_type was provided,
         // otherwise custom
         if let Some(process_config) = self.config.as_mut() {
-            dbg!("HERE");
             if let Some(node) = self.object.node.as_ref() {
                 match process_config {
                     ProcessTypeConfig::Kafka(ref mut kafka) => {
@@ -38,8 +35,6 @@ impl Spawner for Process {
                 docker_group_builder.get_or_insert_with(ComposeGroupBuilder::new);
 
             process_config.setup_container(&mut compose);
-
-            dbg!(&compose);
         }
 
         self.object.build();
@@ -60,10 +55,8 @@ impl Spawner for Process {
                         match broker {
                             ContainerType::Compose(group) => {
                                 if let Some(broker) = group.get_container("kafka-broker") {
-                                    if let Some(node) = self.object.node.as_ref() {
-                                        if let Some(ssh) = node.ssh.as_ref() {
-                                            kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
-                                        } 
+                                    if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
+                                        kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
                                     }
                                     else {
                                         kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new().to_box_runner());

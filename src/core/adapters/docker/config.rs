@@ -7,11 +7,13 @@ pub struct ContainerConfig {
     pub enviroment: HashMap<String, String>,
     pub mount: Vec<String>,
     pub publish: Vec<u16>,
+    pub publish_map: Vec<(u16, u16)>,
     pub publish_all: bool,
     pub expose: bool 
 }
 
 impl ContainerConfig {
+    /// Parse container configuration to valid docker run command
     pub fn parse(&self) -> String {
         let mut command: String = String::from("-d -q");
 
@@ -35,6 +37,9 @@ impl ContainerConfig {
             command = format!("{command} -p 22");
             for port in self.publish.iter() {
                 command = format!("{command} -p {}", port);
+            }
+            for (left, right) in self.publish_map.iter() {
+                command = format!("{command} -p {left}:{right}");
             }
         }
 
@@ -67,6 +72,7 @@ impl Default for ContainerConfigBuilder {
                 enviroment: HashMap::new(),
                 mount: Vec::new(),
                 publish: Vec::new(),
+                publish_map: Vec::new(),
                 publish_all: false,
                 expose: false
             }
@@ -101,6 +107,11 @@ impl ContainerConfigBuilder {
 
     pub fn add_publish(&mut self, port: u16) -> &mut Self {
         self.containerconfig.publish.push(port);
+        self
+    }
+
+    pub fn add_publish_map(&mut self, left: u16, right: u16) -> &mut Self {
+        self.containerconfig.publish_map.push((left, right));
         self
     }
 
