@@ -13,6 +13,8 @@ impl Redis {
     }
 
     pub fn setup_container(&self, docker: &mut ContainerBuilder) {
-        docker.set_image("redis");
+        docker
+            .try_set_name("redis")
+            .set_image("redis");
     }
 }

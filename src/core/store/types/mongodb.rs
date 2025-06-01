@@ -33,6 +33,7 @@ impl MongoDB {
     pub fn setup_container(&mut self, docker: &mut ContainerBuilder) {
         docker.set_image("mongo:4.4.6");
         docker
+            .try_set_name("mongodb")
             .add_publish_map(27017, 27017)
             .add_env_var("MONGO_INITDB_ROOT_USERNAME", self.username.clone())
             .add_env_var("MONGO_INITDB_ROOT_PASSWORD", self.password.clone());

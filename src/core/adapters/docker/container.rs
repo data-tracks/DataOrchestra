@@ -54,6 +54,11 @@ impl ContainerBuilder {
         self
     }
 
+    pub fn try_set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+        self.containerconfig.try_set_name(name);
+        self
+    }
+
     pub fn set_network<T: Into<String>>(&mut self, network: T) -> &mut Self {
         self.containerconfig.set_network(network);
         self

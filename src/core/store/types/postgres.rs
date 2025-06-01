@@ -44,12 +44,13 @@ impl PostGres {
 
     pub fn setup_container(&self, mut docker: &mut ContainerBuilder)  {
         docker = docker
+            .try_set_name("postgres")
             .set_image("postgres")
             .add_env_var("POSTGRES_DB", self.postgres_db.clone())
             .add_env_var("POSTGRES_USER", self.postgres_user.clone())
             .add_env_var("POSTGRES_PASSWORD", self.postgres_password.clone())
             .add_publish(5432);
-       
+
         if let Some(ref initdb_args) = self.postgres_initdb_args {
             docker.add_env_var("POSTGRES_INITDB_ARGS", format!("\"{}\"", initdb_args));
         }

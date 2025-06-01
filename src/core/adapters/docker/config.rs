@@ -90,6 +90,13 @@ impl ContainerConfigBuilder {
         self
     }
 
+    pub fn try_set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+        if self.containerconfig.name.is_none() {
+            self.containerconfig.name = Some(name.into());
+        }
+        self
+    }
+
     pub fn set_network<T: Into<String>>(&mut self, network: T) -> &mut Self {
         self.containerconfig.network = network.into();
         self

@@ -86,19 +86,13 @@
   [
     {
       "node": "${NODE163}",
-      "type": "mongodb",
-      "docker": {
-        "name": "mongodb"
-      }
+      "type": "mongodb"
     },
     {
       "node": "${NODE164}",
-      "schema": "/home/ubuntu/energy.sql",
+      "schema": "examples/smart_building/store/energy_store_postgres/energy.sql",
       "postgres": {
         "postgres_db": "energy"
-      },
-      "docker": {
-        "name": "postgres"
       }
     },
     {
