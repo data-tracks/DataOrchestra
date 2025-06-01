@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{process::process_types::ProcessType, types::Data};
+use crate::core::{process::process_types::ProcessType, types::DockerData};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Sensor {
@@ -41,8 +41,8 @@ impl Sensor {
         }
     }
 
-    pub fn create(&self) -> Data {
-        Data {
+    pub fn create(&self) -> DockerData {
+        DockerData {
             name: String::new(),
             path: String::from("templates/generators/sensor"),
             destination: String::from("/sensor"),

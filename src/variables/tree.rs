@@ -39,7 +39,6 @@ impl VariableTree {
         let variables: Vec<&str> = variable.split(".").collect();
         let last = *variables.clone().last().unwrap(); 
         let mut current_node = self.root;
-        let mut moved = false;
 
         // Iterate over given variable, in the format var.var.var. ....
         for var in variables {
@@ -47,7 +46,7 @@ impl VariableTree {
             if let Some(next_node) = self.nodes.get(current_node) {
 
                 // Reset moved checker
-                moved = false;
+                let mut moved = false;
 
                 for child in next_node.children.clone() {
                     if let Some(child_node) = self.nodes.get(child) {

@@ -1,27 +1,48 @@
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::core::types::Data;
+use crate::core::types::data::NodeData;
+use crate::core::types::DockerData;
 use crate::shared::traits::ToInternal;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct File {
+pub struct NodeFile {
+    pub path: String,
+    pub destination: Option<String>
+}
+
+impl ToInternal<NodeData> for NodeFile {
+    fn to_internal(self) -> NodeData {
+        let mut data = NodeData::default();
+
+        data.path = self.path;
+
+        if let Some(destination) = self.destination {
+            data.destination = destination;
+        }
+
+        data
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DockerFile {
     pub name: Option<String>,
-    pub path: Option<String>,
+    pub path: String,
     pub destination: Option<String>,
     pub start: Option<String>,
     pub dependency: Option<String>
 }
 
-impl ToInternal<Data> for File {
-    fn to_internal(self) -> Data {
-        let mut data = Data::default();
+impl ToInternal<DockerData> for DockerFile {
+    fn to_internal(self) -> DockerData {
+        let mut data = DockerData::default();
 
         if let Some(name) = self.name {
             data.name = name;
         }
-        if let Some(path) = self.path {
-            data.path = path;
-        }
+        
+        data.path = self.path;
+
         if let Some(destination) = self.destination {
             if !destination.starts_with("/") {
                 error!("File path doesn't start with /<path>");

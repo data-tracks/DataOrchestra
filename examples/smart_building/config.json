@@ -27,7 +27,7 @@
     {
       "amount": 4,
       "node": "${NODE161}",
-      "file": {
+      "docker_data": {
         "name": "rust",
         "path": "examples/smart_building/generator/energy_sensor",
         "destination": "/energy_sensor",
@@ -45,7 +45,7 @@
   [
     {
       "node": "${NODE162}",
-      "file": {
+      "docker_data": {
         "name": "rust-filter",
         "path": "examples/smart_building/processor/energy_filter",
         "destination": "/energy_processor",
@@ -68,7 +68,7 @@
     },
     {
       "node": "${NODE162}",
-      "file": {
+      "docker_data": {
         "name": "rust-aggregator",
         "path": "examples/smart_building/processor/energy_aggregator",
         "destination": "/energy_aggregator",
@@ -103,7 +103,7 @@
     },
     {
       "node": "${NODE163}",
-      "file": {
+      "docker_data": {
         "name": "rust",
         "path": "examples/smart_building/store/energy_store_mongodb",
         "destination": "/energy_store_mongodb",
@@ -117,7 +117,7 @@
     },
     {
       "node": "${NODE164}",
-      "file": {
+      "docker_data": {
         "name": "rust",
         "path": "examples/smart_building/store/energy_store_postgres",
         "destination": "/energy_store_postgres",

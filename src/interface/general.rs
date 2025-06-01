@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::shared::{Amount, File};
+use crate::shared::{Amount, DockerFile, NodeFile};
 
 use super::{docker::ExtDocker, node::ExtNode};
 
@@ -9,9 +9,9 @@ pub struct General {
     pub docker: Option<ExtDocker>, 
     pub node: Option<ExtNode>,
     #[serde(default)]
-    pub node_files: Amount<File>,
+    pub node_data: Amount<NodeFile>,
     #[serde(default)]
-    pub docker_files: Amount<File>,
+    pub docker_data: Amount<DockerFile>,
     pub ansible: Option<String>
 }
 

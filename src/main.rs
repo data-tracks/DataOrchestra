@@ -39,7 +39,7 @@ fn main() {
     let args: Arguments = Arguments::parse();
     
     if args.generate_valid_json {
-        println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
+        //println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
         exit(0);
     }
    

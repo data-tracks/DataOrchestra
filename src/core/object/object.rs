@@ -6,7 +6,8 @@ use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::attach::attach_types::AttachType;
-use crate::core::types::Data;
+use crate::core::types::data::NodeData;
+use crate::core::types::data::DockerData;
 use crate::shared::Spawner;
 use crate::core::types::Node;
 use log::{debug, error, info, warn};
@@ -30,9 +31,9 @@ pub struct Object {
     // Ssh connection to object location
     pub ssh: Option<Ssh>,
     // Data to be uploaded to node 
-    pub node_data: Vec<Data>,
+    pub node_data: Vec<NodeData>,
     // Data to be uploaded to docker container 
-    pub docker_data: Vec<Data>,
+    pub docker_data: Vec<DockerData>,
     // Ansible script responsible for the setup of the enviroment
     pub ansible: String
 }
@@ -338,9 +339,9 @@ impl Object {
     ///
     /// If there is only on container, all entries in `data` get combined with that
     /// specific `container`
-    pub fn iter_combine_data<'a >(&'a self) -> impl Iterator<Item = (&'a Container, &'a Data)> {
+    pub fn iter_combine_data<'a >(&'a self) -> impl Iterator<Item = (&'a Container, &'a DockerData)> {
         let mut vec_container = Vec::<&Container>::new();
-        let mut vec_data = Vec::<&Data>::new();
+        let mut vec_data = Vec::<&DockerData>::new();
 
         // Early return for when data contains nothing
         if self.docker_data.len() == 0 {

@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::object::Object;
 use crate::shared::traits::ToInternal;
-use crate::core::types::Data;
 
 use super::general::General;
 
@@ -22,8 +21,8 @@ impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();
 
-        object.node_data = self.general.node_files.to_internal();
-        object.docker_data = self.general.docker_files.to_internal();
+        object.node_data = self.general.node_data.to_internal();
+        object.docker_data = self.general.docker_data.to_internal();
 
         object
     } 

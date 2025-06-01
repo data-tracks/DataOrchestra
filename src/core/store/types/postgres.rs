@@ -1,5 +1,3 @@
-use std::path::{absolute, Path};
-
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::container::ContainerBuilder;

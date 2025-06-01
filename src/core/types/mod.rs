@@ -1,5 +1,5 @@
 pub mod data;
-pub use data::Data;
+pub use data::DockerData;
 
 pub mod node;
 pub use node::Node;

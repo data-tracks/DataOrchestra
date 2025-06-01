@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::types::Data;
+use crate::core::types::data::DockerData;
 
 use super::types::sensor::Sensor;
 
@@ -26,7 +26,7 @@ pub enum GeneratorTypeConfig {
 }
 
 impl GeneratorTypeConfig {
-    pub fn create(&self) -> Data {
+    pub fn create(&self) -> DockerData {
         match self {
             Self::Sensor(ref sensor) => sensor.create()
         }

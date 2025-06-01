@@ -1,7 +1,10 @@
+use std::path::Path;
+
 use log::debug;
 use serde::{Deserialize, Serialize};
 use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::core::store::Store;
+use crate::core::types::data::NodeData;
 use crate::shared::traits::ToInternal;
 use crate::shared::Amount;
 
@@ -25,6 +28,19 @@ impl ToInternal<Store> for ExtStore {
 
         // Set Schema(s)
         store.schema = self.schema.to_vec(); 
+        // Schema needs to be uploaded to the node for it to be mounted
+        if self.general.node.is_some() {
+            for schema in store.schema.iter_mut() {
+                store.object.node_data.push(NodeData::new(schema.clone().to_owned(), "docker/mount/")); 
+                if let Some(file_name) = Path::new(schema)
+                        .file_name()
+                        .and_then(|name| name.to_str()) 
+                {
+                    // Alter path to that of the remote location
+                    *schema = format!("docker/mount/{}", file_name);
+                }
+            }
+        }
     
         // Set Database Type and config
         store.db_type = self.db_type;
@@ -49,8 +65,8 @@ impl ToInternal<Store> for ExtStore {
             } 
         }
     
-        store.object.node_data = self.general.node_files.to_internal();
-        store.object.docker_data = self.general.docker_files.to_internal();
+        store.object.node_data = self.general.node_data.to_internal();
+        store.object.docker_data = self.general.docker_data.to_internal();
 
         debug!("Finished parsing store to internal");
         store

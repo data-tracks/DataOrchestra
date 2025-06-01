@@ -1,5 +1,23 @@
 #[derive(Debug)]
-pub struct Data {
+pub struct NodeData {
+    pub path: String,
+    pub destination: String,
+}
+
+impl Default for NodeData {
+    fn default() -> Self {
+        NodeData { path: String::new(), destination: String::from("data/") }
+    }
+}
+
+impl NodeData {
+    pub fn new<T: Into<String>, S: Into<String>>(path: T, destination: S) -> Self {
+        NodeData { path: path.into(), destination: destination.into() }
+    }
+}
+
+#[derive(Debug)]
+pub struct DockerData {
     pub name: String,
     pub path: String,
     pub destination: String,
@@ -7,9 +25,9 @@ pub struct Data {
     pub dependency: Option<String>
 }
 
-impl Default for Data {
+impl Default for DockerData {
     fn default() -> Self {
-        Data 
+        DockerData 
         {
             name: String::new(),
             path: String::new(),
@@ -20,9 +38,9 @@ impl Default for Data {
     }
 }
 
-impl Data {
+impl DockerData {
     pub fn new(name: String, path: String, destination: String, start: String, dependency: Option<String>) -> Self {
-        Data 
+        DockerData 
         {
             name,
             path,
