@@ -1,3 +1,4 @@
+use std::env::args;
 use std::{env, fs};
 use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
@@ -37,8 +38,9 @@ fn main() {
     print_logo();                                                             
 
     // Read starting arguments
+    dotenvy::dotenv().ok();
     let args: Arguments = Arguments::parse();
-    
+
     if args.generate_valid_json {
         //println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
         exit(0);
@@ -47,8 +49,13 @@ fn main() {
     init_logger(args.level);
 
     if args.file.is_none() {
-        panic!("No config file specified. Please specify config with -f | --file  <path> argument");
+        panic!("No config file specified. Please specify a config file with -f | --file  <path> argument or via the .env file key FILE=<path>");
     }
+
+    if args.ssh_key.is_none() {
+        warn!("No ssh key was provided. A ssh key is necessary when tasks are created on nodes. Please specify a ssh key with -s | --ssh-key <path> argument or via the .env file key SSH_KEY=<path>");
+    }
+
     // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());

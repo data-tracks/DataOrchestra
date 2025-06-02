@@ -13,7 +13,8 @@ pub struct General {
     #[serde(default)]
     pub docker_data: Amount<DockerFile>,
     pub ansible: Option<String>,
-    pub attach_type: Amount<AttachType>,
+    #[serde(default)]
+    #[serde(rename = "attach")]
     pub attach_config: Amount<AttachTypeConfig>
 }
 

@@ -13,8 +13,6 @@ impl Local {
     pub fn new_box() -> Box<Self> {
         Box::new(Local::new())
     }
-
-
 }
 
 impl Runner for Local {
