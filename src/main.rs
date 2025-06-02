@@ -1,3 +1,4 @@
+use std::option::Iter;
 use std::{env, fs};
 use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
@@ -133,21 +134,6 @@ fn main() {
     }
 
     pre_setup(&portainer, &stores, &processes, &generates);
-
-    let nodes = get_nodes(&stores, &processes, &generates);
-    for node in nodes {
-        if let Some(ssh) = node.ssh.as_ref() {
-            let result = docker::api::get_networks(&ssh.to_box_runner());
-            if let Ok(networks) = result {
-                if !networks.contains(&"orchestra".to_string()) {
-                    let result = docker::api::create_network("orchestra", &ssh.to_box_runner());
-                    if let Err(error) = result {
-                        error!("{}", error);
-                    }
-                }
-            }
-        }
-    }
    
     thread::scope(|s| {
         for object in objects.iter_mut() {
@@ -294,6 +280,7 @@ fn main() {
                 for node in nodes {
                     if node.host.eq(&IpAddr::V4(Ipv4Addr::from_str(host).unwrap())) {
                         if let Some(ref ssh) = node.ssh {
+                            info!("Stopping all container {} on {}", &docker, &host);
                             let runner = ssh.to_box_runner();
                             let result = docker::api::stop_container(docker, &runner);
                             if let Err(error) = result {
@@ -307,8 +294,8 @@ fn main() {
                 let nodes = get_nodes(&stores, &processes, &generates);
                 for node in nodes {
                     if let Some(ref ssh) = node.ssh {
-                        let runner = ssh.to_box_runner();
                         info!("Stopping all containers on {}", &node.host);
+                        let runner = ssh.to_box_runner();
                         let result = docker::api::stop_containers(&runner);
                         if let Err(error) = result {
                             error!("{}", error);
@@ -422,8 +409,6 @@ pub fn setup_docker_networks(manager: &DockerManager) {
             _ => ()
         } 
     }
-
-
 }
 
 pub fn kill_containers(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
@@ -480,7 +465,7 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
     let nodes = get_nodes(stores, processes, generates);
 
     if !ARGS.get().unwrap().no_portainer {
-        for node in nodes {
+        for node in nodes.iter() {
             portainer.create_agent(node);
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(portainer.add_agent(node));
@@ -490,6 +475,20 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
                 let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
                 if let Err(error) = result {
                     error!("{}", error);
+                }
+            }
+        }
+    }
+
+    for node in nodes.iter() {
+        if let Some(ssh) = node.ssh.as_ref() {
+            let result = docker::api::get_networks(&ssh.to_box_runner());
+            if let Ok(networks) = result {
+                if !networks.contains(&"orchestra".to_string()) {
+                    let result = docker::api::create_network("orchestra", &ssh.to_box_runner());
+                    if let Err(error) = result {
+                        error!("{}", error);
+                    }
                 }
             }
         }
