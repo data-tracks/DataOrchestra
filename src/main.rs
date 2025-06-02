@@ -1,4 +1,3 @@
-use std::env::args;
 use std::{env, fs};
 use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
@@ -129,7 +128,9 @@ fn main() {
         kill_containers(&stores, &processes, &generates);
     }
 
-    portainer.build(); 
+    if !ARGS.get().unwrap().no_portainer { 
+        portainer.build(); 
+    }
 
     pre_setup(&portainer, &stores, &processes, &generates);
 
@@ -478,16 +479,18 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
     info!("Deploying portainer agent on nodes");
     let nodes = get_nodes(stores, processes, generates);
 
-    for node in nodes {
-        portainer.create_agent(node);
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(portainer.add_agent(node));
+    if !ARGS.get().unwrap().no_portainer {
+        for node in nodes {
+            portainer.create_agent(node);
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(portainer.add_agent(node));
 
-        // Upload data to node
-        if let Some(ref ssh) = node.ssh {
-            let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
-            if let Err(error) = result {
-                error!("{}", error);
+            // Upload data to node
+            if let Some(ref ssh) = node.ssh {
+                let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
+                if let Err(error) = result {
+                    error!("{}", error);
+                }
             }
         }
     }
