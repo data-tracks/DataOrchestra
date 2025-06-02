@@ -47,8 +47,8 @@ impl StoreTypeConfig {
     pub fn mount_data(&self, data: &Vec<String>, docker: &mut ContainerBuilder) {
         match self {
             StoreTypeConfig::PostGres(postgres) => postgres.mount_data(data, docker),
+            StoreTypeConfig::MongoDB(mongodb) => mongodb.mount_data(data, docker),
             StoreTypeConfig::Redis(_redis) => panic!("No mount data for redis"),
-            StoreTypeConfig::MongoDB(_mongodb) => panic!("No mount data for mongodb"),
             StoreTypeConfig::Polypheny(_polypheny) => panic!("No mount data for polypheny")
         };
     }

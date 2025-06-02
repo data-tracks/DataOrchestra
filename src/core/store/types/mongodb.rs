@@ -38,4 +38,10 @@ impl MongoDB {
             .add_env_var("MONGO_INITDB_ROOT_USERNAME", self.username.clone())
             .add_env_var("MONGO_INITDB_ROOT_PASSWORD", self.password.clone());
     }
+
+    pub fn mount_data(&self, mounts: &Vec<String>, mut docker: &mut ContainerBuilder) {
+        for mount in mounts {
+            docker = docker.add_mount(format!("{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
+        }
+    }
 }
