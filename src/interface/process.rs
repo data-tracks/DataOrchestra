@@ -45,7 +45,7 @@ impl ToInternal<Process> for ExtProcess {
                 process.object.docker_container_builder = Some(docker.to_internal());
             } 
         } 
-        
+
         process.object.node_data = self.general.node_data.to_internal();
         process.object.docker_data = self.general.docker_data.to_internal();
 

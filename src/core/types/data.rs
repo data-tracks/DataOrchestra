@@ -39,14 +39,14 @@ impl Default for DockerData {
 }
 
 impl DockerData {
-    pub fn new(name: String, path: String, destination: String, start: String, dependency: Option<String>) -> Self {
+    pub fn new<T: Into<String>, S: Into<String>, V: Into<String>, W: Into<String>>(name: T, path: S, destination: V, start: W, dependency: Option<String>) -> Self {
         DockerData 
         {
-            name,
-            path,
-            destination,
-            start,
-            dependency
+            name: name.into(),
+            path: path.into(),
+            destination: destination.into(),
+            start: start.into(),
+            dependency: dependency.map(|item| item.into())
         }
     }
 }

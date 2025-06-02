@@ -1,3 +1,4 @@
+use std::{mem, vec::IntoIter};
 use serde::{Deserialize, Serialize};
 
 /// The `Amount` type. Allows a value to be nothing, one value or a collection on values
@@ -100,6 +101,57 @@ impl<T> Amount<T> {
             Amount::Multiple(values) => values
         }
     } 
+    
+    /// Transform Amount enum value into vector of references
+    pub fn to_ref_vec<'a>(&'a self) -> Vec<&'a T> {
+        match self {
+            Amount::None => Vec::new(),
+            Amount::Single(value) => vec![value],
+            Amount::Multiple(values) => values.iter().collect::<Vec<&T>>()
+        } 
+    }
+
+    /// Transform Amount enum value into vector of mutable references
+    pub fn to_mut_ref_vec<'a>(&'a mut self) -> Vec<&'a mut T> {
+        match self {
+            Amount::None => Vec::new(),
+            Amount::Single(value) => vec![value],
+            Amount::Multiple(values) => values.iter_mut().collect::<Vec<&mut T>>()
+        } 
+    }
+
+    pub fn take(&mut self) -> Amount<T> {
+        mem::replace(self, Amount::None)
+    }
+
+    /// Insert item
+    pub fn insert(&mut self, item: T) {
+        // Take ownership of self by moving it out of memory. Insert value and then place result
+        // back into self
+        match mem::take(self) {
+            Amount::None => {
+                *self = Amount::Single(item);
+            }
+            Amount::Single(value) => {
+                *self = Amount::Multiple(vec![value, item]);
+            }
+            Amount::Multiple(mut values) => {
+                values.push(item);
+                *self = Amount::Multiple(values);    
+            }
+        }
+    }
+}
+
+impl<T> IntoIterator for Amount<T> {
+    type Item = T;
+    type IntoIter = IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+         self.to_vec().into_iter()
+    }
+
+    
 }
 
 impl<T> Default for Amount<T> {

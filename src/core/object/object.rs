@@ -5,7 +5,6 @@ use crate::core::adapters::docker::container::ContainerBuilder;
 use crate::core::adapters::docker::{ComposeGroupBuilder, DockerManager};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
-use crate::core::attach::attach_types::AttachType;
 use crate::core::types::data::NodeData;
 use crate::core::types::data::DockerData;
 use crate::shared::Spawner;
@@ -24,10 +23,6 @@ pub struct Object {
     pub docker_manager: Option<DockerManager>,
     // Node connection
     pub node: Option<Node>,
-    // Type attached object to current object
-    pub attach_type: Option<AttachType>,
-    // Objects attached to current object
-    pub attach: Vec<Box<Object>>,
     // Ssh connection to object location
     pub ssh: Option<Ssh>,
     // Data to be uploaded to node 
@@ -45,8 +40,6 @@ impl Default for Object {
             docker_container_builder: None, 
             docker_manager: None,
             node: None, 
-            attach_type: None, 
-            attach: Vec::new(), 
             ssh: None,
             node_data: Vec::new(),
             docker_data: Vec::new(),

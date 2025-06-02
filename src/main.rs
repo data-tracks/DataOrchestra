@@ -7,6 +7,7 @@ use std::str::FromStr;
 use std::thread::{self};
 use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
+use data_orchestra::core::object::Object;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
@@ -58,7 +59,7 @@ fn main() {
     let variables: Variables = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
     let config = variables.parse(config);
 
-    let config: Config = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
+    let mut config: Config = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     let result = ARGS.set(args);
@@ -66,11 +67,17 @@ fn main() {
         panic!("Unable to setup CLI arguments as global static");
     }
 
+    // Transform attachable objects to configured objects
+    let attach_objects = config.extract_attachables();
+    
     // Parse to internal structure and move everything out of config
+    let mut objects: Vec<Object> = config.object.to_internal();
     let mut stores: Vec<Store> = config.store.to_internal();
     let mut processes: Vec<Process> = config.process.to_internal();
     let mut generates: Vec<Generate> = config.generate.to_internal();
     let mut portainer = config.portainer;
+
+    objects.extend(attach_objects);
 
     health_check(&stores, &processes, &generates);
 
@@ -78,6 +85,14 @@ fn main() {
     info!("Running tasks");
     
     thread::scope(|s| {
+        for object in objects.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("object".to_string())
+                .spawn_scoped(s, || {
+                    object.build();
+            });
+        }
+
         for store in stores.iter_mut() {
             let _ = thread::Builder::new()
                 .name("store".to_string())
@@ -125,9 +140,16 @@ fn main() {
             }
         }
     }
-
    
     thread::scope(|s| {
+        for object in objects.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("object".to_string())
+                .spawn_scoped(s, || {
+                    object.setup();
+            });
+        }
+
         for store in stores.iter_mut() {
             let _ = thread::Builder::new()
                 .name("store".to_string())
@@ -154,6 +176,14 @@ fn main() {
     });
 
     thread::scope(|s| {
+        for object in objects.iter_mut() {
+            let _ = thread::Builder::new()
+                .name("object".to_string())
+                .spawn_scoped(s, || {
+                    object.deploy();
+            });
+        }
+
         for store in stores.iter_mut() {
             let _ = thread::Builder::new()
                 .name("store".to_string())

@@ -3,6 +3,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::Error;
 use serde_json::Value;
 use crate::core::adapters::portainer::portainer::Portainer;
+use crate::core::attach::attach_types::ToObject;
+use crate::core::object::Object;
 use crate::shared::Amount;
 use super::store::ExtStore;
 use super::process::ExtProcess;
@@ -14,7 +16,6 @@ use super::generate::ExtGenerate;
 pub struct Config {
     #[serde(default)]
     pub portainer: Portainer,
-
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_generate")]
     pub generate: Amount<ExtGenerate>,
@@ -27,6 +28,39 @@ pub struct Config {
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_object")]
     pub object: Amount<ExtObject>,
+}
+
+impl Config {
+    /// Extract the attachable components from the different components and parse them into their
+    /// own objects
+    pub fn extract_attachables(&mut self) -> Vec<Object> {
+        let mut attach_objects = Vec::new();
+        for object in self.object.to_mut_ref_vec() {
+            for config in object.general.attach_config.take().to_vec() {
+                attach_objects.push(config.to_object(&object.general));
+            }
+        }
+
+        for store in self.store.to_mut_ref_vec() {
+            for config in store.general.attach_config.take().to_vec() {
+                attach_objects.push(config.to_object(&store.general));
+            }
+        } 
+
+        for process in self.store.to_mut_ref_vec() {
+            for config in process.general.attach_config.take().to_vec() {
+                attach_objects.push(config.to_object(&process.general));
+            }
+        }
+        
+        for generate in self.generate.to_mut_ref_vec() {
+            for config in generate.general.attach_config.take().to_vec() {
+                attach_objects.push(config.to_object(&generate.general));
+            }
+        }
+
+        attach_objects
+    }
 }
 
 pub fn deserialize_generate<'de, D>(deserializer: D) -> Result<Amount<ExtGenerate>, D::Error>

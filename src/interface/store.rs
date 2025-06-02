@@ -64,7 +64,7 @@ impl ToInternal<Store> for ExtStore {
                 store.object.docker_container_builder = Some(docker.to_internal());
             } 
         }
-    
+
         store.object.node_data = self.general.node_data.to_internal();
         store.object.docker_data = self.general.docker_data.to_internal();
 

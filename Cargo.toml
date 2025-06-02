@@ -9,7 +9,7 @@ log = "0.4"
 env_logger = "0.11.7"
 
 # Console argument parser
-clap = { version = "4.5.37", features = ["derive"] }
+clap = { version = "4.5.37", features = ["derive", "env"] }
 
 # HTTP(s) request
 reqwest = { version = "0.12", features = ["json"] }
