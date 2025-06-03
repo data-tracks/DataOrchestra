@@ -13,7 +13,20 @@ async fn main() -> std::io::Result<()> {
     info!("Starting");
 
     dotenvy::dotenv().ok();
-    let args: Arguments = Arguments::parse();
+    let mut args: Arguments = Arguments::parse();
+
+    let mut vec_topics = Vec::<String>::new();
+    if let Some(topics) = args.topics.as_ref() {
+        if topics.contains("[") {
+            let topics = topics.replace("[", "").replace("]", "");
+            for topic in topics.split(",") {
+                vec_topics.push(topic.to_string().replace(" ", ""));
+            }
+        }
+    }
+    args.vec_topics = vec_topics;
+
+    dbg!(&args);
 
     let api_port = args.api_port.clone();
 
@@ -37,13 +50,11 @@ async fn produce(data: web::Path::<String>, args: web::Data<Arc<Arguments>>) -> 
         .create()
         .expect("Unable to create kafka producer");
 
-    if args.topic.is_none() {
+    if args.topics.is_none() {
         panic!("No topics provided for kafka");
     }
 
-    let topics = args.topic.as_ref().unwrap(); 
-
-    for topic in topics.iter() {
+    for topic in args.vec_topics.iter() {
         let delivery_status = producer
             .send(
                 FutureRecord::to(topic)

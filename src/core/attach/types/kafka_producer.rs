@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::ContainerBuilder;
@@ -15,8 +17,35 @@ pub struct KafkaProducer {
     // Topics the producer writes to
     pub topics: Vec<String>,
     // External Object type to allow for the configuration of the producer
-    pub object: Option<Box<ExtObject>>
+    pub object: Option<Box<ExtObject>>,
+    #[serde(default = "default_api_port")]
+    pub api_port: u16,
+    #[serde(default = "default_level")]
+    pub level: String,
+    pub kafka_address: String
 }
+
+pub fn default_api_port() -> u16 {
+    8080
+}
+
+pub fn default_level() -> String {
+    "info".to_string()
+}
+
+impl Default for KafkaProducer {
+    fn default() -> Self {
+        KafkaProducer 
+        { 
+            topics: Vec::new(), 
+            object: None,
+            api_port: default_api_port(),
+            level: default_level(),
+            kafka_address: "localhost:9092".to_string()
+        }
+    }
+}
+
 
 impl ToObject for KafkaProducer {
     fn to_object(self, general: &General) -> Object {
@@ -40,8 +69,9 @@ impl ToObject for KafkaProducer {
                 "kafka_producer/", 
                 "kafka_producer/start.sh", 
                 None,
-                None)
-            );
+                None
+            )
+        );
         
         object.docker_container_builder.get_or_insert(ContainerBuilder::new());
 

@@ -14,8 +14,22 @@ pub struct KafkaConsumer {
     // Topics the consumer reads from
     pub topics: Vec<String>,
     // External Object type to allow for the configuration of the consumer.
-    //  Set to option as it would otherwise overflow the stack due to circular dependency
-    pub object: Option<Box<ExtObject>>
+    // Set to option as it would otherwise overflow the stack due to circular dependency
+    pub object: Option<Box<ExtObject>>,
+    // Re exports of arguments
+    #[serde(default = "default_api_port")]
+    pub api_port: u16,
+    #[serde(default = "default_level")]
+    pub level: String,
+    pub kafka_address: String
+}
+
+pub fn default_api_port() -> u16 {
+    8080
+}
+
+pub fn default_level() -> String {
+    "info".to_string()
 }
 
 impl Default for KafkaConsumer {
@@ -24,6 +38,9 @@ impl Default for KafkaConsumer {
         { 
             topics: Vec::new(), 
             object: None,
+            api_port: default_api_port(),
+            level: default_level(),
+            kafka_address: "localhost:9092".to_string()
         }
     }
 }
@@ -42,6 +59,8 @@ impl ToObject for KafkaConsumer {
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());
         }
+
+        let env = 
 
         object.docker_data.push(DockerData::new
             (

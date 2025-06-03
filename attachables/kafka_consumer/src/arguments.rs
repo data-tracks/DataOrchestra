@@ -4,7 +4,7 @@ use log::LevelFilter;
 #[derive(Parser, Debug, Clone)]
 #[command(version, about)]
 pub struct Arguments {
-    #[arg(short, long, default_value_t = 8080)]
+    #[arg(short, long)]
     #[arg(env = "API_PORT")]
     pub api_port: u16,
 
@@ -16,7 +16,7 @@ pub struct Arguments {
     #[arg(env = "KAFKA_ADDRESS")]
     pub kafka_address: String,
 
-    #[arg(short = 'l', long, default_value_t = LevelFilter::Info)]
+    #[arg(short = 'l', long)]
     #[arg(env = "LEVEL")]
     pub level: LevelFilter
 }

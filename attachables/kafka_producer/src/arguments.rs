@@ -8,15 +8,18 @@ pub struct Arguments {
     #[arg(env = "API_PORT")]
     pub api_port: u16,
 
-    #[arg(short = 't', long)]
+    #[arg(short, long)]
     #[arg(env = "TOPIC")]
-    pub topic: Option<Vec<String>>,
+    pub topics: Option<String>,
 
-    #[arg(short = 'a', long, value_name = "HOST:PORT")]
+    #[arg(short, long, value_name = "HOST:PORT")]
     #[arg(env = "KAFKA_ADDRESS")]
     pub kafka_address: String,
 
-    #[arg(short = 'l', long, default_value_t = LevelFilter::Info)]
+    #[arg(short, long, default_value_t = LevelFilter::Info)]
     #[arg(env = "LEVEL")]
-    pub level: LevelFilter
+    pub level: LevelFilter,
+
+    #[arg(skip)]
+    pub vec_topics: Vec<String>
 }
