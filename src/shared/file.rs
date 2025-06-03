@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use log::error;
 use serde::{Deserialize, Serialize};
 use crate::core::types::data::NodeData;
@@ -39,6 +41,7 @@ pub struct DockerFile {
     pub name: Option<String>,
     pub path: String,
     pub destination: Option<String>,
+    pub env: Option<HashMap<String, String>>,
     pub start: Option<String>,
     pub dependency: Option<String>
 }
@@ -50,6 +53,7 @@ impl Default for DockerFile {
             name: None, 
             path: "".to_string(), 
             destination: None, 
+            env: None,
             start: None, 
             dependency: None
         }

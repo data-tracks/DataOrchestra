@@ -49,6 +49,7 @@ impl ToObject for KafkaConsumer {
                 "attachables/kafka_consumer/", 
                 "kafka_consumer/", 
                 "kafka_consumer/start.sh", 
+                None,
                 None)
             );
         
@@ -56,7 +57,9 @@ impl ToObject for KafkaConsumer {
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_set_name("KafkaConsumer");
+                .try_set_name("KafkaConsumer")
+                .set_dockerfile("images/rust.dockerfile")
+                .set_image("rust_base");
         }
 
         object

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::{attach::attach_types::{AttachType, AttachTypeConfig}, types::data::NodeData}, shared::{Amount, DockerFile, NodeFile}};
+use crate::core::attach::attach_types::AttachTypeConfig;
+use crate::shared::{Amount, DockerFile, NodeFile};
 
 use super::{docker::ExtDocker, node::ExtNode};
 
@@ -15,7 +16,7 @@ pub struct General {
     pub ansible: Option<String>,
     #[serde(default)]
     #[serde(rename = "attach")]
-    pub attach_config: Amount<AttachTypeConfig>
+    pub attach_config: Amount<AttachTypeConfig>,
 }
 
 impl Default for General {
@@ -27,7 +28,7 @@ impl Default for General {
             node_data: Amount::Single(NodeFile::default()), 
             docker_data: Amount::Single(DockerFile::default()), 
             ansible: Some("".to_string()), 
-            attach_config: Amount::Single(AttachTypeConfig::default()) 
+            attach_config: Amount::Single(AttachTypeConfig::default()),
         }
     }  
 }

@@ -43,14 +43,15 @@ impl ToInternal<Store> for ExtStore {
         // Schema needs to be uploaded to the node for it to be mounted
         if self.general.node.is_some() {
             for schema in store.schema.iter_mut() {
-                store.object.node_data.push(NodeData::new(schema.clone().to_owned(), "docker/mount/")); 
                 if let Some(file_name) = Path::new(schema)
                         .file_name()
                         .and_then(|name| name.to_str()) 
                 {
                     // Alter path to that of the remote location
+                    store.object.node_data.push(NodeData::new(schema.clone().to_owned(), format!("docker/mount/{}", file_name))); 
                     *schema = format!("docker/mount/{}", file_name);
                 }
+                
             }
         }
     
@@ -77,8 +78,8 @@ impl ToInternal<Store> for ExtStore {
             } 
         }
 
-        store.object.node_data = self.general.node_data.to_internal();
-        store.object.docker_data = self.general.docker_data.to_internal();
+        store.object.node_data.extend(self.general.node_data.to_internal());
+        store.object.docker_data.extend(self.general.docker_data.to_internal());
 
         debug!("Finished parsing store to internal");
         store

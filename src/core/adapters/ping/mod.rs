@@ -1,13 +1,13 @@
-use std::net::IpAddr;
+use std::{net::{IpAddr, TcpStream}, time::Duration};
 
-use super::{Local, Runner};
+pub fn ping_node(ip: &IpAddr) -> Result<(), String> {
+    dbg!(&ip);
+    let socket_addr = format!("{}:{}", ip, 22);
+    let rt = tokio::runtime::Runtime::new().unwrap(); 
+    let _ = rt.block_on(async {
+        let timeout = Duration::from_secs(5);
+        TcpStream::connect_timeout(&socket_addr.parse().unwrap(), timeout).map_err(|err| err.to_string())
+    });
 
-pub fn ping(ip: &IpAddr) -> Result<(), String> {
-    let local = Local::new();
-    let result = local.exec(format!("ping -c1 -w5 {} >/dev/null && echo \"true\"", ip))?;
-   
-    match result.as_str().trim() {
-        "true" => Ok(()),
-        _ => Err("Unable to ping remote ip".to_string())
-    }
+    Ok(())
 }

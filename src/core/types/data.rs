@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub struct NodeData {
     pub path: String,
@@ -21,6 +23,7 @@ pub struct DockerData {
     pub name: String,
     pub path: String,
     pub destination: String,
+    pub env: Option<HashMap<String, String>>,
     pub start: String,
     pub dependency: Option<String>
 }
@@ -32,6 +35,7 @@ impl Default for DockerData {
             name: String::new(),
             path: String::new(),
             destination: "/".to_string(),
+            env: Some(HashMap::new()),
             start: String::new(),
             dependency: None
         }
@@ -39,12 +43,13 @@ impl Default for DockerData {
 }
 
 impl DockerData {
-    pub fn new<T: Into<String>, S: Into<String>, V: Into<String>, W: Into<String>>(name: T, path: S, destination: V, start: W, dependency: Option<String>) -> Self {
+    pub fn new<T: Into<String>, S: Into<String>, V: Into<String>, W: Into<String>>(name: T, path: S, destination: V, start: W, env: Option<HashMap<String, String>>, dependency: Option<String>) -> Self {
         DockerData 
         {
             name: name.into(),
             path: path.into(),
             destination: destination.into(),
+            env,
             start: start.into(),
             dependency: dependency.map(|item| item.into())
         }

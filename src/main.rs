@@ -1,12 +1,11 @@
-use std::option::Iter;
-use std::{default, env, fs};
+use std::{env, fs};
 use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::thread::{self};
-use data_orchestra::core::adapters::{ping, ContainerType, DockerManager, Local, Portainer, Runner, Uploader};
+use data_orchestra::core::adapters::{ping_node, ContainerType, DockerManager, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::object::Object;
 use data_orchestra::core::process::Process;
@@ -25,7 +24,6 @@ use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
-use serde_json::ser;
 
 pub fn print_logo() {
     println!(r#"
@@ -109,9 +107,6 @@ fn main() {
     let mut portainer = config.portainer;
 
     objects.extend(attach_objects);
-
-    dbg!(&objects);
-    exit(-1);
 
     health_check(&stores, &processes, &generates);
 
@@ -378,8 +373,8 @@ pub fn viable_check() {
     }
 }
 
-pub fn ping_node(node: &Node) {
-    let result = ping::ping(&node.host);
+pub fn ping_nodes(node: &Node) {
+    let result = ping_node(&node.host);
     if let Err(error) = result {
         panic!("[{}] {}", node.host, error);
     }
@@ -392,19 +387,19 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
 
     for store in stores.iter() {
         if let Some(ref node) = store.object.node {
-            ping_node(node);
+            ping_nodes(node);
         }
     }
 
     for process in processes.iter() {
         if let Some(ref node) = process.object.node {
-            ping_node(node);
+            ping_nodes(node);
         }
     }
 
     for generate in generates.iter() {
         if let Some(ref node) = generate.object.node {
-            ping_node(node);
+            ping_nodes(node);
         }
     }
 

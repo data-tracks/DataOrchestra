@@ -1,32 +1,39 @@
-use std::{thread, time::Duration};
-
+use std::sync::Arc;
+use std::time::Duration;
+use actix_web::{post, web, App, HttpResponse, HttpServer};
 use clap::Parser;
-use fake::{Fake, Faker};
+use kafka_producer::arguments::Arguments;
 use log::{info, LevelFilter};
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
-use sensor::{arguments::{Args, StreamProcessor}, logger::init_logger};
+use kafka_producer::logger::init_logger;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     init_logger(LevelFilter::Debug);
     info!("Starting");
-    let args: Args = Args::parse();
 
-    if let Some(ref process_type) = args.stream_processor {
-        match process_type {
-            StreamProcessor::Kafka => 
-            {
-                kafka_producer(args).await;
-            },
-            _ => ()
-        }
-    }
+    dotenvy::dotenv().ok();
+    let args: Arguments = Arguments::parse();
+
+    let api_port = args.api_port.clone();
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(Arc::new(args.clone())))
+            .service(produce)
+    })
+    .bind(("127.0.0.1", api_port))?
+    .run()
+    .await
 }
 
-pub async fn kafka_producer(args: Args) {
+#[post("/kafkaproducer")]
+async fn produce(data: web::Path::<String>, args: web::Data<Arc<Arguments>>) -> HttpResponse {
+    let data = data.into_inner();
+
     info!("Starting kafka producer");
     let producer: &FutureProducer = &ClientConfig::new()
-        .set("bootstrap.servers", args.address)
+        .set("bootstrap.servers", &args.kafka_address)
         .create()
         .expect("Unable to create kafka producer");
 
@@ -34,21 +41,22 @@ pub async fn kafka_producer(args: Args) {
         panic!("No topics provided for kafka");
     }
 
-    let topics: Vec<String> = args.topic.unwrap(); 
+    let topics = args.topic.as_ref().unwrap(); 
 
-    loop {
-        for topic in topics.iter() {
-            let val: f64 = Faker.fake();
-            let delivery_status = producer
-                .send(
-                    FutureRecord::to(topic)
-                        .payload(&format!("{}", &val))
-                        .key(""),
-                    Duration::from_secs(60),
-                )
-                .await;
+    for topic in topics.iter() {
+        let delivery_status = producer
+            .send(
+                FutureRecord::to(topic)
+                    .payload(&format!("{}", &data))
+                    .key(""),
+                Duration::from_secs(60),
+            )
+            .await;
+
+        if let Err(error) = delivery_status {
+            return HttpResponse::InternalServerError().body(format!("{:?}", error));
         }
-
-        thread::sleep(Duration::from_secs(args.interval));
     }
+
+    HttpResponse::Ok().finish()
 }

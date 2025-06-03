@@ -58,7 +58,9 @@ impl PostGres {
 
     pub fn mount_data(&self, mounts: &Vec<String>, mut docker: &mut ContainerBuilder) {
         for mount in mounts {
-            docker = docker.add_mount(format!("{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
+            // TODO: Conditionally check if user already provides full path
+            // Mount requires full path, $(pwd) inserts the needed base directory
+            docker = docker.add_mount(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
         }
     }
 }

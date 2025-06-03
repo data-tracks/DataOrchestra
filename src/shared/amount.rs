@@ -2,6 +2,7 @@ use std::{mem, vec::IntoIter};
 use serde::{Deserialize, Serialize};
 
 /// The `Amount` type. Allows a value to be nothing, one value or a collection on values
+/// Used to allow for variability of fields in the JSON schema
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Amount<T> {
@@ -50,6 +51,7 @@ impl<T> Amount<T> {
     /// # Panic
     ///
     /// When [`Amount`] is not of type `single`
+    #[inline]
     pub fn get_ref_single(&self) -> &T {
         match self {
             Self::Single(ref value) => value,
@@ -62,6 +64,7 @@ impl<T> Amount<T> {
     /// # Panic
     ///
     /// When [`Amount`] is not of type `single`
+    #[inline]
     pub fn get_ref_mut_single(&mut self) -> &mut T {
         match self {
             Self::Single(ref mut value) => value,
@@ -74,6 +77,7 @@ impl<T> Amount<T> {
     /// # Panic
     ///
     /// When [`Amount`] is not of type `multiple`
+    #[inline]
     pub fn get_ref_multiple(&self) -> &Vec<T> {
         match self {
             Self::Multiple(ref values) => values,
@@ -86,6 +90,7 @@ impl<T> Amount<T> {
     /// # Panic
     ///
     /// When [`Amount`] is not of type `multiple`
+    #[inline]
     pub fn get_ref_mut_multiple(&mut self) -> &mut Vec<T> {
         match self {
             Self::Multiple(ref mut values) => values,
@@ -94,6 +99,7 @@ impl<T> Amount<T> {
     }
 
     /// Transform Amount enum value into vector
+    #[inline]
     pub fn to_vec(self) -> Vec<T> {
         match self {
             Amount::None => Vec::new(),
@@ -103,6 +109,7 @@ impl<T> Amount<T> {
     } 
     
     /// Transform Amount enum value into vector of references
+    #[inline]
     pub fn to_ref_vec<'a>(&'a self) -> Vec<&'a T> {
         match self {
             Amount::None => Vec::new(),
@@ -112,6 +119,7 @@ impl<T> Amount<T> {
     }
 
     /// Transform Amount enum value into vector of mutable references
+    #[inline]
     pub fn to_mut_ref_vec<'a>(&'a mut self) -> Vec<&'a mut T> {
         match self {
             Amount::None => Vec::new(),
@@ -120,11 +128,14 @@ impl<T> Amount<T> {
         } 
     }
 
+    /// Take value out of the Amount enum
+    #[inline]
     pub fn take(&mut self) -> Amount<T> {
         mem::replace(self, Amount::None)
     }
 
-    /// Insert item
+    /// Insert item into Amount enum
+    #[inline]
     pub fn insert(&mut self, item: T) {
         // Take ownership of self by moving it out of memory. Insert value and then place result
         // back into self
@@ -150,8 +161,6 @@ impl<T> IntoIterator for Amount<T> {
     fn into_iter(self) -> Self::IntoIter {
          self.to_vec().into_iter()
     }
-
-    
 }
 
 impl<T> Default for Amount<T> {

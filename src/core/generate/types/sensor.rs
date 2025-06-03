@@ -46,6 +46,7 @@ impl Sensor {
             name: String::new(),
             path: String::from("templates/generators/sensor"),
             destination: String::from("/sensor"),
+            env: None,
             start: format!("cd /sensor && sh spawn.sh \"Sensor\" \"{}\"", self.parse()),
             dependency: None
         }

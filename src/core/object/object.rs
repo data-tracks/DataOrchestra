@@ -30,7 +30,7 @@ pub struct Object {
     // Data to be uploaded to docker container 
     pub docker_data: Vec<DockerData>,
     // Ansible script responsible for the setup of the enviroment
-    pub ansible: String
+    pub ansible: String,
 }
 
 impl Default for Object {
@@ -43,7 +43,7 @@ impl Default for Object {
             ssh: None,
             node_data: Vec::new(),
             docker_data: Vec::new(),
-            ansible: "scripts/ansible/ansible-setup.yml".to_string()
+            ansible: "scripts/ansible/ansible-setup.yml".to_string(),
         }
     }
 }
@@ -135,8 +135,10 @@ impl Spawner for Object {
 
         self.docker_manager = Some(manager);
 
+
         // Upload all node data to relevant node. This is done before the setup as the
         // specialization setup may start before object setup, thus data could be missing
+        debug!("Uploading node data");
         if let Some(node) = self.node.as_ref() {
             if let Some(ssh) = node.ssh.as_ref() {
                 for data in self.node_data.iter() {

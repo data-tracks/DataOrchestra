@@ -6,6 +6,7 @@ use super::Store;
 
 impl Spawner for Store {
     fn build(&mut self) {
+
         info!("Building Store");
 
         if let Some(db_type) = &self.db_type {

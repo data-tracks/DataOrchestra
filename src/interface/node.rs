@@ -33,7 +33,7 @@ impl ToInternal<Node> for ExtNode {
             node.name = name;
         }
 
-        node.host = node.host;
+        node.host = self.host;
 
         if let Some(user) = self.username {
             node.username = user;

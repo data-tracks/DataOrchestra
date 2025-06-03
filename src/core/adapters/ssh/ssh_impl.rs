@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use ssh2::{Session, Channel};
 use walkdir::{DirEntry, WalkDir};
 use std::{fs, io};
@@ -111,6 +111,13 @@ impl<T, S> Uploader<T, S> for Ssh where
         assert!(file.is_file());
         debug!("Uploading file {} to {}", file.display(), &location.display());
 
+        if let Some(parent) = location.parent() {
+            let result = self.exec(format!("mkdir -p {}", parent.display()));
+            if let Err(error) = result {
+                error!("{}", error);
+            }
+        }
+
         let mut local_file = File::open(file).unwrap();
         let remote_file: Result<Channel, ssh2::Error> = self.session.scp_send(location, 0o644, fs::metadata(file).unwrap().len(), None);
 
@@ -138,11 +145,13 @@ impl<T, S> Uploader<T, S> for Ssh where
     ///
     /// [`Result`] type with the parent directory of the files on success or error message.
     fn upload_directory(&self, dir: T, destination: S) -> Result<(), String> {
+        let mut created_paths: Vec<String> = Vec::new();
+        
         let dir = dir.as_ref();
         let destination = destination.as_ref();
         assert!(dir.is_dir());
 
-        let _ = self.exec(format!("mkdir {}", destination.to_str().unwrap()));
+        let _ = self.exec(format!("mkdir -p {}", destination.to_str().unwrap()));
 
         for entry in WalkDir::new(dir) {
             if let Ok(ref entry) = entry {
@@ -155,8 +164,9 @@ impl<T, S> Uploader<T, S> for Ssh where
 
                     // Copy to / directory
                     let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
-                    if entry.file_type().is_dir() {
-                        let _ = self.exec(format!("mkdir {}", remote_path));
+                    if entry.file_type().is_dir() && !created_paths.contains(&remote_path){
+                        created_paths.push(remote_path.to_string());
+                        let _ = self.exec(format!("mkdir -p {}", remote_path));
                     }
                     else {
                         let result = self.upload_file(entry.path(), &Path::new(&remote_path));
@@ -172,6 +182,7 @@ impl<T, S> Uploader<T, S> for Ssh where
     } 
 }
 
+// TODO: Allow for user defined filters
 /// Ignore a directory entry based on predefined filtering for folders and files
 fn ignore(obj: &DirEntry) -> bool {
     let file_filter = vec!["so", "rmeta", "d", "rlib", "TAG"];

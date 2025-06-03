@@ -34,5 +34,7 @@ regex = "1"
 
 dotenvy = "0.15"
 
+ping = "0.4"
+
 [dev-dependencies]
 rstest = "0.25.0"

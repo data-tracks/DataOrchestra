@@ -39,6 +39,7 @@ impl ToObject for KafkaProducer {
                 "attachables/kafka_producer/", 
                 "kafka_producer/", 
                 "kafka_producer/start.sh", 
+                None,
                 None)
             );
         
@@ -46,7 +47,9 @@ impl ToObject for KafkaProducer {
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_set_name("KafkaProducer");
+                .try_set_name("KafkaProducer")
+                .set_dockerfile("images/rust.dockerfile")
+                .set_image("rust_base");
         }
 
         object

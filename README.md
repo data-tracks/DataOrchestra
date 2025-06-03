@@ -1,8 +1,15 @@
 # Data-Orchestra
 
-A rust based dynamics distributed data landscape generator.
+A rust based dynamic heterogeneous distributed data landscape generator.
 
 ## Quickstart
+
+To test the system run the following command which runs the smart building testing example with the relevant variables. 
+Note that you may need to change the nodes addresses to fit your needs.
+
+```shell
+cargo run -- -f examples/smart_building/config.json -s <path/to/your/ssh_key>
+```
 
 ## Dependencies
 
