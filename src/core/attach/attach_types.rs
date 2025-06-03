@@ -18,6 +18,12 @@ pub enum AttachTypeConfig {
     KafkaProducer(KafkaProducer)
 }
 
+impl Default for AttachTypeConfig {
+    fn default() -> Self {
+        Self::KafkaConsumer(KafkaConsumer::default())
+    }
+}
+
 pub trait ToObject {
     fn to_object(self, general: &General) -> Object;
 }

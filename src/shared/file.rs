@@ -10,6 +10,16 @@ pub struct NodeFile {
     pub destination: Option<String>
 }
 
+impl Default for NodeFile {
+    fn default() -> Self {
+        NodeFile 
+        { 
+            path: "".to_string(), 
+            destination: Some("".to_string())
+        }
+    }
+}
+
 impl ToInternal<NodeData> for NodeFile {
     fn to_internal(self) -> NodeData {
         let mut data = NodeData::default();
@@ -31,6 +41,19 @@ pub struct DockerFile {
     pub destination: Option<String>,
     pub start: Option<String>,
     pub dependency: Option<String>
+}
+
+impl Default for DockerFile {
+    fn default() -> Self {
+        DockerFile 
+        { 
+            name: None, 
+            path: "".to_string(), 
+            destination: None, 
+            start: None, 
+            dependency: None
+        }
+    }
 }
 
 impl ToInternal<DockerData> for DockerFile {

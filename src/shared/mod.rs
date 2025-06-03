@@ -12,3 +12,6 @@ pub use file::*;
 
 pub mod arguments;
 pub use arguments::*;
+
+pub mod object_types;
+pub use object_types::*;

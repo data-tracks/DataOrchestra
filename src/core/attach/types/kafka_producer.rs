@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::ContainerBuilder;
 use crate::interface::general::General;
-use crate::core::types::{data::NodeData, DockerData};
+use crate::core::types::DockerData;
 use crate::core::object::Object;
 use crate::core::attach::attach_types::ToObject;
 use crate::interface::object::ExtObject;
@@ -15,7 +15,7 @@ pub struct KafkaProducer {
     // Topics the producer writes to
     pub topics: Vec<String>,
     // External Object type to allow for the configuration of the producer
-    pub object: Box<ExtObject>
+    pub object: Option<Box<ExtObject>>
 }
 
 impl ToObject for KafkaProducer {
@@ -24,20 +24,14 @@ impl ToObject for KafkaProducer {
         // the attach object is attached to
         let general = general.clone();
 
-        let mut object = self.object.to_internal();
+        let mut object = Object::default();
+        if let Some(ext_object) = self.object {
+            object = ext_object.to_internal();
+        }
 
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());
         }
-
-        if let Some(ansible) = general.ansible {
-            object.ansible = ansible;        
-        }
-
-        object.docker_data = general.docker_data
-            .into_iter()
-            .map(|item| item.to_internal())
-            .collect::<Vec<DockerData>>();
 
         object.docker_data.push(DockerData::new
             (
@@ -47,13 +41,6 @@ impl ToObject for KafkaProducer {
                 "kafka_producer/start.sh", 
                 None)
             );
-
-        object.node_data = general.node_data
-            .into_iter()
-            .map(|item| {
-                item.to_internal()
-            })
-            .collect::<Vec<NodeData>>();
         
         object.docker_container_builder.get_or_insert(ContainerBuilder::new());
 

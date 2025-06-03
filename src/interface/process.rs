@@ -21,6 +21,18 @@ pub fn default_amount() -> usize {
     1
 }
 
+impl Default for ExtProcess {
+    fn default() -> Self {
+        ExtProcess 
+        { 
+            process_type: None, 
+            config: None, 
+            amount: default_amount(), 
+            general: General::default() 
+        }
+    }
+}
+
 impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();

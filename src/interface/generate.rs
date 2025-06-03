@@ -20,6 +20,18 @@ pub fn default_amount() -> usize {
     1
 }
 
+impl Default for ExtGenerate {
+    fn default() -> Self {
+        ExtGenerate 
+        {
+            generate_type: None,
+            config: None,
+            amount: default_amount(),
+            general: General::default()
+        }
+    }
+}
+
 impl ToInternalVec<Generate> for ExtGenerate {
     fn to_internal(self) -> Vec<Generate> {
         let mut vec_generate = Vec::<Generate>::new();

@@ -22,6 +22,18 @@ pub struct ExtStore {
     pub general: General
 }
 
+impl Default for ExtStore {
+    fn default() -> Self {
+        ExtStore 
+        {
+            db_type: None,
+            config: None,
+            schema: Amount::None,
+            general: General::default()
+        }
+    }
+}
+
 impl ToInternal<Store> for ExtStore {
     fn to_internal(self) -> Store {
         let mut store = Store::default();

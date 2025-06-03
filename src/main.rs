@@ -1,5 +1,5 @@
 use std::option::Iter;
-use std::{env, fs};
+use std::{default, env, fs};
 use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
@@ -13,13 +13,19 @@ use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::Config;
+use data_orchestra::interface::generate::ExtGenerate;
+use data_orchestra::interface::object::ExtObject;
+use data_orchestra::interface::process::ExtProcess;
+use data_orchestra::interface::store::ExtStore;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
 use data_orchestra::shared::arguments::{Arguments, ARGS};
+use data_orchestra::shared::ObjectTypes;
 use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
+use serde_json::ser;
 
 pub fn print_logo() {
     println!(r#"
@@ -41,8 +47,26 @@ fn main() {
     dotenvy::dotenv().ok();
     let args: Arguments = Arguments::parse();
 
-    if args.generate_valid_json {
-        //println!("{}", serde_json::to_string_pretty(&Config::default()).unwrap());
+    if let Some(json_type) = args.generate_valid_json.as_ref() {
+        match json_type {
+            ObjectTypes::Generate => {
+                let json = serde_json::to_string_pretty(&ExtGenerate::default()).expect("Unable to parse struct to json");
+                println!("{}", json);
+            },
+            ObjectTypes::Store => {
+                let json = serde_json::to_string_pretty(&ExtStore::default()).expect("Unable to parse struct to json");
+                println!("{}", json);
+            },
+            ObjectTypes::Process => {
+                let json = serde_json::to_string_pretty(&ExtProcess::default()).expect("Unable to parse struct to json");
+                println!("{}", json);
+            },
+            ObjectTypes::Object => {
+                let json = serde_json::to_string_pretty(&ExtObject::default()).expect("Unable to parse struct to json");
+                println!("{}", json);
+            }
+        }
+
         exit(0);
     }
    
@@ -85,6 +109,9 @@ fn main() {
     let mut portainer = config.portainer;
 
     objects.extend(attach_objects);
+
+    dbg!(&objects);
+    exit(-1);
 
     health_check(&stores, &processes, &generates);
 

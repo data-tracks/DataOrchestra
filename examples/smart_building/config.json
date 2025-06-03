@@ -37,6 +37,11 @@
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
         "name": "rust"
+      },
+      "attach": {
+        "kafkaconsumer": {
+          "topics": ["EnergyIn"]
+        }
       }
     }
   ],

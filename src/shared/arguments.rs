@@ -3,6 +3,8 @@ use std::sync::OnceLock;
 use clap::Parser;
 use log::LevelFilter;
 
+use super::ObjectTypes;
+
 pub static ARGS: OnceLock<Arguments> = OnceLock::new();
 
 #[derive(Parser, Debug)]
@@ -24,9 +26,9 @@ pub struct Arguments {
     pub remove_all: bool,
 
     /// Generate a valid config file 
-    #[arg(long = "generate_valid_json", default_value_t = false)]
+    #[arg(long = "generate_valid_json")]
     #[arg(env = "GENERATE_VALID_JSON")]
-    pub generate_valid_json: bool,
+    pub generate_valid_json: Option<ObjectTypes>,
 
     /// Skip the portainer manager setup
     #[arg(long = "no_portainer", default_value_t = false)]

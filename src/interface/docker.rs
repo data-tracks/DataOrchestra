@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::default;
+use std::hash::Hash;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::{container::ContainerBuilder, ComposeGroupBuilder};
@@ -27,6 +29,25 @@ pub struct ExtDocker {
     pub names: Option<Vec<String>>,
     #[serde(default)]
     pub interpolation_variables: HashMap<String, String>
+}
+
+impl Default for ExtDocker {
+    fn default() -> Self {
+        ExtDocker 
+        { 
+            name: None, 
+            network: None, 
+            enviroment: None, 
+            mount: Amount::None, 
+            publish_all: true, 
+            image: None, 
+            dockerfile: None, 
+            build_args: None, 
+            compose: None, 
+            names: None, 
+            interpolation_variables: HashMap::new() 
+        }
+    }
 }
 
 impl ToInternal<ComposeGroupBuilder> for ExtDocker {

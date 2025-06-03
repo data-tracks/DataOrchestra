@@ -76,7 +76,6 @@ where
             return Ok(Amount::Multiple(compact));
         }    
         else if let Err(error) = result {
-            debug!("{}", value.clone());
             panic!("Error while deserializing Vec<generate> [{}]", error);
         }
     }

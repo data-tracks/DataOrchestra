@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::types::data::{NodeData, DockerData};
+use crate::core::types::data::DockerData;
 use crate::shared::ToInternal;
 use crate::interface::{general::General, object::ExtObject};
 use crate::core::adapters::ContainerBuilder;
@@ -13,8 +13,19 @@ use crate::core::attach::attach_types::ToObject;
 pub struct KafkaConsumer {
     // Topics the consumer reads from
     pub topics: Vec<String>,
-    // External Object type to allow for the configuration of the consumer
-    pub object: Box<ExtObject>
+    // External Object type to allow for the configuration of the consumer.
+    //  Set to option as it would otherwise overflow the stack due to circular dependency
+    pub object: Option<Box<ExtObject>>
+}
+
+impl Default for KafkaConsumer {
+    fn default() -> Self {
+        KafkaConsumer 
+        { 
+            topics: Vec::new(), 
+            object: None,
+        }
+    }
 }
 
 impl ToObject for KafkaConsumer {
@@ -23,20 +34,14 @@ impl ToObject for KafkaConsumer {
         // the attach object is attached to
         let general = general.clone();
 
-        let mut object = self.object.to_internal();
+        let mut object = Object::default();
+        if let Some(ext_object) = self.object {
+            object = ext_object.to_internal();
+        }
 
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());
         }
-
-        if let Some(ansible) = general.ansible {
-            object.ansible = ansible;        
-        }
-
-        object.docker_data = general.docker_data
-            .into_iter()
-            .map(|item| item.to_internal())
-            .collect::<Vec<DockerData>>();
 
         object.docker_data.push(DockerData::new
             (
@@ -46,11 +51,6 @@ impl ToObject for KafkaConsumer {
                 "kafka_consumer/start.sh", 
                 None)
             );
-
-        object.node_data = general.node_data
-            .into_iter()
-            .map(|item| item.to_internal())
-            .collect::<Vec<NodeData>>();
         
         object.docker_container_builder.get_or_insert(ContainerBuilder::new());
 

@@ -17,6 +17,16 @@ pub fn default_amount() -> usize {
     1
 }
 
+impl Default for ExtObject {
+    fn default() -> Self {
+        ExtObject 
+        { 
+            amount: default_amount(), 
+            general: General::default() 
+        }
+    }
+}
+
 impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();

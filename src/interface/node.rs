@@ -1,4 +1,4 @@
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use serde::{Serialize, Deserialize};
 use crate::core::types::Node;
 use crate::shared::ToInternal;
@@ -8,9 +8,21 @@ use crate::shared::ToInternal;
 #[serde(rename_all="camelCase")]
 pub struct ExtNode {
     pub name: Option<String>,
-    pub host: Option<IpAddr>,
+    pub host: IpAddr,
     pub username: Option<String>,
     pub password: Option<String>
+}
+
+impl Default for ExtNode {
+    fn default() -> Self {
+        ExtNode 
+        { 
+            name: Some("node".to_string()), 
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST), 
+            username: Some("root".to_string()), 
+            password: Some("password".to_string()) 
+        }
+    }
 }
 
 impl ToInternal<Node> for ExtNode {
@@ -21,9 +33,7 @@ impl ToInternal<Node> for ExtNode {
             node.name = name;
         }
 
-        if let Some(ip) = self.host {
-            node.host = ip
-        }
+        node.host = node.host;
 
         if let Some(user) = self.username {
             node.username = user;
