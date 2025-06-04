@@ -10,7 +10,7 @@ use crate::core::adapters::{Local, OsSystems};
 
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
-use super::{ContainerConfig, DockerSource, PortMapping};
+use super::{ContainerConfig, DockerSource, Mount, PortMapping};
 use super::Run;
 
 /// The docker `Container` type. Represents the general information tied to the creation of a
@@ -226,6 +226,16 @@ impl ContainerBuilder {
 
     pub fn expose_mut(&mut self, expose: bool) -> &mut Self {
         self.containerconfig.expose_mut(expose);
+        self
+    }
+
+    pub fn mount(mut self, mount: Mount) -> Self {
+        self.containerconfig = self.containerconfig.mount(mount);
+        self
+    }
+
+    pub fn mount_mut(&mut self, mount: Mount) -> &mut Self {
+        self.containerconfig.mount_mut(mount);
         self
     }
 
