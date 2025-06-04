@@ -318,7 +318,7 @@ fn main() {
                     if let Some(ref ssh) = node.ssh {
                         info!("Stopping all containers on {}", &node.host);
                         let runner = ssh.to_box_runner();
-                        let result = docker::api::stop_containers(&runner);
+                        let result = docker::api::kill_containers(&runner);
                         if let Err(error) = result {
                             error!("{}", error);
                         }

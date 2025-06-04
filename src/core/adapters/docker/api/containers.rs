@@ -3,6 +3,20 @@ use std::time;
 
 use crate::core::adapters::Runner;
 
+pub fn kill_container<T: Into<String>>(runner: &Box<dyn Runner + Send>, name: T) -> Result<(), String> {
+    let command = format!("docker container kill {}", name.into());
+    runner.exec(command)?;
+
+    Ok(())
+}
+
+pub fn kill_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+    let command = "docker container kill $(docker container ls -a -q)";
+    runner.exec(command.to_string())?;
+
+    Ok(())
+}
+
 /// Delete all running containers running on the location of the runner
 pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = "docker rm $(docker container ls -a -q)";
@@ -14,7 +28,7 @@ pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> 
 /// Delete specific container running on the location of the runner
 pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = format!("docker rm {}", name.into());
-    runner.exec(command.to_string())?;
+    runner.exec(command)?;
 
     Ok(())
 }
@@ -30,7 +44,7 @@ pub fn stop_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
 /// Stop specific running container running on the location of the runner
 pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
     let command = format!("docker stop {}", name.into());
-    runner.exec(command.to_string())?;
+    runner.exec(command)?;
 
     Ok(())
 }
