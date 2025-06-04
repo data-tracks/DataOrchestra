@@ -560,14 +560,6 @@ mod tests {
         fn clone_box(&self) -> Box<dyn Runner + Send> {
             panic!()
         }
-
-        fn to_box_runner<'b>(&'b self) -> Box<dyn Runner + Send>
-        where
-            Self: Runner + Send + Clone,
-            Self: 'b + Sync,
-        {
-            (Box::new(self.clone()) as Box<dyn Runner + Send>) as _
-        }
     }
 
     ////////////////////////////////////////////////
