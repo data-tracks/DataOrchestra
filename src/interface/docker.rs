@@ -97,7 +97,7 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
         }
 
         for mount in self.mount.to_vec() {
-            builder.mount_mut(mount);
+            builder.volume_mut(mount);
         }
 
         builder.publish_all_mut(self.publish_all); 

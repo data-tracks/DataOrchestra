@@ -60,7 +60,7 @@ impl PostGres {
         for mount in mounts {
             // TODO: Conditionally check if user already provides full path
             // Mount requires full path, $(pwd) inserts the needed base directory
-            docker = docker.mount_mut(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
+            docker = docker.volume_mut(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
         }
     }
 }

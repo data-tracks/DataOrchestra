@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
+use super::PortMapping;
+
 #[derive(Debug)]
 pub struct ContainerConfig {
     pub name: Option<String>,
     pub network: String,
     pub enviroment: HashMap<String, String>,
-    pub mount: Vec<String>,
+    pub volume: Vec<String>,
     pub publish: Vec<u16>,
-    pub publish_map: Vec<(u16, u16)>,
+    pub publish_map: Vec<PortMapping>,
     pub publish_all: bool,
     pub expose: bool 
 }
@@ -19,7 +21,7 @@ impl Default for ContainerConfig {
             name: None,
             network: String::from("orchestra"),
             enviroment: HashMap::new(),
-            mount: Vec::new(),
+            volume: Vec::new(),
             publish: Vec::new(),
             publish_map: Vec::new(),
             publish_all: false,
@@ -54,8 +56,8 @@ impl ContainerConfig {
             for port in self.publish.iter() {
                 command = format!("{command} -p {}", port);
             }
-            for (left, right) in self.publish_map.iter() {
-                command = format!("{command} -p {left}:{right}");
+            for map in self.publish_map.iter() {
+                command = format!("{command} -p {}:{}", map.get_host(), map.get_internal());
             }
         }
 
@@ -64,7 +66,7 @@ impl ContainerConfig {
         }
 
         // Parse mount 
-        for value in &self.mount {
+        for value in &self.volume {
             command = format!("{command} -v {}", value);
         }
 
@@ -135,13 +137,13 @@ impl ContainerConfigBuilder {
         self
     }
 
-    pub fn mount<T: Into<String>>(mut self, mount: T) -> Self {
-        self.containerconfig.mount.push(mount.into());
+    pub fn volume<T: Into<String>>(mut self, mount: T) -> Self {
+        self.containerconfig.volume.push(mount.into());
         self
     }
 
-    pub fn mount_mut<T: Into<String>>(&mut self, mount: T) -> &mut Self {
-        self.containerconfig.mount.push(mount.into());
+    pub fn volume_mut<T: Into<String>>(&mut self, mount: T) -> &mut Self {
+        self.containerconfig.volume.push(mount.into());
         self
     }
 
@@ -156,12 +158,12 @@ impl ContainerConfigBuilder {
     }
 
     pub fn publish_map(mut self, left: u16, right: u16) -> Self {
-        self.containerconfig.publish_map.push((left, right));
+        self.containerconfig.publish_map.push(PortMapping::new(left, right));
         self
     }
 
     pub fn publish_map_mut(&mut self, left: u16, right: u16) -> &mut Self {
-        self.containerconfig.publish_map.push((left, right));
+        self.containerconfig.publish_map.push(PortMapping::new(left, right));
         self
     }
 
@@ -187,37 +189,5 @@ impl ContainerConfigBuilder {
 
     pub fn build(self) -> ContainerConfig {
         self.containerconfig
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::core::adapters::ContainerBuilder;
-
-    #[test]
-    fn docker_network() {
-        let mut container = ContainerBuilder::default()
-            .name("rust")
-            .image("rust")
-            .network("docker_network")
-            .build();
-    }
-
-    #[test]
-    fn docker_name() {
-        let mut container = ContainerBuilder::default()
-            .name("rust")
-            .image("rust")
-            .network("docker_network")
-            .build();
-    }
-
-    #[test]
-    fn docker() {
-        let mut container = ContainerBuilder::default()
-            .name("rust")
-            .image("rust")
-            .network("docker_network")
-            .build();
     }
 }

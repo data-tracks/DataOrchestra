@@ -41,7 +41,7 @@ impl MongoDB {
 
     pub fn mount_data(&self, mounts: &Vec<String>, mut docker: &mut ContainerBuilder) {
         for mount in mounts {
-            docker = docker.mount_mut(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
+            docker = docker.volume_mut(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
         }
     }
 }

@@ -139,13 +139,13 @@ impl ContainerBuilder {
         self
     }
 
-    pub fn mount<T: Into<String>>(mut self, mount: T) -> Self {
-        self.containerconfig = self.containerconfig.mount(mount);
+    pub fn volume<T: Into<String>>(mut self, mount: T) -> Self {
+        self.containerconfig = self.containerconfig.volume(mount);
         self
     }
 
-    pub fn mount_mut<T: Into<String>>(&mut self, mount: T) -> &mut Self {
-        self.containerconfig.mount_mut(mount);
+    pub fn volume_mut<T: Into<String>>(&mut self, mount: T) -> &mut Self {
+        self.containerconfig.volume_mut(mount);
         self
     }
 
