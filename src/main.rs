@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::thread::{self};
-use data_orchestra::core::adapters::{ping_node, ContainerType, DockerManager, Local, Portainer, Runner, Uploader};
+use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::object::Object;
 use data_orchestra::core::process::Process;
@@ -406,30 +406,25 @@ pub fn health_check(stores: &Vec<Store>, processes: &Vec<Process>, generates: &V
     info!("Health check complete. All systems green");
 }
 
-pub fn setup_docker_networks(manager: &DockerManager) {
-    for (_, item) in manager.containers.iter() {
-        match item {
-            ContainerType::Container(container) => {
-                let network = &container.config.network;
-                if network.is_empty() {
-                    continue;
-                } 
-
-                let existing_networks = docker::api::get_networks(&container.runner);
-                if let Err(ref error) = existing_networks {
-                    error!("{}", error);
-                }
-                let existing_networks = existing_networks.unwrap();
-
-                if !existing_networks.contains(network) {
-                    let result = docker::api::create_network(network, &container.runner);
-                    if let Err(error) = result {
-                        error!("{}", error);
-                    }
-                }
-            }
-            _ => ()
+pub fn setup_docker_networks(manager: &ContainerType) {
+    for container in manager.containers_ref_vec() {
+        let network = &container.config.network;
+        if network.is_empty() {
+            continue;
         } 
+
+        let existing_networks = docker::api::get_networks(&container.runner);
+        if let Err(ref error) = existing_networks {
+            error!("{}", error);
+        }
+        let existing_networks = existing_networks.unwrap();
+
+        if !existing_networks.contains(network) {
+            let result = docker::api::create_network(network, &container.runner);
+            if let Err(error) = result {
+                error!("{}", error);
+            }
+        }
     }
 }
 
@@ -466,21 +461,15 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
 
     info!("Setting up docker networks");
     for store in stores.iter() {
-        if let Some(ref manager) = store.object.docker_manager {
-            setup_docker_networks(manager); 
-        }
+        setup_docker_networks(&store.object.docker_manager); 
     }
 
     for process in processes.iter() {
-        if let Some(ref manager) = process.object.docker_manager {
-            setup_docker_networks(manager); 
-        }
+        setup_docker_networks(&process.object.docker_manager); 
     }
 
     for generate in generates.iter() {
-        if let Some(ref manager) = generate.object.docker_manager {
-            setup_docker_networks(manager); 
-        }
+        setup_docker_networks(&generate.object.docker_manager); 
     }
    
     info!("Deploying portainer agent on nodes");

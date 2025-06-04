@@ -16,9 +16,6 @@ pub use container::*;
 pub mod portmapping;
 pub use portmapping::*;
 
-pub mod manager;
-pub use manager::*;
-
 pub mod config;
 pub use config::*;
 

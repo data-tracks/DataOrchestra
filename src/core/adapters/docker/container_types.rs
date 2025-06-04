@@ -2,8 +2,15 @@ use super::{ComposeGroup, Container, Run};
 
 #[derive(Debug)]
 pub enum ContainerType {
+    Empty,
     Compose(ComposeGroup),
     Container(Container)
+}
+
+impl Default for ContainerType {
+    fn default() -> Self {
+        ContainerType::Empty
+    }
 }
 
 impl Run for ContainerType {
@@ -18,8 +25,21 @@ impl Run for ContainerType {
             ContainerType::Compose(compose) => {
                 compose.run()?;
             }
+            ContainerType::Empty => {
+                return Err("No container available".to_string());
+            }
         } 
 
         Ok(())
     }
 } 
+
+impl<'a> ContainerType {
+    pub fn containers_ref_vec(&'a self) -> Vec<&'a Container> {
+        match self {
+            ContainerType::Compose(compose) => compose.containers.iter().collect::<Vec<&'a Container>>(),
+            ContainerType::Container(container) => vec![container],
+            _ => Vec::new()
+        } 
+    }
+}

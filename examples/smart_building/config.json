@@ -54,7 +54,7 @@
       "docker_data": {
         "name": "rust-filter",
         "path": "examples/smart_building/processor/energy_filter",
-        "destination": "/energy_processor",
+        "destination": "/energy_filter",
         "start": "/energy_processor/start.sh"
       },
       "docker": {

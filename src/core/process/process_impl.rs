@@ -48,26 +48,21 @@ impl Spawner for Process {
         self.object.setup();
         
         // Start containers and move to manager
-        if let (Some(config), Some(ref mut manager)) = (self.config.as_mut(), self.object.docker_manager.as_mut()) {
+        if let Some(config) = self.config.as_mut() {
             match config {
                 ProcessTypeConfig::Kafka(kafka) => {
-                    if let Some(broker) = manager.containers.get("compose") {
-                        match broker {
-                            ContainerType::Compose(group) => {
-                                if let Some(broker) = group.get_container("kafka-broker") {
-                                    if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
-                                        kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
-                                    }
-                                    else {
-                                        kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new().to_box_runner());
-                                    }
+                    match &self.object.docker_manager {
+                        ContainerType::Compose(group) => {
+                            if let Some(broker) = group.get_container("kafka-broker") {
+                                if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
+                                    kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
+                                }
+                                else {
+                                    kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new().to_box_runner());
                                 }
                             }
-                            _ => ()
                         }
-                    }
-                    else {
-                        panic!("Unable to find kafka-broker for kafka compose configuration");
+                        _ => ()
                     }
                 },
                 _ => ()
