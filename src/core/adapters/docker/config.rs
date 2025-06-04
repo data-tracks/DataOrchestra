@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use super::PortMapping;
+use serde::{Deserialize, Serialize};
+
+use super::{BindPropagation, PortMapping};
 
 #[derive(Debug)]
 pub struct ContainerConfig {
@@ -8,10 +10,28 @@ pub struct ContainerConfig {
     pub network: String,
     pub enviroment: HashMap<String, String>,
     pub volume: Vec<String>,
+    pub mount: Vec<Mount>,
     pub publish: Vec<u16>,
     pub publish_map: Vec<PortMapping>,
     pub publish_all: bool,
-    pub expose: bool 
+    pub expose: bool,
+}
+
+
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Mount {
+    src: String,
+    dst: String,
+    #[serde(default)]
+    read_only: bool,
+    bind_propagation: Option<BindPropagation>
+}
+
+impl Mount {
+    pub fn new<T: Into<String>, S: Into<String>>(src: T, dst: S, read_only: bool, bind_propagation: Option<BindPropagation>) -> Self {
+        Mount { src: src.into(), dst: dst.into(), read_only, bind_propagation }
+    }
 }
 
 impl Default for ContainerConfig {
@@ -22,6 +42,7 @@ impl Default for ContainerConfig {
             network: String::from("orchestra"),
             enviroment: HashMap::new(),
             volume: Vec::new(),
+            mount: Vec::new(),
             publish: Vec::new(),
             publish_map: Vec::new(),
             publish_all: false,
@@ -31,7 +52,7 @@ impl Default for ContainerConfig {
 }
 
 impl ContainerConfig {
-    /// Parse container configuration to valid docker run command
+    /// Parser to parse [`ContainerConfig`] to valid docker run command
     pub fn parse(&self) -> String {
         let mut command: String = String::from("-d -q");
 
@@ -43,10 +64,12 @@ impl ContainerConfig {
             command = format!("{command} --name={}", name);
         }
 
+        // Parse expose all
         if self.expose {
             command = format!("{command} --expose");
         }
-    
+   
+        // Parse ports
         if self.publish_all {
             command = format!("{command} -P");
         }
@@ -61,13 +84,26 @@ impl ContainerConfig {
             }
         }
 
+        // Parse enviroment variables
         for (key, value) in &self.enviroment {
             command = format!("{command} -e {key}={value}")
         }
 
-        // Parse mount 
+        // Parse volumes
         for value in &self.volume {
             command = format!("{command} -v {}", value);
+        }
+
+        // Parse mounts
+        for mount in &self.mount {
+            command = format!("{command} type=bind,src={},", mount.src);
+            if mount.read_only {
+                command = format!("{command}ro,");
+            }
+            command = format!("{command}dst={}", mount.dst);
+            if let Some(bind_propagation) = mount.bind_propagation.as_ref() {
+                command = format!("{command},bind-propagation={}", bind_propagation);
+            }
         }
 
         command
@@ -184,6 +220,16 @@ impl ContainerConfigBuilder {
 
     pub fn expose_mut(&mut self, expose: bool) -> &mut Self {
         self.containerconfig.expose = expose;
+        self
+    }
+
+    pub fn mount(mut self, mount: Mount) -> Self {
+        self.containerconfig.mount.push(mount);
+        self
+    }
+
+    pub fn mount_mut(&mut self, mount: Mount) -> &mut Self {
+        self.containerconfig.mount.push(mount);
         self
     }
 

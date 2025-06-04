@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use data_orchestra::core::adapters::ContainerConfigBuilder;
+    use data_orchestra::core::adapters::{BindPropagation, ContainerConfigBuilder, Mount};
     use rstest::rstest;
 
     #[test]
@@ -138,7 +138,33 @@ mod tests {
         for volume in volumes.iter() {
             let needle = ["-v", volume];
             let found = command.windows(2).any(|s| s == needle);
-            assert!(found, "Expected environment variables");
+            assert!(found, "Expected volume");
+        }
+    }
+
+    #[rstest]
+    #[case(vec![Mount::new("/source", "/destination", false, None)], vec!["type=bind,src=/source,dst=/destination"])]
+    #[case(vec![Mount::new("/source", "/destination", true, None)], vec!["type=bind,src=/source,ro,dst=/destination"])]
+    #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::Shared))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=shared"])]
+    #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::Slave))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=slave"])]
+    #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::Private))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=private"])]
+    #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::RShared))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=rshared"])]
+    #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::RSlave))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=rslave"])]
+    #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::RPrivate))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=rprivate"])]
+    fn docker_mounts(#[case] mounts: Vec<Mount>, #[case] expected: Vec<&str>) {
+        let mut config = ContainerConfigBuilder::default();
+
+        for mount in mounts.clone() {
+            config.mount_mut(mount);
+        }
+
+        let config = config.build();
+
+        let command = config.parse();
+        let command = command.split_whitespace().collect::<Vec<_>>();
+
+        for expect in expected.iter() {
+            assert!(command.contains(&expect), "Expected mount");
         }
     }
 }
