@@ -44,73 +44,188 @@ pub struct ContainerBuilder {
     dockersource: DockerSourceBuilder,
 }
 
+impl Default for Container {
+    fn default() -> Self {
+        Container 
+        { 
+            id: None, 
+            ip: None, 
+            os: None, 
+            publish_ports: Vec::new(), 
+            is_running: false, 
+            ssh: None, 
+            config: ContainerConfig::default(), 
+            source: DockerSource::default(), 
+            runner: Box::new(Local::new()) 
+        } 
+    }
+}
+
+impl Default for ContainerBuilder {
+    fn default() -> Self {
+        ContainerBuilder 
+        { 
+            containerconfig: ContainerConfigBuilder::default(), 
+            dockersource: DockerSourceBuilder::default() 
+        }
+    }
+}
+
 impl ContainerBuilder {
     pub fn new() -> ContainerBuilder {
-        ContainerBuilder { containerconfig: ContainerConfigBuilder::new(), dockersource: DockerSourceBuilder::new() }
+        ContainerBuilder 
+        { 
+            containerconfig: ContainerConfigBuilder::default(), 
+            dockersource: DockerSourceBuilder::default() 
+        }
     }
-
-    pub fn set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
-        self.containerconfig.set_name(name);
+    pub fn config(mut self, config: ContainerConfigBuilder) -> Self {
+        self.containerconfig = config;
         self
     }
 
-    pub fn try_set_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
-        self.containerconfig.try_set_name(name);
-        self
-    }
-
-    pub fn set_network<T: Into<String>>(&mut self, network: T) -> &mut Self {
-        self.containerconfig.set_network(network);
-        self
-    }
-
-    pub fn add_env_var<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
-        self.containerconfig.add_env_var(key, value);
-        self
-    }
-
-    pub fn add_mount<T: Into<String>>(&mut self, mount: T) -> &mut Self {
-        self.containerconfig.add_mount(mount);
-        self
-    }
-
-    pub fn add_publish(&mut self, port: u16) -> &mut Self {
-        self.containerconfig.add_publish(port);
-        self
-    }
-
-    pub fn add_publish_map(&mut self, left: u16, right: u16) -> &mut Self {
-        self.containerconfig.add_publish_map(left, right);
-        self
-    }
-
-    pub fn set_publish_all(&mut self, publish_all: bool) -> &mut Self {
-        self.containerconfig.set_publish_all(publish_all);
-        self
-    }
-
-    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
-        self.dockersource.set_compose(compose);
+    pub fn config_mut(&mut self, config: ContainerConfigBuilder) -> &mut Self {
+        self.containerconfig = config;
         self
     }
     
-    pub fn set_image<T: Into<String>>(&mut self, image: T) -> &mut Self {
-        self.dockersource.set_image(image);
+    pub fn source(mut self, source: DockerSourceBuilder) -> Self {
+        self.dockersource = source;
+        self
+    }
+    
+    pub fn source_mut(&mut self, source: DockerSourceBuilder) -> &mut Self {
+        self.dockersource = source;
         self
     }
 
-    pub fn set_dockerfile<T: Into<String>>(&mut self, dockerfile: T) -> &mut Self {
-        self.dockersource.set_dockerfile(dockerfile);
+    pub fn name<T: Into<String>>(mut self, name: T) -> Self {
+        self.containerconfig = self.containerconfig.name(name);
         self
     }
 
-    pub fn add_build_arg<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
-        self.dockersource.add_build_arg(key, value);
+    pub fn name_mut<T: Into<String>>(&mut self, name: T) -> &mut Self {
+        self.containerconfig.name_mut(name);
         self
     }
 
-    pub fn set_expose(&mut self, expose: bool) -> &mut Self {
-        self.containerconfig.set_expose(expose);
+    pub fn try_name<T: Into<String>>(mut self, name: T) -> Self {
+        self.containerconfig = self.containerconfig.try_name(name);
+        self
+    }
+
+    pub fn try_name_mut<T: Into<String>>(&mut self, name: T) -> &mut Self {
+        self.containerconfig.try_name_mut(name);
+        self
+    }
+
+    pub fn network<T: Into<String>>(mut self, network: T) -> Self {
+        self.containerconfig = self.containerconfig.network(network);
+        self
+    }
+
+    pub fn set_network_mut<T: Into<String>>(&mut self, network: T) -> &mut Self {
+        self.containerconfig.network_mut(network);
+        self
+    }
+
+    pub fn env_var<T: Into<String>, S: Into<String>>(mut self, key: T, value: S) -> Self {
+        self.containerconfig = self.containerconfig.env_var(key, value);
+        self
+    }
+
+    pub fn env_var_mut<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+        self.containerconfig.env_var_mut(key, value);
+        self
+    }
+
+    pub fn mount<T: Into<String>>(mut self, mount: T) -> Self {
+        self.containerconfig = self.containerconfig.mount(mount);
+        self
+    }
+
+    pub fn mount_mut<T: Into<String>>(&mut self, mount: T) -> &mut Self {
+        self.containerconfig.mount_mut(mount);
+        self
+    }
+
+    pub fn publish(mut self, port: u16) -> Self {
+        self.containerconfig = self.containerconfig.publish(port);
+        self
+    }
+
+    pub fn publish_mut(&mut self, port: u16) -> &mut Self {
+        self.containerconfig.publish_mut(port);
+        self
+    }
+
+    pub fn publish_map(mut self, left: u16, right: u16) -> Self {
+        self.containerconfig = self.containerconfig.publish_map(left, right);
+        self
+    }
+
+    pub fn publish_map_mut(&mut self, left: u16, right: u16) -> &mut Self {
+        self.containerconfig.publish_map_mut(left, right);
+        self
+    }
+
+    pub fn publish_all(mut self, publish_all: bool) -> Self {
+        self.containerconfig = self.containerconfig.publish_all(publish_all);
+        self
+    }
+
+    pub fn publish_all_mut(&mut self, publish_all: bool) -> &mut Self {
+        self.containerconfig.publish_all_mut(publish_all);
+        self
+    }
+
+    pub fn compose<T: Into<String>>(mut self, compose: T) -> Self {
+        self.dockersource = self.dockersource.compose(compose);
+        self
+    }
+
+    pub fn compose_mut<T: Into<String>>(&mut self, compose: T) -> &mut Self {
+        self.dockersource.compose_mut(compose);
+        self
+    }
+
+    pub fn image<T: Into<String>>(mut self, image: T) -> Self {
+        self.dockersource = self.dockersource.image(image);
+        self
+    }
+    
+    pub fn image_mut<T: Into<String>>(&mut self, image: T) -> &mut Self {
+        self.dockersource.image_mut(image);
+        self
+    }
+
+    pub fn dockerfile<T: Into<String>>(mut self, dockerfile: T) -> Self {
+        self.dockersource = self.dockersource.dockerfile(dockerfile);
+        self
+    }
+
+    pub fn dockerfile_mut<T: Into<String>>(&mut self, dockerfile: T) -> &mut Self {
+        self.dockersource.dockerfile_mut(dockerfile);
+        self
+    }
+
+    pub fn build_arg<T: Into<String>, S: Into<String>>(mut self, key: T, value: S) -> Self {
+        self.dockersource = self.dockersource.build_arg(key, value);
+        self
+    }
+
+    pub fn build_arg_mut<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+        self.dockersource.build_arg_mut(key, value);
+        self
+    }
+
+    pub fn expose(mut self, expose: bool) -> Self {
+        self.containerconfig = self.containerconfig.expose(expose);
+        self
+    }
+
+    pub fn expose_mut(&mut self, expose: bool) -> &mut Self {
+        self.containerconfig.expose_mut(expose);
         self
     }
 
@@ -205,11 +320,11 @@ impl Run for Container {
     fn run(&mut self) -> Result<(), String> {
         // Build and start container
         if self.source.dockerfile.is_some() {
-            self.build_from_dockerfile();
+            let _ = self.build_from_dockerfile().map_err(|err| panic!("{}", err));
         }
 
         if self.source.image.is_some() {
-            self.build_from_image();
+            let _ = self.build_from_image().map_err(|err| panic!("{}", err));
         }
 
         if let Some(id) = self.id.as_ref() {
@@ -255,7 +370,7 @@ impl Run for Container {
 }
 
 impl Container {
-    fn build_from_dockerfile(&mut self) {
+    fn build_from_dockerfile(&mut self) -> Result<(), String> {
         if let (Some(dockerfile), Some(image)) = (&self.source.dockerfile, &self.source.image) {
             let mut building_args = String::new();
             for (key, value) in self.source.build_args.iter() {
@@ -266,24 +381,19 @@ impl Container {
                 building_args = format!("--build-arg {building_args}");
             }
             
-
-            let result = self.runner.exec(format!("docker build -f {} {building_args} -t {} .", dockerfile, image));
-            if let Err(error) = result {
-                error!("{}", error);
-            }
-            
+            self.runner.exec(format!("docker build -f {} {building_args} -t {} .", dockerfile, image))?;
         }
         else {
-            panic!("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} ");
+            return Err(format!("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} "));
         }
+
+        Ok(())
     }
-    fn build_from_image(&mut self) {
+    fn build_from_image(&mut self) -> Result<(), String>{
         // Create image
-        let id = self.runner.exec(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()));
-        match id {
-            Ok(id) => self.set_id(id.trim().to_string().replace("\n", "")),
-            Err(error) => error!("{}", error)
-        }
+        let id = self.runner.exec(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()))?;
+        self.set_id(id.trim().to_string().replace("\n", ""));
+        Ok(())
     }
 
     pub fn load_name(&mut self) -> Result<(), String> {
@@ -396,4 +506,90 @@ impl Container {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+    use crate::core::adapters::{Run, Runner};
+    use super::ContainerBuilder;
+
+    #[derive(Debug, Clone)]
+    pub struct DummyRunner {
+        output: Arc<Mutex<String>>,
+    }
+
+    impl Default for DummyRunner {
+        fn default() -> Self {
+            let arc = Arc::new(Mutex::new(String::new()));
+            DummyRunner {output: arc}
+        }
+    }
+
+    impl DummyRunner {
+        #[allow(dead_code)]
+        pub fn new(mutex: Arc<Mutex<String>>) -> Self {
+            DummyRunner {
+                output: mutex,
+            }
+        }
+
+        #[allow(dead_code)]
+        pub fn get_output(&self) -> String {
+            self.output.lock().unwrap().clone()
+        }
+    }
+
+    impl Runner for DummyRunner {
+        fn exec(&self, command: String) -> Result<String, String> {
+            let mut output = self.output.lock().unwrap();
+            *output = command.clone();
+            Ok(command)
+        }
+
+        fn clone_box(&self) -> Box<dyn Runner + Send> {
+            panic!()
+        }
+
+        fn to_box_runner<'b>(&'b self) -> Box<dyn Runner + Send>
+        where
+            Self: Runner + Send + Clone,
+            Self: 'b + Sync,
+        {
+            (Box::new(self.clone()) as Box<dyn Runner + Send>) as _
+        }
+    }
+
+    ////////////////////////////////////////////////
+    /// Tests    
+    ////////////////////////////////////////////////
+    
+    #[test]
+    #[should_panic]
+    fn docker_no_image() {
+        let dummy = DummyRunner::default();
+
+        let mut container = ContainerBuilder::default()
+            .name("rust")
+            .build();
+
+        container.runner = dummy.to_box_runner();
+
+        let _ = container.run();
+    }
+
+    #[test]
+    #[should_panic]
+    fn docker_dockerfile_no_image() {
+        let dummy = DummyRunner::default();
+
+        let mut container = ContainerBuilder::default()
+            .dockerfile("dockerfile")
+            .name("rust")
+            .build();
+
+        container.runner = dummy.to_box_runner();
+
+        let _ = container.run();
+    } 
 }

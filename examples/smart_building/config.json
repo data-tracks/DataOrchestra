@@ -40,7 +40,8 @@
       },
       "attach": {
         "kafkaconsumer": {
-          "topics": ["EnergyIn"]
+          "topics": ["EnergyIn"],
+          "kafka_address": "${NODE162.host}:9092"
         }
       }
     }

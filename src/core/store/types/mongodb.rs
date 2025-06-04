@@ -31,17 +31,17 @@ impl MongoDB {
     /// Sets up the docker [`ContainerBuilder`] with the configuration specific to the MongoDB
     /// application
     pub fn setup_container(&mut self, docker: &mut ContainerBuilder) {
-        docker.set_image("mongo:4.4.6");
+        docker.image_mut("mongo:4.4.6");
         docker
-            .try_set_name("mongodb")
-            .add_publish_map(27017, 27017)
-            .add_env_var("MONGO_INITDB_ROOT_USERNAME", self.username.clone())
-            .add_env_var("MONGO_INITDB_ROOT_PASSWORD", self.password.clone());
+            .try_name_mut("mongodb")
+            .publish_map_mut(27017, 27017)
+            .env_var_mut("MONGO_INITDB_ROOT_USERNAME", self.username.clone())
+            .env_var_mut("MONGO_INITDB_ROOT_PASSWORD", self.password.clone());
     }
 
     pub fn mount_data(&self, mounts: &Vec<String>, mut docker: &mut ContainerBuilder) {
         for mount in mounts {
-            docker = docker.add_mount(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
+            docker = docker.mount_mut(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
         }
     }
 }

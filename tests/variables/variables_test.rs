@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod tests {
     use rstest::rstest;
     use data_orchestra::variables::variables::Variables;

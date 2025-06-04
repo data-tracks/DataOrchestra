@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod tests {
     use data_orchestra::variables::tree::VariableTree;
     use rstest::rstest;

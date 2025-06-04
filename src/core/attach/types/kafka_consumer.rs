@@ -60,8 +60,6 @@ impl ToObject for KafkaConsumer {
             object.node = Some(node.to_internal());
         }
 
-        let env = 
-
         object.docker_data.push(DockerData::new
             (
                 "", 
@@ -76,9 +74,9 @@ impl ToObject for KafkaConsumer {
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_set_name("KafkaConsumer")
-                .set_dockerfile("images/rust.dockerfile")
-                .set_image("rust_base");
+                .try_name_mut("KafkaConsumer")
+                .dockerfile_mut("images/rust.dockerfile")
+                .image_mut("rust_base");
         }
 
         object
