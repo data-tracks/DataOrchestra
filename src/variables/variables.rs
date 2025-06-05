@@ -31,6 +31,13 @@ impl Variables {
                 let map = value.as_object().unwrap().to_owned();
                 Self::insert_variables(id, map, tree);
             }
+            if value.is_array() {
+                let mut map = Map::new();
+                for (key, value) in value.as_array().unwrap().to_owned().into_iter().enumerate() {
+                    map.insert(format!("{}", key), value);
+                }
+                Self::insert_variables(id, map, tree);
+            }
         }
     }
 

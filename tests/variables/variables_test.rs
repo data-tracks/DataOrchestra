@@ -38,13 +38,23 @@ mod tests {
         let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
         let result = variables.parse(config.to_string());
 
-        dbg!(&result);
-
         let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
         let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
 
         assert_eq!(actual_json, expected_json);
     }
+
+    #[rstest]
+    #[case(
+        r#"{ "variables": { "NAME": "someone" } }"#, 
+        r#"{ "name": "${AGE}" }"#, 
+        )]
+    #[should_panic]
+    pub fn single_invalid_variable(#[case] var: &str, #[case] config: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let _ = variables.parse(config.to_string());
+    }
+
 
     #[rstest]
     #[case(
@@ -150,6 +160,17 @@ mod tests {
 
     #[rstest]
     #[case(
+        r#"{ "variables": { "PERSON": { "name": "someone" } } }"#, 
+        r#"{ "name": "${PERSON.age}" }"#,
+        )]
+    #[should_panic]
+        pub fn map_invalid_variable_access(#[case] var: &str, #[case] config: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let _ = variables.parse(config.to_string());
+    }
+ 
+    #[rstest]
+    #[case(
         r#"{ "variables": { "PERSON": { "name": { "sirname": "someone" } } } }"#, 
         r#"{ "name": "${PERSON.name.sirname}" }"#,
         r#"{ "name": "someone" }"#
@@ -162,6 +183,17 @@ mod tests {
         let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
 
         assert_eq!(actual_json, expected_json);
+    }
+
+    #[rstest]
+    #[case(
+        r#"{ "variables": { "PERSON": { "name": { "sirname": "someone" } } } }"#, 
+        r#"{ "name": "${PERSON.name.age}" }"#,
+        )]
+    #[should_panic]
+    pub fn map_invalid_variable_access_deep(#[case] var: &str, #[case] config: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let _ = variables.parse(config.to_string());
     }
 
     #[rstest]
@@ -193,10 +225,42 @@ mod tests {
     fn variable_access_inside_string(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
         let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
         let result = variables.parse(config.to_string());
-        dbg!(&result); 
+        
         let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
         let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
 
         assert_eq!(actual_json, expected_json);
+    }
+
+    #[rstest]
+    #[case(
+        r#"{ "variables": { "NAMES": ["someone", "someone_else"] } }"#,
+        r#"{ "name": "${NAMES.0}" }"#,
+        r#"{ "name": "someone" }"#
+    )]
+    #[case(
+        r#"{ "variables": { "NAMES": ["someone", "someone_else"] } }"#,
+        r#"{ "name": "${NAMES.1}" }"#,
+        r#"{ "name": "someone_else" }"#
+    )]
+    fn array_variables_index(#[case] var: &str, #[case] config: &str, #[case] expected: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = variables.parse(config.to_string());
+       
+        let actual_json: serde_json::Value = serde_json::from_str(&result).expect("Failed to parse actual result as JSON");
+        let expected_json: serde_json::Value = serde_json::from_str(expected).expect("Failed to parse expected result as JSON");
+
+        assert_eq!(actual_json, expected_json);
+    }
+
+    #[rstest]
+    #[case(
+        r#"{ "variables": { "NAMES": ["someone", "someone_else"] } }"#,
+        r#"{ "name": "${NAMES.2}" }"#,
+    )]
+    #[should_panic]
+    fn array_variable_invalid_index(#[case] var: &str, #[case] config: &str) {
+        let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
+        let result = variables.parse(config.to_string());
     }
 }
