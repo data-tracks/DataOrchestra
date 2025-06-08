@@ -38,5 +38,9 @@ pub struct Arguments {
     /// Valid private ssh key for validating remote node connection
     #[arg(short, long)]
     #[arg(env = "SSH_KEY")]
-    pub ssh_key: Option<String> 
+    pub ssh_key: Option<String>,
+
+    #[arg(short, long, default_value_t = false)]
+    #[arg(env = "API_ONLY")]
+    pub api_only: bool
 }

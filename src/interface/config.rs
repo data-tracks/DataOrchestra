@@ -4,8 +4,9 @@ use serde::de::Error;
 use serde_json::Value;
 use crate::core::adapters::portainer::portainer::Portainer;
 use crate::core::attach::attach_types::ToObject;
+use crate::core::config::Config;
 use crate::core::object::Object;
-use crate::shared::Amount;
+use crate::shared::{Amount, ToInternal, ToInternalVec};
 use super::store::ExtStore;
 use super::process::ExtProcess;
 use super::object::ExtObject;
@@ -13,7 +14,7 @@ use super::generate::ExtGenerate;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub struct Config {
+pub struct ExtConfig {
     #[serde(default)]
     pub portainer: Portainer,
     #[serde(default)]
@@ -30,7 +31,22 @@ pub struct Config {
     pub object: Amount<ExtObject>,
 }
 
-impl Config {
+impl ToInternal<(Config, Portainer)> for ExtConfig {
+    fn to_internal(self) -> (Config, Portainer) {
+        let config = Config 
+        {
+            generate: self.generate.to_internal(),
+            process: self.process.to_internal(),
+            store: self.store.to_internal(),
+            object: self.object.to_internal()
+        };
+        let portainer = self.portainer;
+
+        (config, portainer)
+    }
+}
+
+impl ExtConfig {
     /// Extract the attachable components from the different components and parse them into their
     /// own objects
     pub fn extract_attachables(&mut self) -> Vec<Object> {

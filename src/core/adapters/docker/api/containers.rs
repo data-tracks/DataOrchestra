@@ -1,16 +1,42 @@
 use std::{thread, time::Duration};
 use std::time;
 
-use crate::core::adapters::Runner;
+use serde::{Deserialize, Serialize};
 
-pub fn kill_container<T: Into<String>>(runner: &Box<dyn Runner + Send>, name: T) -> Result<(), String> {
+use crate::core::adapters::{ContainerData, PortMapping, Runner};
+
+/// Kill container with `name` on the location of the runner
+///
+/// # Examples
+///
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = api::kill_container(&runner, "postgres");
+/// ```
+pub fn kill_container<T: Into<String>>(runner: &Box<dyn Runner + Send + Sync>, name: T) -> Result<(), String> {
     let command = format!("docker container kill {}", name.into());
     runner.exec(command)?;
 
     Ok(())
 }
 
-pub fn kill_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+/// Kill container all containers on the location of the runner
+///
+/// # Examples
+///
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = api::kill_containers(&runner);
+/// ```
+pub fn kill_containers(runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
     let command = "docker container kill $(docker container ls -a -q)";
     runner.exec(command.to_string())?;
 
@@ -18,7 +44,17 @@ pub fn kill_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
 }
 
 /// Delete all running containers running on the location of the runner
-pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+///
+/// # Examples
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = api::delete_containers(&runner);
+/// ```
+pub fn delete_containers(runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
     let command = "docker rm $(docker container ls -a -q)";
     runner.exec(command.to_string())?;
 
@@ -26,7 +62,17 @@ pub fn delete_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> 
 }
 
 /// Delete specific container running on the location of the runner
-pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+///
+/// # Examples
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = api::delete_container("postgres", &runner);
+/// ```
+pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
     let command = format!("docker rm {}", name.into());
     runner.exec(command)?;
 
@@ -34,7 +80,17 @@ pub fn delete_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send
 }
 
 /// Delete all running containers running on the location of the runner
-pub fn stop_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+///
+/// # Examples
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = api::stop_containers(&runner);
+/// ```
+pub fn stop_containers(runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
     let command = "docker stop $(docker container ls -a -q)";
     runner.exec(command.to_string())?;
 
@@ -42,7 +98,17 @@ pub fn stop_containers(runner: &Box<dyn Runner + Send>) -> Result<(), String> {
 }
 
 /// Stop specific running container running on the location of the runner
-pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+///
+/// # Examples
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = api::stop_container("postgres", &runner);
+/// ```
+pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
     let command = format!("docker stop {}", name.into());
     runner.exec(command)?;
 
@@ -50,7 +116,18 @@ pub fn stop_container<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send>)
 }
 
 /// Check if container is running by continously polling its status every second until `timeout`
-pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Runner + Send>) -> Result<(), String> {
+///
+/// # Examples
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::poll_container;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = poll_container("postgres", 30, &runner);
+/// ```
+pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
     let name = name.into();
     let start = time::Instant::now();
     let timout = Duration::from_secs(timout);
@@ -77,16 +154,54 @@ pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Ru
 }
 
 /// Get all container names running on location of runner
-pub fn get_container_names(runner: &Box<dyn Runner + Send>) -> Result<Vec<String>, String> {
+///
+/// # Examples
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::get_container_names;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = get_container_names(&runner);
+/// ```
+pub fn get_container_names(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<String>, String> {
     let command = "docker container ls --format {{.Names}}";
-    let output: String;
-    output = runner.exec(command.to_string())?;
+    let output = runner.exec(command.to_string())?;
 
     let containers: Vec<String> = output
         .split("\n")
         .filter(|x| x.ne(&""))
         .map(|x| x.to_string())
         .collect();
+
+    Ok(containers)
+}
+
+
+/// Get metadata of all containers running on location of runner
+///
+/// # Examples 
+/// ```
+/// use data_orchestra::core::adapters::docker::api;
+/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::get_container_data;
+/// use data_orchestra::core::adapters::traits::Runner;
+///
+/// let runner = Local::new().to_box_runner();
+/// let result = get_container_data(&runner);
+/// ```
+pub fn get_container_data(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<ContainerData>, String> {
+    let command = "docker container ls --format {{.ID}}";
+    let result = runner.exec(command.to_string())?;
+
+    let mut containers = Vec::new();
+    for id in result.split("\n") {
+        let command = format!("docker container ls -f id={id} --format json");
+        let result = runner.exec(command)?;
+        let data: ContainerData = serde_json::from_str(result.as_str()).expect("Unable to parse json to struct");
+        containers.push(data); 
+    }
 
     Ok(containers)
 }

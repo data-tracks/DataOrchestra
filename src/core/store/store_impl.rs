@@ -1,5 +1,6 @@
 use log::info;
-use crate::core::adapters::ContainerBuilder;
+use crate::core::adapters::{ContainerBuilder, ContainerType};
+use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::shared::traits::Spawner;
 
 use super::Store;
@@ -38,7 +39,7 @@ impl Spawner for Store {
         info!("Setting up Store");
 
         self.object.setup();
-        
+
         info!("Finished setting up Store");
     }
 

@@ -49,6 +49,10 @@ impl Default for Object {
 }
 
 impl Spawner for Object {
+    /// Building of Object. After invocation:
+    /// - Base variables set for systems
+    /// - Node ssh connection available
+    /// - Node data uploaded
     fn build(&mut self) {
         if let Some(ref mut node) = self.node {
             let result = node.load_ssh();
@@ -103,7 +107,6 @@ impl Spawner for Object {
                 if let Some(ref ssh) = node.ssh {
                     let runner = ssh.to_box_runner();
                     container.runner = runner;
-    
                     if let Some(dockerfile) = container.source.dockerfile.as_mut() {
                         let result = ssh.exec("mkdir docker/".to_string());
                         if let Err(error) = result {
@@ -155,6 +158,10 @@ impl Spawner for Object {
         }
     }
 
+    /// Setup of object. After invocation:
+    /// - Docker container functionally running
+    /// - Docker container configured with base libraries and ssh connection
+    /// - Docker container data uploaded
     fn setup(&mut self) {
         let result = self.docker_manager.run();
         if let Err(error) = result {
@@ -216,6 +223,8 @@ impl Spawner for Object {
         }
     }
 
+    /// Deployement of Object. After invocation:
+    /// - Start script running
     fn deploy(&mut self) {
         let result = self.start_script();
         if let Err(error) = result {

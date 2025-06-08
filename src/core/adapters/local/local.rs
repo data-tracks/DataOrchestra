@@ -49,7 +49,7 @@ impl Runner for Local {
         }
     }
 
-    fn clone_box(&self) -> Box<dyn Runner + Send> {
+    fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
         Box::new(self.clone()) 
     }
 }

@@ -40,14 +40,14 @@ impl Kafka {
     ///
     /// Runner should the executor at the location of the docker deamon due to the `docker exec`
     /// command execution
-    pub fn create_topic(&self, id: &String, runner: &Box<dyn Runner + Send>) {
+    pub fn create_topic(&self, id: &String, runner: &Box<dyn Runner + Send + Sync>) {
         info!("Creating kafka topics {:?}", self.topics);
         for topic in &self.topics {
             self.exec_create_topic(id, topic, runner);
         }
     }
 
-    fn exec_create_topic<T: Into<String>>(&self, id: &String, topic: T, runner: &Box<dyn Runner + Send>) {
+    fn exec_create_topic<T: Into<String>>(&self, id: &String, topic: T, runner: &Box<dyn Runner + Send + Sync>) {
         let result = runner.exec(format!("docker exec {} /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic {}", id, topic.into()));
         if let Err(error) = result {
             error!("{}", error);

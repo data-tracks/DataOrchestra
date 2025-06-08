@@ -12,7 +12,7 @@ pub struct ComposeGroup {
     pub compose: Option<String>,
     pub names: Vec<String>,
     pub containers: Vec<Container>,
-    pub runner: Box<dyn Runner + Send>
+    pub runner: Box<dyn Runner + Send + Sync>
 }
 
 impl ComposeGroup {

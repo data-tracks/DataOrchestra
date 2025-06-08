@@ -29,7 +29,7 @@ pub struct Portainer {
 
     #[serde(skip)]
     #[serde(default = "default_runner")]
-    pub runner: Box<dyn Runner + Send>
+    pub runner: Box<dyn Runner + Send + Sync>
 }
 
 /// Temporary struct to easily deserialize the jwt token
@@ -58,7 +58,7 @@ pub fn default_password() -> String {
     "portaineradmin".to_string()
 }
 
-pub fn default_runner() -> Box<dyn Runner + Send> {
+pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
     Box::new(Local::new())
 }
 

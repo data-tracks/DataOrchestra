@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use ssh2::{Session, Channel};
 use walkdir::{DirEntry, WalkDir};
 use std::{fs, io};
@@ -95,7 +95,7 @@ impl Runner for Ssh {
         Ok(result)
     }
 
-    fn clone_box(&self) -> Box<dyn Runner + Send> {
+    fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
         Box::new(self.clone()) 
     }
 }   

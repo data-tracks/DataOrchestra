@@ -1,4 +1,5 @@
 use std::net::{IpAddr, Ipv4Addr};
+use std::process::Output;
 use serde::{Serialize, Deserialize};
 use crate::core::types::Node;
 use crate::shared::ToInternal;
@@ -51,4 +52,5 @@ impl ToInternal<Node> for ExtNode {
 
         node
     }
+
 }

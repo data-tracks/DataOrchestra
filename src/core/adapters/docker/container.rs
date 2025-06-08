@@ -35,7 +35,7 @@ pub struct Container {
     /// Container creation source
     pub source: DockerSource,
     /// Local or remote command runner 
-    pub runner: Box<dyn Runner + Send>
+    pub runner: Box<dyn Runner + Send + Sync>
 }
 
 #[derive(Debug)]
@@ -306,19 +306,28 @@ impl Container {
         return None;
     }
 
+    /// Add port mapping of type `external`:`internal`
     pub fn add_port_mapping(&mut self, ext: u16, int: u16) {
         self.publish_ports.push(PortMapping::new(ext, int));
     }
 
+    /// Set name of container
     pub fn set_name(&mut self, name: String) -> &mut Self {
         self.config.name = Some(name);
         self
     }
 
+    /// Get name of container
+    pub fn get_name(&self) -> Option<String> {
+        self.config.name.clone()
+    }
+
+    /// Set id of container
     pub fn set_id(&mut self, id: String) {
         self.id = Some(id);
     }
 
+    /// Get id of container
     pub fn get_id(&self) -> &String {
         self.id.as_ref().unwrap()
     }
@@ -559,7 +568,7 @@ mod tests {
             Ok(command)
         }
 
-        fn clone_box(&self) -> Box<dyn Runner + Send> {
+        fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
             panic!()
         }
     }

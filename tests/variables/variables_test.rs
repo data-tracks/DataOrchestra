@@ -261,6 +261,6 @@ mod tests {
     #[should_panic]
     fn array_variable_invalid_index(#[case] var: &str, #[case] config: &str) {
         let variables: Variables = serde_json::from_str(var).expect("Unable to parse variables to struct");
-        let result = variables.parse(config.to_string());
+        let _ = variables.parse(config.to_string());
     }
 }

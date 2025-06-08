@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use std::{env, fs};
 use std::io::{stdin, stdout, Write};
 use std::net::{IpAddr, Ipv4Addr};
@@ -5,13 +6,15 @@ use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::thread::{self};
+use actix_web::rt::Runtime;
+use data_orchestra::api::api::start_api;
 use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::object::Object;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
-use data_orchestra::interface::config::Config;
+use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::interface::generate::ExtGenerate;
 use data_orchestra::interface::object::ExtObject;
 use data_orchestra::interface::process::ExtProcess;
@@ -19,6 +22,7 @@ use data_orchestra::interface::store::ExtStore;
 use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
 use data_orchestra::shared::arguments::{Arguments, ARGS};
 use data_orchestra::shared::ObjectTypes;
+use data_orchestra::state::State;
 use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
@@ -27,11 +31,11 @@ use clap::Parser;
 
 pub fn print_logo() {
     println!(r#"
-    ____        __        ____            __              __            
-   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _
-  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/
- / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ / 
-/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/  
+    ____        __        ____            __              __                
+   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _          |\      _,,,---,,_
+  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/    ZZZzz /,`.-'`'    -.  ;-;;,_
+ / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
+/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
     "#);  
 }
 
@@ -86,9 +90,9 @@ fn main() {
     // Read only variables from config into struct and transform config string to replace variables
     // with actual values before parsing the modified string to the config struct
     let variables: Variables = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
-    let config = variables.parse(config);
+    let ext_config_string = variables.parse(config);
 
-    let mut config: Config = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
+    let mut ext_config: ExtConfig = serde_json::from_str(ext_config_string.as_str()).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     let result = ARGS.set(args);
@@ -97,24 +101,20 @@ fn main() {
     }
 
     // Transform attachable objects to configured objects
-    let attach_objects = config.extract_attachables();
+    let attach_objects = ext_config.extract_attachables();
+    let (mut config, mut portainer) = ext_config.to_internal();
     
     // Parse to internal structure and move everything out of config
-    let mut objects: Vec<Object> = config.object.to_internal();
-    let mut stores: Vec<Store> = config.store.to_internal();
-    let mut processes: Vec<Process> = config.process.to_internal();
-    let mut generates: Vec<Generate> = config.generate.to_internal();
-    let mut portainer = config.portainer;
 
-    objects.extend(attach_objects);
+    config.object.extend(attach_objects);
 
-    health_check(&stores, &processes, &generates);
+    health_check(&config.store, &config.process, &config.generate);
 
     // Start different tasks
     info!("Running tasks");
     
     thread::scope(|s| {
-        for object in objects.iter_mut() {
+        for object in config.object.iter_mut() {
             let _ = thread::Builder::new()
                 .name("object".to_string())
                 .spawn_scoped(s, || {
@@ -122,7 +122,7 @@ fn main() {
             });
         }
 
-        for store in stores.iter_mut() {
+        for store in config.store.iter_mut() {
             let _ = thread::Builder::new()
                 .name("store".to_string())
                 .spawn_scoped(s, || {
@@ -130,7 +130,7 @@ fn main() {
             });
         }
 
-        for process in processes.iter_mut() {
+        for process in config.process.iter_mut() {
             let _ = thread::Builder::new()
                 .name("process".to_string())
                 .spawn_scoped(s, || {
@@ -138,7 +138,7 @@ fn main() {
             });
         }
 
-        for generate in generates.iter_mut() {
+        for generate in config.generate.iter_mut() {
             let _ = thread::Builder::new()
                 .name("generate".to_string())
                 .spawn_scoped(s, || {
@@ -148,17 +148,17 @@ fn main() {
     });
 
     if ARGS.get().unwrap().remove_all {
-        kill_containers(&stores, &processes, &generates);
+        kill_containers(&config.store, &config.process, &config.generate);
     }
 
     if !ARGS.get().unwrap().no_portainer { 
         portainer.build(); 
     }
 
-    pre_setup(&portainer, &stores, &processes, &generates);
+    pre_setup(&portainer, &config.store, &config.process, &config.generate);
    
     thread::scope(|s| {
-        for object in objects.iter_mut() {
+        for object in config.object.iter_mut() {
             let _ = thread::Builder::new()
                 .name("object".to_string())
                 .spawn_scoped(s, || {
@@ -166,7 +166,7 @@ fn main() {
             });
         }
 
-        for store in stores.iter_mut() {
+        for store in config.store.iter_mut() {
             let _ = thread::Builder::new()
                 .name("store".to_string())
                 .spawn_scoped(s, || {
@@ -174,7 +174,7 @@ fn main() {
             });
         }
 
-        for process in processes.iter_mut() {
+        for process in config.process.iter_mut() {
             let _ = thread::Builder::new()
                 .name("process".to_string())
                 .spawn_scoped(s, || {
@@ -182,7 +182,7 @@ fn main() {
             });
         }
 
-        for generate in generates.iter_mut() {
+        for generate in config.generate.iter_mut() {
             let _ = thread::Builder::new()
                 .name("generate".to_string())
                 .spawn_scoped(s, || {
@@ -192,7 +192,7 @@ fn main() {
     });
 
     thread::scope(|s| {
-        for object in objects.iter_mut() {
+        for object in config.object.iter_mut() {
             let _ = thread::Builder::new()
                 .name("object".to_string())
                 .spawn_scoped(s, || {
@@ -200,7 +200,7 @@ fn main() {
             });
         }
 
-        for store in stores.iter_mut() {
+        for store in config.store.iter_mut() {
             let _ = thread::Builder::new()
                 .name("store".to_string())
                 .spawn_scoped(s, || {
@@ -208,7 +208,7 @@ fn main() {
             });
         }
 
-        for process in processes.iter_mut() {
+        for process in config.process.iter_mut() {
             let _ = thread::Builder::new()
                 .name("process".to_string())
                 .spawn_scoped(s, || {
@@ -216,7 +216,7 @@ fn main() {
             });
         }
 
-        for generate in generates.iter_mut() {
+        for generate in config.generate.iter_mut() {
             let _ = thread::Builder::new()
                 .name("generate".to_string())
                 .spawn_scoped(s, || {
@@ -225,134 +225,13 @@ fn main() {
         }
     });
 
-    let mut do_cleanup: bool = true;
+    info!("Everything deployed. starting API.");
 
-    info!("Everything deployed. Enabling CLI.");
-
-    // Enter main loop of programm. Infinite loop which allows the user to communicate with
-    // programm and remote entities. 
-    loop {
-        let mut s=String::new();
-        print!("Enter command: ");
-        let _ = stdout().flush();
-        let _ = stdin().read_line(&mut s);
-        s = s.replace("\n", "");
-        let mut command = s.trim();
-        let mut parameters = "";
-
-        // If command containes whitespace after trim, it holds parameters
-        if command.contains(" ") {
-            let result = s.split_once(" ");
-
-            if result.is_none() {
-                continue;
-            }
-
-            (command, parameters) = result.unwrap();
-        }
-
-        match command {
-            "nc" | "no-cleanup" => { 
-                do_cleanup = false; 
-            }
-            "hc" | "health-check" => {
-                health_check(&stores, &processes, &generates);
-            },
-            "i" | "info" => {
-                println!("Stores: {}", stores.len());
-                for store in stores.iter() {
-                    let mut store_format = String::new();
-                    if let Some(ref node) = store.object.node {
-                        store_format = format!("{store_format}-ip: {}\n", node.host);
-                    }
-                    println!("{}", store_format);
-                }
-                
-                println!("Processes: {}", processes.len());
-                for process in processes.iter() {
-                    let mut process_format = String::new();
-                    if let Some(ref node) = process.object.node {
-                        process_format = format!("{process_format}-ip: {}\n", node.host);
-                    }
-                    println!("{}", process_format);
-                }
-
-                println!("Generates: {}", generates.len());
-                for generate in generates.iter() {
-                    let mut generate_format = String::new();
-                    if let Some(ref node) = generate.object.node {
-                        generate_format = format!("{generate_format}-ip: {}\n", node.host);
-                    }
-                    println!("{}", generate_format);
-                }
-            },
-            "k" | "kill" => {
-                if parameters.is_empty() {
-                    warn!("Please provide node ip and docker name to kill docker process");
-                    continue;
-                }
-                let parameters = parameters.split_once(" ");
-                if parameters.is_none() {
-                    warn!("Please provide node ip and docker name to kill docker process");
-                    continue;
-                }
-                
-                let (host, docker) = parameters.unwrap();
-                let nodes = get_nodes(&stores, &processes, &generates);
-                for node in nodes {
-                    if node.host.eq(&IpAddr::V4(Ipv4Addr::from_str(host).unwrap())) {
-                        if let Some(ref ssh) = node.ssh {
-                            info!("Stopping all container {} on {}", &docker, &host);
-                            let runner = ssh.to_box_runner();
-                            let result = docker::api::kill_container(&runner, docker);
-                            if let Err(error) = result {
-                                error!("{}", error);
-                            }
-                        }
-                    }
-                }
-            },
-            "ka" | "kill-all" => {
-                let nodes = get_nodes(&stores, &processes, &generates);
-                for node in nodes {
-                    if let Some(ref ssh) = node.ssh {
-                        info!("Stopping all containers on {}", &node.host);
-                        let runner = ssh.to_box_runner();
-                        let result = docker::api::kill_containers(&runner);
-                        if let Err(error) = result {
-                            error!("{}", error);
-                        }
-                    }
-                }                
-            }
-            "q" | "quit" => break,
-            "h" | "help" | _ => {
-                println!(
-                    r#"
-    ____        __        ____            __              __                
-   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _          |\      _,,,---,,_
-  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/    ZZZzz /,`.-'`'    -.  ;-;;,_
- / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
-/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
-
-short   | long          | parameters                | description 
--------------------------------------------------------------------------
-h       | help          |                           | Get explanation of possible commands
-i       | info          |                           | Get info of produced system
-q       | quit          |                           | Quit programm and perform cleanup
-k       | kill          | <node ip> <docker name>   | Kill a specific docker container
-ka      | kill-all      |                           | Kill all running docker containers
-nc      | no-cleanup    |                           | Perform no cleanup
-hc      | health-check  |                           | Perform a health check on remote entities
-                    "#
-                    );
-            }
-        }
-    }
-        
-    if do_cleanup {
-        cleanup(&stores, &processes, &generates);
-    }
+    let state = Arc::new(State::new(config));
+    let rt = Runtime::new().unwrap();
+    rt.block_on(async {
+        start_api(state).await;
+    });
 
     info!("Closing DataOrchestra");
 }
