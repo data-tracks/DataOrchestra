@@ -180,17 +180,6 @@ pub fn get_container_names(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec
 
 
 /// Get metadata of all containers running on location of runner
-///
-/// # Examples 
-/// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
-/// use data_orchestra::core::adapters::get_container_data;
-/// use data_orchestra::core::adapters::traits::Runner;
-///
-/// let runner = Local::new().to_box_runner();
-/// let result = get_container_data(&runner);
-/// ```
 pub fn get_container_data(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<ContainerData>, String> {
     let command = "docker container ls --format {{.ID}}";
     let result = runner.exec(command.to_string())?;
