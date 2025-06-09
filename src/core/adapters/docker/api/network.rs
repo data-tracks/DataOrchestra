@@ -1,7 +1,7 @@
 use crate::core::adapters::Runner;
 
 /// Get all docker networks running on the location of the runner
-pub fn get_networks(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<String>, String> {
+pub fn get_networks(runner: &dyn Runner) -> Result<Vec<String>, String> {
     let command = "docker network ls --format {{.Name}}";
 
     let output: String;
@@ -19,7 +19,7 @@ pub fn get_networks(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<String
 
 
 /// Create docker network on the location of the runner
-pub fn create_network<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
+pub fn create_network<T: Into<String>>(name: T, runner: &dyn Runner) -> Result<(), String> {
     let command = format!("docker network create -d bridge {}", name.into());
     runner.exec(command)?;
 
@@ -27,7 +27,7 @@ pub fn create_network<T: Into<String>>(name: T, runner: &Box<dyn Runner + Send +
 }
 
 /// Delete all docker networks on the location of the runner
-pub fn delete_networks(runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String> {
+pub fn delete_networks(runner: &dyn Runner) -> Result<(), String> {
     let command = "docker network prune -f";
     runner.exec(command.to_string())?;
 
@@ -36,7 +36,7 @@ pub fn delete_networks(runner: &Box<dyn Runner + Send + Sync>) -> Result<(), Str
 
 
 /// Delete specific docker network on the location of the runner
-pub fn delete_network<T: Into<String>>(network: T, runner: &Box<dyn Runner + Send + Sync>) -> Result<(), String>{
+pub fn delete_network<T: Into<String>>(network: T, runner: &dyn Runner) -> Result<(), String>{
     let command = format!("docker network rm {}", network.into());
     runner.exec(command)?;
 

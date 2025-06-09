@@ -248,7 +248,7 @@ impl Object {
                     command = format!("ansible-playbook {} -e \"port={}\" -e \"host={}\"", &self.ansible, port, node.host);
                 }    
 
-                let runner = Local::new().to_box_runner();
+                let runner = Local::new();
                 runner.exec(command)?;
             }
             else {

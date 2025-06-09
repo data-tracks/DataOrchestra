@@ -288,14 +288,14 @@ pub fn setup_docker_networks(manager: &ContainerType) {
             continue;
         } 
 
-        let existing_networks = docker::api::get_networks(&container.runner);
+        let existing_networks = docker::api::get_networks(&*container.runner);
         if let Err(ref error) = existing_networks {
             error!("{}", error);
         }
         let existing_networks = existing_networks.unwrap();
 
         if !existing_networks.contains(network) {
-            let result = docker::api::create_network(network, &container.runner);
+            let result = docker::api::create_network(network, &*container.runner);
             if let Err(error) = result {
                 error!("{}", error);
             }
@@ -367,10 +367,10 @@ pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Pro
 
     for node in nodes.iter() {
         if let Some(ssh) = node.ssh.as_ref() {
-            let result = docker::api::get_networks(&ssh.to_box_runner());
+            let result = docker::api::get_networks(ssh);
             if let Ok(networks) = result {
                 if !networks.contains(&"orchestra".to_string()) {
-                    let result = docker::api::create_network("orchestra", &ssh.to_box_runner());
+                    let result = docker::api::create_network("orchestra", ssh);
                     if let Err(error) = result {
                         error!("{}", error);
                     }

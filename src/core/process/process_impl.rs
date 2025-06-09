@@ -55,10 +55,10 @@ impl Spawner for Process {
                         ContainerType::Compose(group) => {
                             if let Some(broker) = group.get_container("kafka-broker") {
                                 if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
-                                    kafka.create_topic(broker.id.as_ref().unwrap(), &ssh.to_box_runner());
+                                    kafka.create_topic(broker.id.as_ref().unwrap(), ssh);
                                 }
                                 else {
-                                    kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new().to_box_runner());
+                                    kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new());
                                 }
                             }
                         }

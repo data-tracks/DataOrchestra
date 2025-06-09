@@ -91,7 +91,7 @@ impl Portainer {
         else {
             info!("Setting up portainer");
 
-            let volumes = docker::api::get_all_volumes(&self.runner);
+            let volumes = docker::api::get_all_volumes(&*self.runner);
             if let Err(error) = volumes {
                 panic!("{}", error);
             }
