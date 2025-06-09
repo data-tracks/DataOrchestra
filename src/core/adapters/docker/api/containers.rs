@@ -166,7 +166,7 @@ pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &Box<dyn Ru
 /// let result = get_container_names(&runner);
 /// ```
 pub fn get_container_names(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<String>, String> {
-    let command = "docker container ls --format {{.Names}}";
+    let command = "docker container ls -a --format {{.Names}}";
     let output = runner.exec(command.to_string())?;
 
     let containers: Vec<String> = output
@@ -188,8 +188,10 @@ pub fn get_container_data(runner: &Box<dyn Runner + Send + Sync>) -> Result<Vec<
     for id in result.split("\n") {
         let command = format!("docker container ls -f id={id} --format json");
         let result = runner.exec(command)?;
-        let data: ContainerData = serde_json::from_str(result.as_str()).expect("Unable to parse json to struct");
-        containers.push(data); 
+        if !result.is_empty() {
+            let data: ContainerData = serde_json::from_str(result.as_str()).expect("Unable to parse json to struct");
+            containers.push(data); 
+        }
     }
 
     Ok(containers)

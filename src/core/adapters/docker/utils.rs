@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -28,14 +28,14 @@ impl Display for BindPropagation {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename = "snake_case")]
+#[serde(rename_all = "PascalCase")]
 pub struct ContainerData {
-    pub command: String,
     pub created_at: String,
+    #[serde(rename = "ID")]
     pub id: String,
     pub image: String,
     pub labels: String,
-    pub local_volumes: usize,
+    pub local_volumes: String,
     pub mounts: String,
     pub names: String,
     pub networks: String,
@@ -47,12 +47,37 @@ pub struct ContainerData {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum StateTypes {
     Created,
     Running,
     Complete,
     Failed,
     Die
+}
+
+impl FromStr for StateTypes {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.contains("created") {
+            return Ok(StateTypes::Created);
+        }
+        else if s.contains("running") {
+            return Ok(StateTypes::Running);
+        }
+        else if s.contains("complete") {
+            return Ok(StateTypes::Complete);
+        }
+        else if s.contains("failed") {
+            return Ok(StateTypes::Failed);
+        }
+        else if s.contains("die") {
+            return Ok(StateTypes::Die);
+        }
+
+        Err("State doesnt exist".to_string())
+    }
 }
 
 

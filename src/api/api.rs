@@ -1,6 +1,7 @@
 use std::{net::IpAddr, sync::Arc};
-
-use actix_web::{get, http::header::ContentType, post, put, web, App, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
+use actix_web::{get, http::{self, header::ContentType}, post, put, web, App, HttpResponse, HttpServer, Responder};
+use log::debug;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -9,7 +10,16 @@ use crate::{core::adapters::{async_ping_node, docker, Runner, StateTypes}, state
 pub async fn start_api(state: Arc<State>) {
     let _ = HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()  // For development only, allows all origins
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS", "PUT", "DELETE"])
+                    .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+                    .allowed_header(http::header::CONTENT_TYPE)
+                    .max_age(3600)
+            )
             .app_data(web::Data::new(state.clone()))
+            .service(get_active)
             .service(get_healthcheck)
             .service(put_kill)
             .service(put_killall)
@@ -30,7 +40,12 @@ pub struct BroadcastMessage {
     pub message: String
 }
 
-#[get("/healtcheck")]
+#[get("orchestra/active")]
+pub async fn get_active() -> impl Responder {
+    HttpResponse::Ok()
+}
+
+#[get("orchestra/healthcheck")]
 pub async fn get_healthcheck(state: web::Data<Arc<State>>) -> impl Responder {
     let mut health_data = Vec::new();
 
@@ -75,7 +90,7 @@ pub async fn get_healthcheck(state: web::Data<Arc<State>>) -> impl Responder {
         .json(health_data)
 }
 
-#[put("/kill/{host}/{name}")]
+#[put("orchestra/kill/{host}/{name}")]
 pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<State>>) -> impl Responder {
     let (host, name) = data.into_inner();
     let nodes = state.get_config().get_all_nodes();
@@ -96,7 +111,7 @@ pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<St
     HttpResponse::Ok().into()
 }
 
-#[put("/killall")]
+#[put("orchestra/killall")]
 pub async fn put_killall(state: web::Data<Arc<State>>) -> impl Responder {
     let nodes = state.get_config().get_all_nodes();
     for node in nodes {
