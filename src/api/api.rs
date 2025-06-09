@@ -5,7 +5,7 @@ use log::debug;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::{core::adapters::{async_ping_node, docker, Runner, StateTypes}, state::State};
+use crate::{core::adapters::{async_ping_node, docker, StateTypes}, state::State};
 
 pub async fn start_api(state: Arc<State>) {
     let _ = HttpServer::new(move || {
@@ -62,8 +62,7 @@ pub async fn get_healthcheck(state: web::Data<Arc<State>>) -> impl Responder {
             )
         );
         if let Some(ssh) = node.ssh.as_ref() {
-            let runner = ssh.to_box_runner();
-            let result = docker::api::get_container_data(&runner);
+            let result = docker::api::get_container_data(ssh);
             if let Ok(containers) = result {
                 for container in containers {
                     health_data.push(
@@ -97,8 +96,7 @@ pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<St
     for node in nodes {
         if node.host.eq(&host) {
             if let Some(ref ssh) = node.ssh {
-                let runner = ssh.to_box_runner();
-                let result = docker::api::kill_container(&runner, &name);
+                let result = docker::api::kill_container(ssh, &name);
                 if let Err(error) = result {
                     return HttpResponse::InternalServerError()
                         .content_type(ContentType::plaintext())
@@ -115,10 +113,8 @@ pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<St
 pub async fn put_killall(state: web::Data<Arc<State>>) -> impl Responder {
     let nodes = state.get_config().get_all_nodes();
     for node in nodes {
-        if let Some(ref ssh) = node.ssh {
-            let runner = ssh.to_box_runner();
-            
-            let result = docker::api::kill_containers(&runner);
+        if let Some(ssh) = node.ssh.as_ref() {
+            let result = docker::api::kill_containers(ssh);
             if let Err(error) = result {
                 return HttpResponse::InternalServerError()
                     .content_type(ContentType::plaintext())

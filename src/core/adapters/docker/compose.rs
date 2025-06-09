@@ -63,7 +63,7 @@ impl Run for ComposeGroup {
             container.set_id(id.replace("\n", ""));
             self.containers.push(container);
 
-            let result = super::api::poll_container(id, 30, &self.runner);
+            let result = super::api::poll_container(id, 30, &*self.runner);
             if let Err(error) = result {
                 error!("{}", error);
             }

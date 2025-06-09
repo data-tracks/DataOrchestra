@@ -1,16 +1,12 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{env, fs};
-use std::io::{stdin, stdout, Write};
-use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::process::exit;
-use std::str::FromStr;
 use std::thread::{self};
 use actix_web::rt::Runtime;
 use data_orchestra::api::api::start_api;
 use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
-use data_orchestra::core::object::Object;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
@@ -19,7 +15,7 @@ use data_orchestra::interface::generate::ExtGenerate;
 use data_orchestra::interface::object::ExtObject;
 use data_orchestra::interface::process::ExtProcess;
 use data_orchestra::interface::store::ExtStore;
-use data_orchestra::shared::traits::{Spawner, ToInternal, ToInternalVec};
+use data_orchestra::shared::traits::{Spawner, ToInternal};
 use data_orchestra::shared::arguments::{Arguments, ARGS};
 use data_orchestra::shared::ObjectTypes;
 use data_orchestra::state::State;
@@ -311,25 +307,24 @@ pub fn kill_containers(stores: &Vec<Store>, processes: &Vec<Process>, generates:
     let nodes = get_nodes(stores, processes, generates);
     for node in nodes {
         if let Some(ssh) = node.ssh.as_ref() {
-            let runner = ssh.to_box_runner();
             info!("Removing all docker containers from {}", node.host);
-            let result = docker::api::stop_containers(&runner);
+            let result = docker::api::stop_containers(ssh);
             if let Err(error) = result {
                 error!("{}", error);
             }
-            let result = docker::api::delete_containers(&runner);
+            let result = docker::api::delete_containers(ssh);
             if let Err(error) = result {
                 error!("{}", error);
             }
         }
     }
 
-    let runner = Local::new().to_box_runner();
-    let result = docker::api::stop_containers(&runner);
+    let local = Local::new();
+    let result = docker::api::stop_containers(&local);
     if let Err(error) = result {
         error!("{}", error);
     }
-    let result = docker::api::delete_containers(&runner);
+    let result = docker::api::delete_containers(&local);
     if let Err(error) = result {
         error!("{}", error);
     }

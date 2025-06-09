@@ -79,7 +79,7 @@ impl Default for Portainer {
 
 impl Portainer {
     pub fn build(&mut self) {
-        let containers = docker::api::get_container_names(&self.runner);
+        let containers = docker::api::get_container_names(&*self.runner);
         if let Err(error) = containers {
             panic!("{}", error);
         }
@@ -119,7 +119,7 @@ impl Portainer {
             }
 
             // poll docker container
-            let result = docker::api::poll_container("portainer", 30, &self.runner);
+            let result = docker::api::poll_container("portainer", 30, &*self.runner);
             if let Err(error) = result {
                 panic!("{}", error);
             }

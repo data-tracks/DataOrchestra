@@ -349,7 +349,7 @@ impl Run for Container {
         }
 
         if let Some(id) = self.id.as_ref() {
-            let result = super::api::poll_container(id, 30, &self.runner);
+            let result = super::api::poll_container(id, 30, &*self.runner);
             if let Err(error) = result {
                 panic!("Polling docker container {} timeout after 30 seconds | {}", id, error);
             }
