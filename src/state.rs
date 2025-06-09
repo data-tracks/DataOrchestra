@@ -3,7 +3,7 @@ use std::sync::RwLock;
 use crate::{api::api::BroadcastMessage, core::{config::Config, generate::Generate, object::Object, process::Process, store::Store}};
 
 pub struct State {
-    pub messages: RwLock<Vec<String>>,
+    pub messages: RwLock<Vec<BroadcastMessage>>,
     config: Config
 }
 
@@ -18,7 +18,6 @@ impl State {
 
     pub fn write_message(&mut self, message: BroadcastMessage) {
         if let Ok(writer) = self.messages.write().as_mut() {
-            let message = format!("[{}] {}", message.from, message.message);
             writer.push(message);
         }
     }

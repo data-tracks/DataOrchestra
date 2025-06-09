@@ -25,11 +25,16 @@ impl Node {
         }
     }
 
-    pub fn load_ssh(&mut self) -> Result<(), String> {
+    pub fn set_ssh(&mut self) -> Result<(), String> {
+        let ssh = self.get_ssh();
+        self.ssh = Some(ssh);
+        Ok(())
+    }
+
+    pub fn get_ssh(&self) -> Ssh {
         let mut ssh = Ssh::new();
         let _ = ssh.connect(&self.host.to_string(), self.ssh_port, &self.username, self.password.as_ref());
 
-        self.ssh = Some(ssh);
-        Ok(())
+        ssh
     }
 }

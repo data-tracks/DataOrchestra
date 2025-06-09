@@ -53,7 +53,8 @@ pub enum StateTypes {
     Running,
     Complete,
     Failed,
-    Die
+    Die,
+    Exited
 }
 
 impl FromStr for StateTypes {
@@ -74,6 +75,9 @@ impl FromStr for StateTypes {
         }
         else if s.contains("die") {
             return Ok(StateTypes::Die);
+        }
+        else if s.contains("exited") {
+            return Ok(StateTypes::Exited);
         }
 
         Err("State doesnt exist".to_string())

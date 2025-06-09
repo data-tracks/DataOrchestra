@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
-use ssh2::{Session, Channel};
+use ssh2::{Channel, DisconnectCode, Session};
 use walkdir::{DirEntry, WalkDir};
 use std::{fs, io};
 use log::{debug, error};
@@ -58,7 +58,13 @@ impl Ssh {
             return Err("Session not authenticated".to_string());
         } 
 
+
         Ok(())
+    }
+
+    pub fn disconnect(&self) -> Result<(), String> {
+        self.session.disconnect(None, "finished", None)
+            .map_err(|err| format!("Unable to close session {}", err))
     }
 }
 

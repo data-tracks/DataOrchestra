@@ -169,7 +169,7 @@ pub fn get_container_names(runner: &dyn Runner) -> Result<Vec<String>, String> {
 
     let containers: Vec<String> = output
         .split("\n")
-        .filter(|x| x.ne(&""))
+        .filter(|x| !x.is_empty())
         .map(|x| x.to_string())
         .collect();
 
@@ -179,16 +179,20 @@ pub fn get_container_names(runner: &dyn Runner) -> Result<Vec<String>, String> {
 
 /// Get metadata of all containers running on location of runner
 pub fn get_container_data(runner: &dyn Runner) -> Result<Vec<ContainerData>, String> {
-    let command = "docker container ls --format {{.ID}}";
+    let command = "docker container ls -a --format {{.ID}}";
     let result = runner.exec(command.to_string())?;
 
     let mut containers = Vec::new();
-    for id in result.split("\n") {
-        let command = format!("docker container ls -f id={id} --format json");
+    for id in result.split("\n").filter(|x| !x.is_empty()) {
+        let command = format!("docker container ls -a -f id={id} --format json");
         let result = runner.exec(command)?;
         if !result.is_empty() {
             let data: ContainerData = serde_json::from_str(result.as_str()).expect("Unable to parse json to struct");
-            containers.push(data); 
+            // Filter out portainer
+            // TODO: Do this step before to skip unecessary request
+            if !data.names.contains("portainer") {
+                containers.push(data); 
+            }
         }
     }
 

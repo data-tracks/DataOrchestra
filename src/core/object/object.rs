@@ -55,7 +55,7 @@ impl Spawner for Object {
     /// - Node data uploaded
     fn build(&mut self) {
         if let Some(ref mut node) = self.node {
-            let result = node.load_ssh();
+            let result = node.set_ssh();
             if let Err(error) = result {
                 panic!("Unable to setup ssh for {} {}", node.host, error);
             }
