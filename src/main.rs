@@ -1,9 +1,11 @@
+use std::mem::take;
 use std::sync::Arc;
 use std::{env, fs};
 use std::path::Path;
 use std::process::exit;
 use std::thread::{self};
 use actix_web::rt::Runtime;
+use actix_web::web::get;
 use data_orchestra::api::api::start_api;
 use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::generate::Generate;
@@ -222,8 +224,8 @@ fn main() {
     });
 
     info!("Everything deployed. starting API.");
-
-    let state = Arc::new(State::new(config));
+    let args = ARGS.get().unwrap().clone();
+    let state = Arc::new(State::new(config, args));
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         start_api(state).await;

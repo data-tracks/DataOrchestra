@@ -455,7 +455,7 @@ impl Container {
 
     pub fn load_ssh(&mut self, host: IpAddr) -> Result<(), String> {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), Some(&"password".to_string()));
+        let _ = ssh.connect_password(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
 
         self.ssh = Some(ssh);
         Ok(())

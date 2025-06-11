@@ -1,18 +1,20 @@
 use std::sync::RwLock;
 
-use crate::{api::api::BroadcastMessage, core::{config::Config, generate::Generate, object::Object, process::Process, store::Store}};
+use crate::{api::api::BroadcastMessage, core::{config::Config, generate::Generate, object::Object, process::Process, store::Store}, shared::Arguments};
 
 pub struct State {
     pub messages: RwLock<Vec<BroadcastMessage>>,
-    config: Config
+    config: Config,
+    args: Arguments
 }
 
 impl State {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, args: Arguments) -> Self {
         State 
         { 
             messages: RwLock::new(Vec::new()),
-            config 
+            args,
+            config
         }
     }
 
@@ -40,5 +42,9 @@ impl State {
 
     pub fn get_objects(&self) -> &Vec<Object> {
         &self.config.object
+    }
+
+    pub fn get_args(&self) -> &Arguments {
+        &self.args
     }
 }

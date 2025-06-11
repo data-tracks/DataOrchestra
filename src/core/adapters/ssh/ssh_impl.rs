@@ -8,13 +8,12 @@ use std::{fs, io};
 use log::{debug, error};
 use crate::core::adapters::ssh::ssh::Ssh;
 use crate::core::adapters::traits::{Runner, Uploader};
-use crate::shared::arguments::ARGS;
 
 impl Ssh {
     pub fn new() -> Ssh {
         Ssh { session: Session::new().unwrap()  }
     }
-
+    /*
     /// Connect to Ssh server
     ///
     /// # Note
@@ -58,6 +57,72 @@ impl Ssh {
             return Err("Session not authenticated".to_string());
         } 
 
+
+        Ok(())
+    }
+    */
+
+    pub fn connect_password(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
+        let address: String = format!("{}:{}", host, port);
+        debug!("Connecting to Ssh client {} with {}@{}", &address, &username, password);
+        let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
+    
+        if let Err(ref error) = tcp {
+            error!("Unable to setup tcp stream {}", error);
+        } 
+
+        let tcp = tcp.unwrap();
+        self.session.set_tcp_stream(tcp);
+        
+        let handshake: Result<(), ssh2::Error> = self.session.handshake();
+
+        if let Err(ref error) = handshake {
+            return Err(format!("Unsuccessful handshake {}", error));
+        }
+        let authentication: Result<(), ssh2::Error>;
+
+        authentication = self.session.userauth_password(username, password);
+        
+        if let Err(ref error) = authentication {
+            return Err(format!("Unsuccessful authentication {}", error));
+        }
+
+        if !self.session.authenticated() {
+            return Err("Session not authenticated".to_string());
+        } 
+
+
+        Ok(())
+    }
+
+    pub fn connect_ssh(&mut self, host: &String, port: u16, username: &String, ssh_key: &String) -> Result<(), String> {
+        let address: String = format!("{}:{}", host, port);
+        debug!("Connecting to Ssh client {} with {} and ssh_key", &address, &username);
+        let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
+    
+        if let Err(ref error) = tcp {
+            error!("Unable to setup tcp stream {}", error);
+        } 
+
+        let tcp = tcp.unwrap();
+        self.session.set_tcp_stream(tcp);
+        
+        let handshake: Result<(), ssh2::Error> = self.session.handshake();
+
+        if let Err(ref error) = handshake {
+            return Err(format!("Unsuccessful handshake {}", error));
+        }
+        let authentication: Result<(), ssh2::Error>;
+
+        authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key), None);
+        
+        if let Err(ref error) = authentication {
+            return Err(format!("Unsuccessful authentication {}", error));
+        }
+
+        if !self.session.authenticated() {
+            return Err("Session not authenticated".to_string());
+        } 
 
         Ok(())
     }
@@ -209,4 +274,26 @@ fn ignore(obj: &DirEntry) -> bool {
     }
 
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::core::adapters::{Runner, Ssh};
+
+    #[test]
+    pub fn ssh_load() {
+        let mut ssh_sessions = Vec::new();
+        for _ in 0..10 {
+            let mut ssh = Ssh::new();
+            let _ = ssh.connect_ssh(&"".to_string(), 22, &"".to_string(), &"".to_string());
+            ssh_sessions.push(ssh);
+        }
+       
+        for _ in 0..10 {
+            for ssh in ssh_sessions.iter() {
+                let result = ssh.exec("pwd".to_string());
+                assert!(matches!(result, Ok(_)));
+            }
+        }
+    }
 }

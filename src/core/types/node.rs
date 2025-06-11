@@ -25,15 +25,15 @@ impl Node {
         }
     }
 
-    pub fn set_ssh(&mut self) -> Result<(), String> {
-        let ssh = self.get_ssh();
+    pub fn set_ssh(&mut self, ssh_key: &String) -> Result<(), String> {
+        let ssh = self.get_ssh(ssh_key);
         self.ssh = Some(ssh);
         Ok(())
     }
 
-    pub fn get_ssh(&self) -> Ssh {
+    pub fn get_ssh(&self, ssh_key: &String) -> Ssh {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect(&self.host.to_string(), self.ssh_port, &self.username, self.password.as_ref());
+        let _ = ssh.connect_ssh(&self.host.to_string(), self.ssh_port, &self.username, ssh_key);
 
         ssh
     }

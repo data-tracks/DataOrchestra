@@ -7,7 +7,7 @@ use super::ObjectTypes;
 
 pub static ARGS: OnceLock<Arguments> = OnceLock::new();
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(version, about)]
 pub struct Arguments {
     /// Config file location

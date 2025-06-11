@@ -7,7 +7,7 @@ use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::types::data::NodeData;
 use crate::core::types::data::DockerData;
-use crate::shared::Spawner;
+use crate::shared::{Spawner, ARGS};
 use crate::core::types::Node;
 use log::{debug, error, info, warn};
 
@@ -55,9 +55,14 @@ impl Spawner for Object {
     /// - Node data uploaded
     fn build(&mut self) {
         if let Some(ref mut node) = self.node {
-            let result = node.set_ssh();
-            if let Err(error) = result {
-                panic!("Unable to setup ssh for {} {}", node.host, error);
+            if let Some(key) = ARGS.get().as_ref().unwrap().ssh_key.as_ref() {
+                let result = node.set_ssh(key);
+                if let Err(error) = result {
+                    panic!("Unable to setup ssh for {} {}", node.host, error);
+                }
+            }
+            else {
+                panic!("No ssh key provided for node");
             }
         }
 

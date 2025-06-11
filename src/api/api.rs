@@ -1,11 +1,11 @@
-use std::{fmt::write, net::IpAddr, sync::Arc};
+use std::{net::IpAddr, sync::Arc};
 use actix_cors::Cors;
 use actix_web::{get, http::{self, header::ContentType}, post, put, rt::System, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use log::error;
 
-use crate::{core::adapters::{async_ping_node, docker, ContainerType, StateTypes}, state::State};
+use crate::{core::adapters::{async_ping_node, docker, StateTypes}, state::State};
 
 pub async fn start_api(state: Arc<State>) {
     let _ = HttpServer::new(move || {
@@ -63,7 +63,8 @@ pub async fn get_healthcheck(state: web::Data<Arc<State>>) -> impl Responder {
                 }
             )
         );
-        let ssh = node.get_ssh();
+
+        let ssh = node.get_ssh(state.get_args().ssh_key.as_ref().unwrap());
         let result = docker::api::get_container_data(&ssh);
         if let Err(error) = ssh.disconnect() {
             error!("{}", error);
@@ -100,7 +101,7 @@ pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<St
     let nodes = state.get_config().get_all_nodes();
     for node in nodes {
         if node.host.eq(&host) {
-            let ssh = node.get_ssh();
+            let ssh = node.get_ssh(state.get_args().ssh_key.as_ref().unwrap());
             let result = docker::api::kill_container(&ssh, &name);
             if let Err(error) = ssh.disconnect() {
                 error!("{}", error);
@@ -120,7 +121,7 @@ pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<St
 pub async fn put_killall(state: web::Data<Arc<State>>) -> impl Responder {
     let nodes = state.get_config().get_all_nodes();
     for node in nodes {
-        let ssh = node.get_ssh();
+        let ssh = node.get_ssh(state.get_args().ssh_key.as_ref().unwrap());
         let result = docker::api::kill_containers(&ssh);
         if let Err(error) = ssh.disconnect() {
             error!("{}", error);
