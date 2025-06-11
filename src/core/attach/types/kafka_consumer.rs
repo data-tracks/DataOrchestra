@@ -1,6 +1,8 @@
+use log::LevelFilter;
 use serde::{Deserialize, Serialize};
+use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 
-use crate::core::types::data::DockerData;
+use crate::core::types::data::{DockerData, DockerSFTPData};
 use crate::shared::ToInternal;
 use crate::interface::{general::General, object::ExtObject};
 use crate::core::adapters::ContainerBuilder;
@@ -11,36 +13,53 @@ use crate::core::attach::attach_types::ToObject;
 // and sending them further through a http request
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KafkaConsumer {
-    // Topics the consumer reads from
-    pub topics: Vec<String>,
     // External Object type to allow for the configuration of the consumer.
     // Set to option as it would otherwise overflow the stack due to circular dependency
     pub object: Option<Box<ExtObject>>,
-    // Re exports of arguments
-    #[serde(default = "default_api_port")]
-    pub api_port: u16,
+    #[serde(flatten)]
+    pub args: Arguments
+}
+
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Arguments {
+    /// Address where data should be send to
+    pub address: String,    
+    /// Address (host:port) of kafka 
+    #[serde(default = "default_consumer")]
+    pub consumer: String,
+    /// Group id of consumer
+    pub group_id: String,
+    /// Kafka topics consumer should consume from
+    pub topics: Vec<String>,
+    /// Logging level
+    #[serde(deserialize_with = "deserialize_levelfilter")]
+    #[serde(serialize_with = "serialize_levelfilter")]
     #[serde(default = "default_level")]
-    pub level: String,
-    pub kafka_address: String
+    pub level: LevelFilter
 }
 
-pub fn default_api_port() -> u16 {
-    8080
+impl Default for Arguments {
+    fn default() -> Self {
+        Arguments { address: "".to_string(), consumer: default_consumer(), group_id: "".to_string(), topics: Vec::new(), level: default_level() }
+    }
 }
 
-pub fn default_level() -> String {
-    "info".to_string()
+
+pub fn default_consumer() -> String {
+    "localhost:9092".to_string()
+}
+
+pub fn default_level() -> LevelFilter {
+    LevelFilter::Info
 }
 
 impl Default for KafkaConsumer {
     fn default() -> Self {
         KafkaConsumer 
         { 
-            topics: Vec::new(), 
             object: None,
-            api_port: default_api_port(),
-            level: default_level(),
-            kafka_address: "localhost:9092".to_string()
+            args: Arguments::default()
         }
     }
 }
@@ -67,12 +86,13 @@ impl ToObject for KafkaConsumer {
             (
                 "", 
                 "attachables/kafka_consumer/", 
-                "kafka_consumer/", 
-                "kafka_consumer/start.sh", 
+                "/kafka_consumer", 
+                "/kafka_consumer/start.sh", 
                 None,
-                None)
-            );
-        
+                None
+            )
+        );
+
         object.docker_container_builder.get_or_insert(ContainerBuilder::new());
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
@@ -81,6 +101,22 @@ impl ToObject for KafkaConsumer {
                 .dockerfile_mut("images/rust.dockerfile")
                 .image_mut("rust_base");
         }
+
+        let name = object.docker_container_builder
+            .as_ref()
+            .unwrap()
+            .get_name()
+            .unwrap();
+
+        let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
+
+        object.docker_sftp_data.push(DockerSFTPData::new
+            (
+                name.to_owned(),
+                "/kafka_consumer/config.json".into(),
+                json
+            )
+        );
 
         object
     }

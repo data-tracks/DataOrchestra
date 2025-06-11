@@ -1,22 +1,37 @@
-use clap::Parser;
 use log::LevelFilter;
+use serde::{de::Error, Deserialize, Deserializer};
+use serde_json::Value;
 
-#[derive(Parser, Debug, Clone)]
-#[command(version, about)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Arguments {
-    #[arg(short, long)]
-    #[arg(env = "API_PORT")]
-    pub api_port: u16,
-
-    #[arg(short = 't', long)]
-    #[arg(env = "TOPIC")]
-    pub topic: Option<Vec<String>>,
-
-    #[arg(short = 'a', long, value_name = "HOST:PORT")]
-    #[arg(env = "KAFKA_ADDRESS")]
-    pub kafka_address: String,
-
-    #[arg(short = 'l', long)]
-    #[arg(env = "LEVEL")]
+    /// Address where data should be send to
+    pub address: String,    
+    /// Address (host:port) of kafka 
+    pub consumer: String,
+    /// Group id of consumer
+    pub group_id: String,
+    /// Kafka topics consumer should consume from
+    pub topics: Vec<String>,
+    /// Logging level
+    #[serde(deserialize_with = "deserialize_levelfilter")]
     pub level: LevelFilter
+}
+
+pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    let first = value.to_string();
+
+    match first.to_lowercase().trim() {
+        "error" => Ok(LevelFilter::Error),
+        "warn" => Ok(LevelFilter::Warn),
+        "info" => Ok(LevelFilter::Info),
+        "debug" => Ok(LevelFilter::Debug),
+        "trace" => Ok(LevelFilter::Trace),
+        "off" => Ok(LevelFilter::Off),
+        _ => Err(Error::custom("No Value exists"))
+    }
+
 }

@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use crate::core::adapters::docker::container::ContainerBuilder;
 use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
-use crate::core::types::data::NodeData;
+use crate::core::types::data::{NodeData, DockerSFTPData};
 use crate::core::types::data::DockerData;
 use crate::shared::{Spawner, ARGS};
 use crate::core::types::Node;
@@ -46,12 +47,12 @@ pub struct Object {
     pub docker_manager: ContainerType,
     // Node connection
     pub node: Option<Node>,
-    // Ssh connection to object location
-    pub ssh: Option<Ssh>,
     // Data to be uploaded to node 
     pub node_data: Vec<NodeData>,
     // Data to be uploaded to docker container 
     pub docker_data: Vec<DockerData>,
+    // Data to be upload
+    pub docker_sftp_data: Vec<DockerSFTPData>,
     // Ansible script responsible for the setup of the enviroment
     pub ansible: String,
 }
@@ -65,9 +66,9 @@ impl Default for Object {
             docker_container_builder: None, 
             docker_manager: ContainerType::Empty,
             node: None, 
-            ssh: None,
             node_data: Vec::new(),
             docker_data: Vec::new(),
+            docker_sftp_data: Vec::new(),
             ansible: "scripts/ansible/ansible-setup.yml".to_string(),
         }
     }
@@ -333,7 +334,7 @@ impl Object {
         Ok(())
     }
 
-    /// Combine containers managed by manager with [`Data`] to [`Iterator`] 
+    /// Combine containers with [`DockerData`] to [`Iterator`] 
     ///
     /// If `data` is empty, returns an empty iterator.
     ///
@@ -342,6 +343,50 @@ impl Object {
     pub fn iter_combine_data<'a >(containers: &'a Vec<&'a Container>, data: &'a Vec<DockerData>) -> impl Iterator<Item = (&'a Container, &'a DockerData)> {
         let mut vec_container = Vec::<&Container>::new();
         let mut vec_data = Vec::<&DockerData>::new();
+
+        // Early return for when data contains nothing
+        if data.len() == 0 {
+            return vec_container.into_iter().zip(vec_data);
+        }
+
+        // Map all data entries to specific containers
+        if containers.len() == 1 {
+            let container = containers.get(0);
+            if let Some(container) = container {
+                for d in data.iter() {
+                    vec_container.push(container);
+                    vec_data.push(d);
+                }
+            }
+        }
+        // Map data entries according to the container names
+        else 
+        {
+            let mut mapped_all_containers = HashMap::<&String, &Container>::new();
+            for container in containers.iter() {
+                mapped_all_containers.insert(container.config.name.as_ref().unwrap(), container);
+            }
+
+            for d in data.iter() {
+                if let Some(container) = mapped_all_containers.get(&d.name) {
+                    vec_container.push(container);
+                    vec_data.push(d);
+                }
+            };
+        }
+
+        vec_container.into_iter().zip(vec_data)
+    }
+
+    /// Combine containers with [`DockerSFTPData`] to [`Iterator`] 
+    ///
+    /// If `data` is empty, returns an empty iterator.
+    ///
+    /// If there is only on container, all entries in `data` get combined with that
+    /// specific `container`
+    pub fn iter_combine_sftp_data<'a >(containers: &'a Vec<&'a Container>, data: &'a Vec<DockerSFTPData>) -> impl Iterator<Item = (&'a Container, &'a DockerSFTPData)> {
+        let mut vec_container = Vec::<&Container>::new();
+        let mut vec_data = Vec::<&DockerSFTPData>::new();
 
         // Early return for when data contains nothing
         if data.len() == 0 {
@@ -395,6 +440,24 @@ impl Object {
                     ssh.exec("mkdir /scripts".to_string())?;
                     ssh.upload_file(dependency_path, Path::new(&format!("/scripts/{}", &dependency_path.file_name().unwrap().to_str().unwrap())))?;
                     ssh.exec(format!("sh /scripts/{}", dependency_path.file_name().unwrap().to_str().unwrap()))?;
+                }
+            } 
+            else {
+                panic!("Ssh client unavailable for container {} even though upload data was specified", container.config.name.as_ref().unwrap());
+            }
+        }
+
+        for (container, data) in Self::iter_combine_sftp_data(&self.docker_manager.containers_ref_vec(), &self.docker_sftp_data) {
+            if let Some(ref ssh) = container.ssh {
+                let result = ssh.create_sftp_file(&data.file);
+                if let Ok(mut file) = result {
+                    let result = file.write_all(data.data.as_bytes());
+                    if let Err(error) = result {
+                        error!("{}", error);
+                    }
+                }
+                else if let Err(error) = result {
+                    error!("{}", error);
                 }
             } 
             else {

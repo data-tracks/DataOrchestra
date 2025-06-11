@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
-use ssh2::{Channel, DisconnectCode, Session};
+use ssh2::{Channel, Session, Sftp};
 use walkdir::{DirEntry, WalkDir};
 use std::{fs, io};
 use log::{debug, error};
@@ -13,55 +13,8 @@ impl Ssh {
     pub fn new() -> Ssh {
         Ssh { session: Session::new().unwrap()  }
     }
-    /*
-    /// Connect to Ssh server
-    ///
-    /// # Note
-    /// 
-    /// See <https://github.com/libssh2/libssh2/blob/master/include/libssh2.h> for relevant error
-    /// codes
-    pub fn connect(&mut self, host: &String, port: u16, username: &String, password: Option<&String>) -> Result<(), String> {
-        let address: String = format!("{}:{}", host, port);
-        debug!("Connecting to Ssh client {} with {}@{}", &address, &username, password.unwrap_or(&String::new()));
-        let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
-    
-        if let Err(ref error) = tcp {
-            error!("Unable to setup tcp stream {}", error);
-        } 
 
-        let tcp = tcp.unwrap();
-        self.session.set_tcp_stream(tcp);
-        
-        let handshake: Result<(), ssh2::Error> = self.session.handshake();
-
-        if let Err(ref error) = handshake {
-            return Err(format!("Unsuccessful handshake {}", error));
-        }
-        let authentication: Result<(), ssh2::Error>;
-
-        if let Some(password) = password {
-            authentication = self.session.userauth_password(username, password);
-        }
-        else if let Some(ssh_key) = ARGS.get().unwrap().ssh_key.as_ref() {
-            authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key), None);
-        }
-        else {
-            panic!("No valid connection type given. Either provide a ssh key or a password");
-        }
-        
-        if let Err(ref error) = authentication {
-            return Err(format!("Unsuccessful authentication {}", error));
-        }
-
-        if !self.session.authenticated() {
-            return Err("Session not authenticated".to_string());
-        } 
-
-
-        Ok(())
-    }
-    */
-
+    /// Connect to ssh session using password 
     pub fn connect_password(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
         let address: String = format!("{}:{}", host, port);
         debug!("Connecting to Ssh client {} with {}@{}", &address, &username, password);
@@ -95,7 +48,8 @@ impl Ssh {
         Ok(())
     }
 
-    pub fn connect_ssh(&mut self, host: &String, port: u16, username: &String, ssh_key: &String) -> Result<(), String> {
+    /// Connect to ssh session using a private ssh key as path
+    pub fn connect_ssh<T: AsRef<Path>>(&mut self, host: &String, port: u16, username: &String, ssh_key: &T) -> Result<(), String> {
         let address: String = format!("{}:{}", host, port);
         debug!("Connecting to Ssh client {} with {} and ssh_key", &address, &username);
         let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
@@ -114,7 +68,7 @@ impl Ssh {
         }
         let authentication: Result<(), ssh2::Error>;
 
-        authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key), None);
+        authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key.as_ref()), None);
         
         if let Err(ref error) = authentication {
             return Err(format!("Unsuccessful authentication {}", error));
@@ -127,10 +81,24 @@ impl Ssh {
         Ok(())
     }
 
+    /// Disconnect from ssh session
     pub fn disconnect(&self) -> Result<(), String> {
         self.session.disconnect(None, "finished", None)
             .map_err(|err| format!("Unable to close session {}", err))
     }
+
+    /// Get STFP from ssh session
+    pub fn get_sftp(&self) -> Result<Sftp, String> {
+        self.session.sftp().map_err(|err| err.to_string())
+    } 
+
+    /// Create and write file using STFP from ssh session
+    pub fn create_sftp_file(&self, file: impl AsRef<Path>) -> Result<ssh2::File, String> {
+        let sftp = self.get_sftp()?;
+        sftp.create(file.as_ref()).map_err(|err| err.to_string())
+    }
+
+    
 }
 
 

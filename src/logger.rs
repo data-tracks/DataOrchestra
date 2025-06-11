@@ -1,6 +1,8 @@
 use std::io::Write;
 use log::LevelFilter;
 use ansi_term::Colour;
+use serde::{de::Error, Deserialize, Deserializer, Serializer};
+use serde_json::Value;
 
 use std::thread;
 
@@ -40,4 +42,39 @@ pub fn init_logger(level: LevelFilter) {
             )
         })
         .init();
+}
+
+pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    let first = value.to_string();
+
+    match first.to_lowercase().trim() {
+        "error" => Ok(LevelFilter::Error),
+        "warn" => Ok(LevelFilter::Warn),
+        "info" => Ok(LevelFilter::Info),
+        "debug" => Ok(LevelFilter::Debug),
+        "trace" => Ok(LevelFilter::Trace),
+        "off" => Ok(LevelFilter::Off),
+        _ => Err(Error::custom("No Value exists"))
+    }
+
+}
+
+pub fn serialize_levelfilter<S>(level: &LevelFilter, s: S) -> Result<S::Ok, S::Error> 
+where
+    S: Serializer,
+{
+    let level_str = match level {
+        LevelFilter::Off => "off",
+        LevelFilter::Error => "error",
+        LevelFilter::Warn => "warn",
+        LevelFilter::Info => "info",
+        LevelFilter::Debug => "debug",
+        LevelFilter::Trace => "trace",
+    };
+
+    s.serialize_str(level_str)
 }

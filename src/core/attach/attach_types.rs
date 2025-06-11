@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::object::Object, interface::{general::General, object::ExtObject}};
+use crate::{core::object::Object, interface::general::General};
 
 use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer};
 
@@ -20,7 +20,7 @@ pub enum AttachTypeConfig {
 
 impl Default for AttachTypeConfig {
     fn default() -> Self {
-        Self::KafkaConsumer(KafkaConsumer::default())
+        Self::KafkaProducer(KafkaProducer::default())
     }
 }
 

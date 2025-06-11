@@ -125,6 +125,12 @@ impl Default for ContainerConfigBuilder {
 }
 
 impl ContainerConfigBuilder {
+    pub fn get_name(&self) -> Option<&String> {
+        self.containerconfig.name.as_ref()
+    }
+}
+
+impl ContainerConfigBuilder {
     pub fn new() -> Self {
         Self::default()
     }

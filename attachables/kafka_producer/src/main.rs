@@ -1,32 +1,22 @@
-use std::sync::Arc;
+use std::fs;
+use std::{path::Path, sync::Arc};
 use std::time::Duration;
 use actix_web::{post, web, App, HttpResponse, HttpServer};
-use clap::Parser;
 use kafka_producer::arguments::Arguments;
-use log::{info, LevelFilter};
+use log::info;
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
 use kafka_producer::logger::init_logger;
+use serde_json::from_str;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    init_logger(LevelFilter::Debug);
     info!("Starting");
 
-    dotenvy::dotenv().ok();
-    let mut args: Arguments = Arguments::parse();
+    let config_path = Path::new("config.json");
+    let config = fs::read_to_string(config_path).expect("Unable to read config file");
+    let args: Arguments = from_str(config.as_str()).expect("Unable to parse config to struct");
 
-    let mut vec_topics = Vec::<String>::new();
-    if let Some(topics) = args.topics.as_ref() {
-        if topics.contains("[") {
-            let topics = topics.replace("[", "").replace("]", "");
-            for topic in topics.split(",") {
-                vec_topics.push(topic.to_string().replace(" ", ""));
-            }
-        }
-    }
-    args.vec_topics = vec_topics;
-
-    dbg!(&args);
+    init_logger(args.level);
 
     let api_port = args.api_port.clone();
 

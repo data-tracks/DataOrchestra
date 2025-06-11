@@ -71,8 +71,14 @@ impl Default for ContainerBuilder {
     }
 }
 
+impl ContainerBuilder {
+    pub fn get_name(&self) -> Option<&String> {
+        self.containerconfig.get_name()
+    }
+}
+
+
 // Builder value setters and value cascaders for config and source.
-//TODO: Replace when Bon cascade nightly is available
 impl ContainerBuilder {
     pub fn new() -> ContainerBuilder {
         ContainerBuilder 

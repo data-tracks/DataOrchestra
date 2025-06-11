@@ -1,62 +1,74 @@
-use std::sync::Arc;
-use std::time::Duration;
-use actix_web::{post, web, App, HttpResponse, HttpServer};
-use clap::Parser;
-use kafka_producer::arguments::Arguments;
-use log::{info, LevelFilter};
-use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
-use kafka_producer::logger::init_logger;
+use std::fs;
+use std::path::Path;
+use kafka_consumer::arguments::Arguments;
+use log::{info, error, warn};
+use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
+use rdkafka::{ClientConfig, Message};
+use kafka_consumer::logger::init_logger;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
-    init_logger(LevelFilter::Debug);
+async fn main() {
     info!("Starting");
 
-    dotenvy::dotenv().ok();
-    let args: Arguments = Arguments::parse();
+    let config_path = Path::new("config.json");
+    let config = fs::read_to_string(config_path).expect("Unable to read config file");
+    let args: Arguments = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
 
-    let api_port = args.api_port.clone();
+    init_logger(args.level);
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(Arc::new(args.clone())))
-            .service(produce)
-    })
-    .bind(("127.0.0.1", api_port))?
-    .run()
-    .await
+    kafka_consumer(args).await;
 }
 
-#[post("/kafkaproducer")]
-async fn produce(data: web::Path::<String>, args: web::Data<Arc<Arguments>>) -> HttpResponse {
-    let data = data.into_inner();
+pub async fn kafka_consumer(args: Arguments) {
+    info!("Setting up consumer");
 
-    info!("Starting kafka producer");
-    let producer: &FutureProducer = &ClientConfig::new()
-        .set("bootstrap.servers", &args.kafka_address)
+    let consumer: StreamConsumer = ClientConfig::new()
+        .set("bootstrap.servers", args.consumer)
+        .set("group.id", args.group_id)
+        .set("enable.partition.eof", "false")
+        .set("session.timeout.ms", "6000")
+        .set("enable.auto.commit", "true")
         .create()
-        .expect("Unable to create kafka producer");
+        .expect("Unable to create consumer");
+    
+    let topics: Vec<&str> = args.topic
+        .iter()
+        .map(|x| x.as_str())
+        .collect();
+    
+    consumer
+        .subscribe(&topics)
+        .expect("Unable to subscribe to topics");
 
-    if args.topic.is_none() {
-        panic!("No topics provided for kafka");
+    let client = reqwest::Client::new();
+
+    info!("Listening on topic");
+    loop {
+        match consumer.recv().await {
+            Err(e) => warn!("Kafka error: {}", e),
+            Ok(m) => {
+                match m.payload_view::<str>() {
+                    Some(Ok(s)) => {
+                        let s = s.to_owned();
+
+                        let result = client.post(&args.address)
+                            .body(s)
+                            .send()
+                            .await;
+
+                        if let Err(error) = result {
+                            error!("{}", error);
+                        }
+                    },
+                    None => {
+                        warn!("No payload");
+                    },
+                    Some(Err(e)) => {
+                        warn!("Error while deserializing message payload: {:?}", e);
+                    }
+                };
+                consumer.commit_message(&m, CommitMode::Async).unwrap();
+            }
+        };
     }
-
-    let topics = args.topic.as_ref().unwrap(); 
-
-    for topic in topics.iter() {
-        let delivery_status = producer
-            .send(
-                FutureRecord::to(topic)
-                    .payload(&format!("{}", &data))
-                    .key(""),
-                Duration::from_secs(60),
-            )
-            .await;
-
-        if let Err(error) = delivery_status {
-            return HttpResponse::InternalServerError().body(format!("{:?}", error));
-        }
-    }
-
-    HttpResponse::Ok().finish()
 }

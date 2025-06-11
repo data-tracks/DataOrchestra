@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug)]
 pub struct NodeData {
@@ -13,7 +13,7 @@ impl Default for NodeData {
 }
 
 impl NodeData {
-    pub fn new<T: Into<String>, S: Into<String>>(path: T, destination: S) -> Self {
+    pub fn new(path: impl Into<String>, destination: impl Into<String>) -> Self {
         NodeData { path: path.into(), destination: destination.into() }
     }
 }
@@ -43,7 +43,7 @@ impl Default for DockerData {
 }
 
 impl DockerData {
-    pub fn new<T: Into<String>, S: Into<String>, V: Into<String>, W: Into<String>>(name: T, path: S, destination: V, start: W, env: Option<HashMap<String, String>>, dependency: Option<String>) -> Self {
+    pub fn new(name: impl Into<String>, path: impl Into<String>, destination: impl Into<String>, start: impl Into<String>, env: Option<HashMap<String, String>>, dependency: Option<String>) -> Self {
         DockerData 
         {
             name: name.into(),
@@ -52,6 +52,24 @@ impl DockerData {
             env,
             start: start.into(),
             dependency: dependency.map(|item| item.into())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DockerSFTPData {
+    pub name: String,
+    pub file: PathBuf,
+    pub data: String
+}
+
+impl DockerSFTPData {
+    pub fn new(name: impl Into<String>, file: PathBuf, data: impl Into<String>) -> Self {
+        DockerSFTPData 
+        {
+            name: name.into(),
+            data: data.into(),
+            file
         }
     }
 }

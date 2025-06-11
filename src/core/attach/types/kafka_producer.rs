@@ -1,5 +1,7 @@
-use std::collections::HashMap;
+use crate::core::types::data::DockerSFTPData;
+use crate::logger::{serialize_levelfilter, deserialize_levelfilter};
 
+use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::ContainerBuilder;
@@ -14,34 +16,59 @@ use crate::shared::ToInternal;
 // and sending them further through a http request
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KafkaProducer {
-    // Topics the producer writes to
-    pub topics: Vec<String>,
     // External Object type to allow for the configuration of the producer
     pub object: Option<Box<ExtObject>>,
+    #[serde(flatten)]
+    pub args: Arguments
+    
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Arguments {
     #[serde(default = "default_api_port")]
     pub api_port: u16,
+
+    #[serde(default = "default_address")]
+    pub address: String,
+
+    #[serde(deserialize_with = "deserialize_levelfilter")]
+    #[serde(serialize_with = "serialize_levelfilter")]
     #[serde(default = "default_level")]
-    pub level: String,
-    pub kafka_address: String
+    pub level: LevelFilter,
+
+    pub topics: Vec<String>
 }
 
 pub fn default_api_port() -> u16 {
-    8080
+    5000
 }
 
-pub fn default_level() -> String {
-    "info".to_string()
+pub fn default_address() -> String {
+    "localhost:9092".to_string()
+}
+
+pub fn default_level() -> LevelFilter {
+    LevelFilter::Info
+}
+
+impl Default for Arguments {
+    fn default() -> Self {
+        Arguments 
+        { 
+            api_port: 5000, 
+            address: "localhost:9092".to_string(), 
+            level: LevelFilter::Info, 
+            topics: Vec::new() 
+        }
+    }
 }
 
 impl Default for KafkaProducer {
     fn default() -> Self {
         KafkaProducer 
         { 
-            topics: Vec::new(), 
             object: None,
-            api_port: default_api_port(),
-            level: default_level(),
-            kafka_address: "localhost:9092".to_string()
+            args: Arguments::default()
         }
     }
 }
@@ -69,8 +96,8 @@ impl ToObject for KafkaProducer {
             (
                 "", 
                 "attachables/kafka_producer/", 
-                "kafka_producer/", 
-                "kafka_producer/start.sh", 
+                "/kafka_producer", 
+                "/kafka_producer/start.sh", 
                 None,
                 None
             )
@@ -84,6 +111,22 @@ impl ToObject for KafkaProducer {
                 .dockerfile_mut("images/rust.dockerfile")
                 .image_mut("rust_base");
         }
+
+        let name = object.docker_container_builder
+            .as_ref()
+            .unwrap()
+            .get_name()
+            .unwrap();
+
+        let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
+
+        object.docker_sftp_data.push(DockerSFTPData::new
+            (
+                name.to_owned(),
+                "/kafka_producer/config.json".into(),
+                json
+            )
+        );
 
         object
     }
