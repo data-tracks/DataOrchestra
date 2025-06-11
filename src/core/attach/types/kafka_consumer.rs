@@ -56,6 +56,8 @@ impl ToObject for KafkaConsumer {
             object = ext_object.to_internal();
         }
 
+        object.name = "kafka-consumer".to_string();
+
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());
         }

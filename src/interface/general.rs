@@ -7,6 +7,7 @@ use super::{docker::ExtDocker, node::ExtNode};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct General {
+    pub name: Option<String>,
     pub docker: Option<ExtDocker>, 
     pub node: Option<ExtNode>,
     #[serde(default)]
@@ -23,6 +24,7 @@ impl Default for General {
     fn default() -> Self {
         General 
         { 
+            name: None,
             docker: Some(ExtDocker::default()), 
             node: Some(ExtNode::default()), 
             node_data: Amount::Single(NodeFile::default()), 

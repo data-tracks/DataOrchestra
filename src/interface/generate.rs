@@ -38,6 +38,8 @@ impl ToInternalVec<Generate> for ExtGenerate {
         for i in 0..self.amount {
             let mut generate = Generate::default();
 
+            generate.object.name = self.general.name.clone().unwrap_or("store".to_string());
+
             if let Some(ref config) = self.config {
                 generate.object.docker_data.push(config.create());
             }

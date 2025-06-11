@@ -1,6 +1,6 @@
 use log::info;
 use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::core::adapters::{ContainerType, Local, Runner};
+use crate::core::adapters::{ContainerType, Local};
 use crate::core::process::process_types::ProcessTypeConfig;
 use crate::shared::traits::Spawner;
 
@@ -8,8 +8,6 @@ use super::Process;
 
 impl Spawner for Process {
     fn build(&mut self) {
-        info!("Building Process");
-
         if let Some(process_type) = &self.process_type {
             if self.config.is_none() {
                 info!("No config was provided. Setting up default config");
@@ -38,13 +36,9 @@ impl Spawner for Process {
         }
 
         self.object.build();
-
-        info!("Finished building Process");
     } 
 
     fn setup(&mut self) {
-        info!("Setting up Process");
-
         self.object.setup();
         
         // Start containers and move to manager
@@ -68,15 +62,9 @@ impl Spawner for Process {
                 _ => ()
             }
         }
-
-        info!("Finished setting up Process");
     }
 
     fn deploy(&mut self) {
-        info!("Deploying Process");
-
         self.object.deploy();
-
-        info!("Finished deploying Process");
     }
 }

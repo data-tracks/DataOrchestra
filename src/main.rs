@@ -1,13 +1,11 @@
-use std::mem::take;
 use std::sync::Arc;
 use std::{env, fs};
 use std::path::Path;
 use std::process::exit;
 use std::thread::{self};
 use actix_web::rt::Runtime;
-use actix_web::web::get;
 use data_orchestra::api::api::start_api;
-use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
+use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Uploader};
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
@@ -114,7 +112,7 @@ fn main() {
     thread::scope(|s| {
         for object in config.object.iter_mut() {
             let _ = thread::Builder::new()
-                .name("object".to_string())
+                .name(object.name.clone())
                 .spawn_scoped(s, || {
                     object.build();
             });
@@ -122,7 +120,7 @@ fn main() {
 
         for store in config.store.iter_mut() {
             let _ = thread::Builder::new()
-                .name("store".to_string())
+                .name(store.object.name.clone())
                 .spawn_scoped(s, || {
                     store.build();
             });
@@ -130,7 +128,7 @@ fn main() {
 
         for process in config.process.iter_mut() {
             let _ = thread::Builder::new()
-                .name("process".to_string())
+                .name(process.object.name.clone())
                 .spawn_scoped(s, || {
                     process.build();
             });
@@ -138,7 +136,7 @@ fn main() {
 
         for generate in config.generate.iter_mut() {
             let _ = thread::Builder::new()
-                .name("generate".to_string())
+                .name(generate.object.name.clone())
                 .spawn_scoped(s, || {
                     generate.build();
             });
@@ -158,7 +156,7 @@ fn main() {
     thread::scope(|s| {
         for object in config.object.iter_mut() {
             let _ = thread::Builder::new()
-                .name("object".to_string())
+                .name(object.name.clone())
                 .spawn_scoped(s, || {
                     object.setup();
             });
@@ -166,7 +164,7 @@ fn main() {
 
         for store in config.store.iter_mut() {
             let _ = thread::Builder::new()
-                .name("store".to_string())
+                .name(store.object.name.clone())
                 .spawn_scoped(s, || {
                     store.setup();
             });
@@ -174,7 +172,7 @@ fn main() {
 
         for process in config.process.iter_mut() {
             let _ = thread::Builder::new()
-                .name("process".to_string())
+                .name(process.object.name.clone())
                 .spawn_scoped(s, || {
                     process.setup();
             });
@@ -182,7 +180,7 @@ fn main() {
 
         for generate in config.generate.iter_mut() {
             let _ = thread::Builder::new()
-                .name("generate".to_string())
+                .name(generate.object.name.clone())
                 .spawn_scoped(s, || {
                     generate.setup();
             });
@@ -192,7 +190,7 @@ fn main() {
     thread::scope(|s| {
         for object in config.object.iter_mut() {
             let _ = thread::Builder::new()
-                .name("object".to_string())
+                .name(object.name.clone())
                 .spawn_scoped(s, || {
                     object.deploy();
             });
@@ -200,7 +198,7 @@ fn main() {
 
         for store in config.store.iter_mut() {
             let _ = thread::Builder::new()
-                .name("store".to_string())
+                .name(store.object.name.clone())
                 .spawn_scoped(s, || {
                     store.deploy();
             });
@@ -208,7 +206,7 @@ fn main() {
 
         for process in config.process.iter_mut() {
             let _ = thread::Builder::new()
-                .name("process".to_string())
+                .name(process.object.name.clone())
                 .spawn_scoped(s, || {
                     process.deploy();
             });
@@ -216,7 +214,7 @@ fn main() {
 
         for generate in config.generate.iter_mut() {
             let _ = thread::Builder::new()
-                .name("generate".to_string())
+                .name(generate.object.name.clone())
                 .spawn_scoped(s, || {
                     generate.deploy();
             });

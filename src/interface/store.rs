@@ -38,6 +38,8 @@ impl ToInternal<Store> for ExtStore {
     fn to_internal(self) -> Store {
         let mut store = Store::default();
 
+        store.object.name = self.general.name.unwrap_or("store".to_string());
+
         // Set Schema(s)
         store.schema = self.schema.to_vec(); 
         // Schema needs to be uploaded to the node for it to be mounted
@@ -50,8 +52,7 @@ impl ToInternal<Store> for ExtStore {
                     // Alter path to that of the remote location
                     store.object.node_data.push(NodeData::new(schema.clone().to_owned(), format!("docker/mount/{}", file_name))); 
                     *schema = format!("docker/mount/{}", file_name);
-                }
-                
+                } 
             }
         }
     

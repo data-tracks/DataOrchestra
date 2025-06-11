@@ -58,6 +58,8 @@ impl ToObject for KafkaProducer {
             object = ext_object.to_internal();
         }
 
+        object.name = "kafka-producer".to_string();
+
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());
         }

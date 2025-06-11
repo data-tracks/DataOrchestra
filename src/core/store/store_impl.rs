@@ -1,15 +1,11 @@
 use log::info;
-use crate::core::adapters::{ContainerBuilder, ContainerType};
-use crate::core::store::store_types::{StoreType, StoreTypeConfig};
+use crate::core::adapters::ContainerBuilder;
 use crate::shared::traits::Spawner;
 
 use super::Store;
 
 impl Spawner for Store {
     fn build(&mut self) {
-
-        info!("Building Store");
-
         if let Some(db_type) = &self.db_type {
             if self.config.is_none() {
                 info!("No config given for database type. Loading default config");
@@ -31,23 +27,14 @@ impl Spawner for Store {
         }
 
         self.object.build();
-
-        info!("Finished building Store");
     }
 
     fn setup(&mut self) {
-        info!("Setting up Store");
-
         self.object.setup();
 
-        info!("Finished setting up Store");
     }
 
     fn deploy(&mut self) {
-        info!("Deploying Store");
-
         self.object.deploy(); 
-
-        info!("Finished deploying Store");
     }
 }

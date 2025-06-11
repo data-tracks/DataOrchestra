@@ -36,6 +36,9 @@ impl Default for ExtProcess {
 impl ToInternal<Process> for ExtProcess {
     fn to_internal(self) -> Process {
         let mut process = Process::default();
+
+        process.object.name = self.general.name.unwrap_or("process".to_string());
+
         process.process_type = self.process_type;
         process.config = self.config;
 

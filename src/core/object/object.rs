@@ -15,6 +15,8 @@ use log::{debug, error, info, warn};
 /// should possess.
 #[derive(Debug)]
 pub struct Object {
+    // Name of object. Default is the object type itself
+    pub name: String,
     // Docker builder for compose 
     pub docker_group_builder: Option<ComposeGroupBuilder>,
     // Docker builder for container
@@ -36,6 +38,7 @@ pub struct Object {
 impl Default for Object {
     fn default() -> Self {
         Object { 
+            name: "object".to_string(),
             docker_group_builder: None,
             docker_container_builder: None, 
             docker_manager: ContainerType::Empty,
@@ -54,6 +57,8 @@ impl Spawner for Object {
     /// - Node ssh connection available
     /// - Node data uploaded
     fn build(&mut self) {
+        info!("Building {}", self.name);
+
         if let Some(ref mut node) = self.node {
             if let Some(key) = ARGS.get().as_ref().unwrap().ssh_key.as_ref() {
                 let result = node.set_ssh(key);
@@ -161,6 +166,8 @@ impl Spawner for Object {
                 } 
             }
         }
+
+        info!("Finished building {}", self.name);
     }
 
     /// Setup of object. After invocation:
@@ -168,6 +175,8 @@ impl Spawner for Object {
     /// - Docker container configured with base libraries and ssh connection
     /// - Docker container data uploaded
     fn setup(&mut self) {
+        info!("Setting up {}", self.name);
+
         let result = self.docker_manager.run();
         if let Err(error) = result {
             error!("{}", error);
@@ -226,15 +235,21 @@ impl Spawner for Object {
         if let Err(error) = result {
             panic!("Unable to upload data {}", error);
         }
+
+        info!("Finished setting up {}", self.name);
     }
 
     /// Deployement of Object. After invocation:
     /// - Start script running
     fn deploy(&mut self) {
+        info!("Deploying {}", self.name);
+
         let result = self.start_script();
         if let Err(error) = result {
             error!("{}", error);
         }
+
+        info!("Finished deploying {}", self.name);
     }
 }
 

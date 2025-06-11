@@ -31,6 +31,8 @@ impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();
 
+        object.name = self.general.name.unwrap_or("object".to_string());
+
         if let Some(node) = self.general.node {
             object.node = Some(node.to_internal());
         }

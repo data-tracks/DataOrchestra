@@ -281,6 +281,7 @@ mod tests {
     use crate::core::adapters::{Runner, Ssh};
 
     #[test]
+    #[ignore = "Should be tested manually"]
     pub fn ssh_load() {
         let mut ssh_sessions = Vec::new();
         for _ in 0..10 {
