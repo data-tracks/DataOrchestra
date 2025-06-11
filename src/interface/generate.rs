@@ -40,6 +40,8 @@ impl ToInternalVec<Generate> for ExtGenerate {
 
             generate.object.name = self.general.name.clone().unwrap_or("store".to_string());
 
+            generate.object.graph.to = self.general.graph.to.clone().to_vec();
+
             if let Some(ref config) = self.config {
                 generate.object.docker_data.push(config.create());
             }

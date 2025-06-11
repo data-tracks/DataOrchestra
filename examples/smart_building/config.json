@@ -28,6 +28,7 @@
       "amount": 4,
       "node": "${NODE161}",
       "name": "energy-sensor",
+      "to": ["energy-filter"],
       "docker_data": {
         "name": "rust",
         "path": "examples/smart_building/generator/energy_sensor",
@@ -53,6 +54,7 @@
     {
       "node": "${NODE162}",
       "name": "energy-filter",
+      "to": ["kafka"],
       "docker_data": {
         "name": "rust-filter",
         "path": "examples/smart_building/processor/energy_filter",
@@ -68,6 +70,7 @@
     {
       "node": "${NODE162}",
       "name": "kafka",
+      "to": ["mongodb-adapter", "energy-aggregator"],
       "kafka": {
         "topics": ["EnergyIn", "EnergyFiltered", "EnergyAggregated"]
       },
@@ -78,6 +81,7 @@
     {
       "node": "${NODE162}",
       "name": "energy-aggregator",
+      "to": ["postgres-adapter"],
       "docker_data": {
         "name": "rust-aggregator",
         "path": "examples/smart_building/processor/energy_aggregator",
@@ -110,6 +114,7 @@
     {
       "node": "${NODE163}",
       "name": "mongodb-adapter",
+      "to": ["mongodb"],
       "docker_data": {
         "name": "rust",
         "path": "examples/smart_building/store/energy_store_mongodb",
@@ -125,6 +130,7 @@
     {
       "node": "${NODE164}",
       "name": "postgres-adapter",
+      "to": ["postgres"],
       "docker_data": {
         "name": "rust",
         "path": "examples/smart_building/store/energy_store_postgres",

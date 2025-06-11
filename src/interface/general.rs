@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::core::attach::attach_types::AttachTypeConfig;
+use crate::core::object::Graph;
 use crate::shared::{Amount, DockerFile, NodeFile};
 
 use super::{docker::ExtDocker, node::ExtNode};
@@ -8,6 +9,9 @@ use super::{docker::ExtDocker, node::ExtNode};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct General {
     pub name: Option<String>,
+    #[serde(default)]
+    #[serde(flatten)]
+    pub graph: Graph,
     pub docker: Option<ExtDocker>, 
     pub node: Option<ExtNode>,
     #[serde(default)]
@@ -25,6 +29,7 @@ impl Default for General {
         General 
         { 
             name: None,
+            graph: Graph::default(),
             docker: Some(ExtDocker::default()), 
             node: Some(ExtNode::default()), 
             node_data: Amount::Single(NodeFile::default()), 

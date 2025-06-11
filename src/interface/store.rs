@@ -40,6 +40,8 @@ impl ToInternal<Store> for ExtStore {
 
         store.object.name = self.general.name.unwrap_or("store".to_string());
 
+        store.object.graph.to = self.general.graph.to.to_vec();
+
         // Set Schema(s)
         store.schema = self.schema.to_vec(); 
         // Schema needs to be uploaded to the node for it to be mounted

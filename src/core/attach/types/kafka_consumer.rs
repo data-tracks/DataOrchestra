@@ -57,6 +57,7 @@ impl ToObject for KafkaConsumer {
         }
 
         object.name = "kafka-consumer".to_string();
+        object.graph.ignore = true;
 
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());

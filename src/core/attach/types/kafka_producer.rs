@@ -59,6 +59,7 @@ impl ToObject for KafkaProducer {
         }
 
         object.name = "kafka-producer".to_string();
+        object.graph.ignore = true;
 
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());

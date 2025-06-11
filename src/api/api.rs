@@ -12,7 +12,7 @@ pub async fn start_api(state: Arc<State>) {
         App::new()
             .wrap(
                 Cors::default()
-                    .allow_any_origin()  // For development only, allows all origins
+                    .allow_any_origin()  
                     .allowed_methods(vec!["GET", "POST", "OPTIONS", "PUT", "DELETE"])
                     .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
                     .allowed_header(http::header::CONTENT_TYPE)
@@ -25,6 +25,7 @@ pub async fn start_api(state: Arc<State>) {
             .service(put_killall)
             .service(post_broadcast)
             .service(get_broadcast)
+            .service(get_graph)
             .service(metric_store)
             .service(metric_process)
             .service(metric_generate)
@@ -164,6 +165,37 @@ pub async fn get_broadcast(state: web::Data<Arc<State>>) -> impl Responder {
 pub async fn put_killswitch() -> impl Responder {
     System::current().stop();
     HttpResponse::Ok()
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GraphNode {
+    pub name: String,
+    pub to: Vec<String>
+}
+
+#[get("orchestra/graph")]
+pub async fn get_graph(state: web::Data<Arc<State>>) -> impl Responder {
+    let mut graph_nodes = Vec::new();
+
+    for store in state.get_stores() {
+        graph_nodes.push(GraphNode { name: store.object.name.clone(), to: store.object.graph.to.clone() });
+    }
+    
+    for object in state.get_objects() {
+        graph_nodes.push(GraphNode { name: object.name.clone(), to: object.graph.to.clone().clone() });
+    }
+
+    for process in state.get_processes() {
+        graph_nodes.push(GraphNode { name: process.object.name.clone(), to: process.object.graph.to.clone() });
+    }
+
+    for generate in state.get_generates() {
+        graph_nodes.push(GraphNode { name: generate.object.name.clone(), to: generate.object.graph.to.clone() });
+    }
+
+    HttpResponse::Ok()
+        .content_type(ContentType::json())
+        .json(graph_nodes)
 }
 
 #[post("/metric/store/broadcast")]

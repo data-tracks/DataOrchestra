@@ -1,5 +1,7 @@
 use std::{net::{IpAddr, TcpStream}, time::Duration};
 
+use log::error;
+
 /// Ping a remote node. 
 ///
 /// Ping is done via the creation of a tcp stream to the ssh socket. A node is
@@ -15,7 +17,7 @@ pub fn ping_node(ip: &IpAddr) -> Result<(), String> {
     let _ = rt.block_on(async {
         let timeout = Duration::from_secs(5);
         TcpStream::connect_timeout(&socket_addr.parse().unwrap(), timeout).map_err(|err| err.to_string())
-    });
+    })?;
 
     Ok(())
 }

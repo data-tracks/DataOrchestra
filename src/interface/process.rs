@@ -39,6 +39,8 @@ impl ToInternal<Process> for ExtProcess {
 
         process.object.name = self.general.name.unwrap_or("process".to_string());
 
+        process.object.graph.to = self.general.graph.to.to_vec();
+
         process.process_type = self.process_type;
         process.config = self.config;
 

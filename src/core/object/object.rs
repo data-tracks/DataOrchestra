@@ -10,6 +10,25 @@ use crate::core::types::data::DockerData;
 use crate::shared::{Spawner, ARGS};
 use crate::core::types::Node;
 use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Graph {
+    #[serde(default)]
+    pub to: Vec<String>,
+    #[serde(default)]
+    pub ignore: bool
+}
+
+impl Default for Graph {
+    fn default() -> Self {
+        Graph
+        {
+            to: Vec::new(),
+            ignore: false
+        }
+    }
+}
 
 /// The `Object` type. Acts as a generic component. Implements basic fields that every object
 /// should possess.
@@ -17,6 +36,8 @@ use log::{debug, error, info, warn};
 pub struct Object {
     // Name of object. Default is the object type itself
     pub name: String,
+    // Data related to graph
+    pub graph: Graph,
     // Docker builder for compose 
     pub docker_group_builder: Option<ComposeGroupBuilder>,
     // Docker builder for container
@@ -39,6 +60,7 @@ impl Default for Object {
     fn default() -> Self {
         Object { 
             name: "object".to_string(),
+            graph: Graph::default(),
             docker_group_builder: None,
             docker_container_builder: None, 
             docker_manager: ContainerType::Empty,
