@@ -1,16 +1,9 @@
 use std::{net::{IpAddr, TcpStream}, time::Duration};
 
-use log::error;
-
 /// Ping a remote node. 
 ///
 /// Ping is done via the creation of a tcp stream to the ssh socket. A node is
 /// considered operational if the one is able to create the tcp stream to the ssh socket.
-///
-/// # Example
-///
-/// ```
-/// ```
 pub fn ping_node(ip: &IpAddr) -> Result<(), String> {
     let socket_addr = format!("{}:{}", ip, 22);
     let rt = tokio::runtime::Runtime::new().unwrap(); 
@@ -26,11 +19,6 @@ pub fn ping_node(ip: &IpAddr) -> Result<(), String> {
 ///
 /// Ping is done via the creation of a tcp stream to the ssh socket. A node is
 /// considered operational if the one is able to create the tcp stream to the ssh socket.
-///
-/// # Example
-///
-/// ```
-/// ```
 pub async fn async_ping_node(ip: &IpAddr) -> Result<(), String> {
     let socket_addr = format!("{}:{}", ip, 22);
     let timeout = Duration::from_secs(5);

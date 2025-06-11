@@ -178,19 +178,27 @@ pub async fn get_graph(state: web::Data<Arc<State>>) -> impl Responder {
     let mut graph_nodes = Vec::new();
 
     for store in state.get_stores() {
-        graph_nodes.push(GraphNode { name: store.object.name.clone(), to: store.object.graph.to.clone() });
+        if !store.object.graph.ignore {
+            graph_nodes.push(GraphNode { name: store.object.name.clone(), to: store.object.graph.to.clone() });
+        }
     }
     
     for object in state.get_objects() {
-        graph_nodes.push(GraphNode { name: object.name.clone(), to: object.graph.to.clone().clone() });
+        if !object.graph.ignore {
+            graph_nodes.push(GraphNode { name: object.name.clone(), to: object.graph.to.clone().clone() });
+        }
     }
 
     for process in state.get_processes() {
-        graph_nodes.push(GraphNode { name: process.object.name.clone(), to: process.object.graph.to.clone() });
+        if !process.object.graph.ignore {
+            graph_nodes.push(GraphNode { name: process.object.name.clone(), to: process.object.graph.to.clone() });
+        }
     }
 
     for generate in state.get_generates() {
-        graph_nodes.push(GraphNode { name: generate.object.name.clone(), to: generate.object.graph.to.clone() });
+        if !generate.object.graph.ignore {
+            graph_nodes.push(GraphNode { name: generate.object.name.clone(), to: generate.object.graph.to.clone() });
+        }
     }
 
     HttpResponse::Ok()

@@ -33,7 +33,7 @@ impl ToInternal<Object> for ExtObject {
 
         object.name = self.general.name.unwrap_or("object".to_string());
 
-        object.graph.to = self.general.graph.to.to_vec();
+        object.graph = self.general.graph;
 
         if let Some(node) = self.general.node {
             object.node = Some(node.to_internal());
