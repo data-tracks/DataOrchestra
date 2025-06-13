@@ -47,7 +47,7 @@ impl Spawner for Process {
                 ProcessTypeConfig::Kafka(kafka) => {
                     match &self.object.docker_manager {
                         ContainerType::Compose(group) => {
-                            if let Some(broker) = group.get_container("kafka-broker") {
+                            if let Some(broker) = group.get_containers("kafka-broker") {
                                 if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
                                     kafka.create_topic(broker.id.as_ref().unwrap(), ssh);
                                 }

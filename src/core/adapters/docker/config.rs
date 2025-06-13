@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::{BindPropagation, PortMapping};
+use super::{BindPropagation, PortMapping, RestartTypes};
 
 #[derive(Debug)]
 pub struct ContainerConfig {
@@ -15,6 +15,7 @@ pub struct ContainerConfig {
     pub publish_map: Vec<PortMapping>,
     pub publish_all: bool,
     pub expose: bool,
+    pub restart: RestartTypes 
 }
 
 
@@ -46,7 +47,8 @@ impl Default for ContainerConfig {
             publish: Vec::new(),
             publish_map: Vec::new(),
             publish_all: false,
-            expose: false
+            expose: false,
+            restart: RestartTypes::default() 
         }
     }
 }
@@ -74,11 +76,11 @@ impl ContainerConfig {
             command = format!("{command} -P");
         }
         else {
-            // Publish ssh port
-            command = format!("{command} -p 22");
+            // Parse published ports
             for port in self.publish.iter() {
                 command = format!("{command} -p {}", port);
             }
+            // Parse published mapped ports
             for map in self.publish_map.iter() {
                 command = format!("{command} -p {}:{}", map.get_host(), map.get_internal());
             }
@@ -106,12 +108,21 @@ impl ContainerConfig {
             }
         }
 
+        // Parse restart
+        match self.restart {
+            RestartTypes::No => command = format!("{command} --restart=no"),
+            RestartTypes::Always => command = format!("{command} --restart=always"),
+            RestartTypes::UnlessStopped => command = format!("{command} --restart=unless-stopped"),
+            RestartTypes::OnFailure(max_retries) => command = format!("{command} --restart=on-failure:{max_retries}"),
+        }
+
         command
     }
 }
 
 #[derive(Debug)]
 pub struct ContainerConfigBuilder {
+    ignore_ssh: bool,
     containerconfig: ContainerConfig,
 }
 
@@ -119,6 +130,7 @@ impl Default for ContainerConfigBuilder {
     fn default() -> Self {
         Self 
         {
+            ignore_ssh: false,
             containerconfig: ContainerConfig::default()
         } 
     }
@@ -133,6 +145,16 @@ impl ContainerConfigBuilder {
 impl ContainerConfigBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn ignore_ssh(mut self, ignore_ssh: bool) -> Self {
+        self.ignore_ssh = ignore_ssh;
+        self
+    }
+
+    pub fn ignore_ssh_mut(&mut self, ignore_ssh: bool) -> &mut Self {
+        self.ignore_ssh = ignore_ssh;
+        self
     }
 
     pub fn name<T: Into<String>>(mut self, name: T) -> Self {
@@ -190,22 +212,30 @@ impl ContainerConfigBuilder {
     }
 
     pub fn publish(mut self, port: u16) -> Self {
-        self.containerconfig.publish.push(port);
+        if !(port == 22 && self.ignore_ssh) {
+            self.containerconfig.publish.push(port);
+        }
         self
     }
 
     pub fn publish_mut(&mut self, port: u16) -> &mut Self {
-        self.containerconfig.publish.push(port);
+        if !(port == 22 && self.ignore_ssh) {
+            self.containerconfig.publish.push(port);
+        }
         self
     }
 
     pub fn publish_map(mut self, left: u16, right: u16) -> Self {
-        self.containerconfig.publish_map.push(PortMapping::new(left, right));
+        if !(right == 22 && self.ignore_ssh) {
+            self.containerconfig.publish_map.push(PortMapping::new(left, right));
+        }
         self
     }
 
     pub fn publish_map_mut(&mut self, left: u16, right: u16) -> &mut Self {
-        self.containerconfig.publish_map.push(PortMapping::new(left, right));
+        if !(right == 22 && self.ignore_ssh) {
+            self.containerconfig.publish_map.push(PortMapping::new(left, right));
+        }
         self
     }
 
@@ -227,7 +257,7 @@ impl ContainerConfigBuilder {
     pub fn expose_mut(&mut self, expose: bool) -> &mut Self {
         self.containerconfig.expose = expose;
         self
-    }
+   }
 
     pub fn mount(mut self, mount: Mount) -> Self {
         self.containerconfig.mount.push(mount);
@@ -239,7 +269,18 @@ impl ContainerConfigBuilder {
         self
     }
 
+    pub fn restart(mut self, restart: RestartTypes) -> Self {
+        self.containerconfig.restart = restart;
+        self
+    }
+
+    pub fn restart_mut(&mut self, restart: RestartTypes) -> &mut Self {
+        self.containerconfig.restart = restart;
+        self
+    }
+
     pub fn build(self) -> ContainerConfig {
         self.containerconfig
     }
+
 }

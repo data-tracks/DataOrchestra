@@ -31,9 +31,9 @@ pub struct Arguments {
     pub generate_valid_json: Option<ObjectTypes>,
 
     /// Skip the portainer manager setup
-    #[arg(long = "no_portainer", default_value_t = false)]
+    #[arg(long = "no_portainer", default_value_t = true)]
     #[arg(env = "NO_PORTAINER")]
-    pub no_portainer: bool,
+    pub portainer: bool,
 
     /// Valid private ssh key for validating remote node connection
     #[arg(short, long)]

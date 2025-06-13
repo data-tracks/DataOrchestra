@@ -1,23 +1,21 @@
 use std::sync::Arc;
-use std::{env, fs};
+use std::thread::Scope;
+use std::{env, fs, thread};
 use std::path::Path;
 use std::process::exit;
-use std::thread::{self};
 use actix_web::rt::Runtime;
 use data_orchestra::api::api::start_api;
-use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Uploader};
+use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
+use data_orchestra::core::config::Config;
 use data_orchestra::core::generate::Generate;
+use data_orchestra::core::object::Object;
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
-use data_orchestra::interface::generate::ExtGenerate;
-use data_orchestra::interface::object::ExtObject;
-use data_orchestra::interface::process::ExtProcess;
-use data_orchestra::interface::store::ExtStore;
-use data_orchestra::shared::traits::{Spawner, ToInternal};
+use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::{Arguments, ARGS};
-use data_orchestra::shared::ObjectTypes;
+use data_orchestra::shared::Spawner;
 use data_orchestra::state::State;
 use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
@@ -46,25 +44,7 @@ fn main() {
     let args: Arguments = Arguments::parse();
 
     if let Some(json_type) = args.generate_valid_json.as_ref() {
-        match json_type {
-            ObjectTypes::Generate => {
-                let json = serde_json::to_string_pretty(&ExtGenerate::default()).expect("Unable to parse struct to json");
-                println!("{}", json);
-            },
-            ObjectTypes::Store => {
-                let json = serde_json::to_string_pretty(&ExtStore::default()).expect("Unable to parse struct to json");
-                println!("{}", json);
-            },
-            ObjectTypes::Process => {
-                let json = serde_json::to_string_pretty(&ExtProcess::default()).expect("Unable to parse struct to json");
-                println!("{}", json);
-            },
-            ObjectTypes::Object => {
-                let json = serde_json::to_string_pretty(&ExtObject::default()).expect("Unable to parse struct to json");
-                println!("{}", json);
-            }
-        }
-
+        json_type.print_json(); 
         exit(0);
     }
    
@@ -81,14 +61,17 @@ fn main() {
     // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
-    let config= fs::read_to_string(config_path).expect("Unable to read config file");
+    let config= fs::read_to_string(config_path)
+        .expect("Unable to read config file");
 
     // Read only variables from config into struct and transform config string to replace variables
     // with actual values before parsing the modified string to the config struct
-    let variables: Variables = serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
+    let variables: Variables = serde_json::from_str(config.as_str())
+        .expect("Unable to parse config to struct");
     let ext_config_string = variables.parse(config);
 
-    let mut ext_config: ExtConfig = serde_json::from_str(ext_config_string.as_str()).expect("Unable to parse config to struct");
+    let mut ext_config: ExtConfig = serde_json::from_str(ext_config_string.as_str())
+        .expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     let result = ARGS.set(args);
@@ -100,9 +83,17 @@ fn main() {
     let attach_objects = ext_config.extract_attachables();
     let (mut config, mut portainer) = ext_config.to_internal();
     
-    // Parse to internal structure and move everything out of config
-
     config.object.extend(attach_objects);
+
+    // Inject portainer agents as objects
+    let mut agents = Vec::<Object>::new();
+    if ARGS.get().as_ref().unwrap().portainer {
+        for node in config.get_nodes() {
+            agents.push(portainer.create_agent(node));
+        }
+    }
+
+    config.object.extend(agents);
 
     health_check(&config.store, &config.process, &config.generate);
 
@@ -110,113 +101,44 @@ fn main() {
     info!("Running tasks");
     
     thread::scope(|s| {
-        for object in config.object.iter_mut() {
+        let spawners = config.get_mut_spawners();
+        for (spawner, name) in spawners {
             let _ = thread::Builder::new()
-                .name(object.name.clone())
+                .name(name)
                 .spawn_scoped(s, || {
-                    object.build();
-            });
-        }
-
-        for store in config.store.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(store.object.name.clone())
-                .spawn_scoped(s, || {
-                    store.build();
-            });
-        }
-
-        for process in config.process.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(process.object.name.clone())
-                .spawn_scoped(s, || {
-                    process.build();
-            });
-        }
-
-        for generate in config.generate.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(generate.object.name.clone())
-                .spawn_scoped(s, || {
-                    generate.build();
+                    spawner.build();
             });
         }
     });
 
     if ARGS.get().unwrap().remove_all {
-        kill_containers(&config.store, &config.process, &config.generate);
+        kill_containers(&config);
     }
 
-    if !ARGS.get().unwrap().no_portainer { 
+    if ARGS.get().unwrap().portainer { 
         portainer.build(); 
     }
 
-    pre_setup(&portainer, &config.store, &config.process, &config.generate);
+    pre_setup(&portainer, &config);
    
     thread::scope(|s| {
-        for object in config.object.iter_mut() {
+        let spawners = config.get_mut_spawners();
+        for (spawner, name) in spawners {
             let _ = thread::Builder::new()
-                .name(object.name.clone())
+                .name(name)
                 .spawn_scoped(s, || {
-                    object.setup();
-            });
-        }
-
-        for store in config.store.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(store.object.name.clone())
-                .spawn_scoped(s, || {
-                    store.setup();
-            });
-        }
-
-        for process in config.process.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(process.object.name.clone())
-                .spawn_scoped(s, || {
-                    process.setup();
-            });
-        }
-
-        for generate in config.generate.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(generate.object.name.clone())
-                .spawn_scoped(s, || {
-                    generate.setup();
+                    spawner.setup();
             });
         }
     });
 
     thread::scope(|s| {
-        for object in config.object.iter_mut() {
+        let spawners = config.get_mut_spawners();
+        for (spawner, name) in spawners {
             let _ = thread::Builder::new()
-                .name(object.name.clone())
+                .name(name)
                 .spawn_scoped(s, || {
-                    object.deploy();
-            });
-        }
-
-        for store in config.store.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(store.object.name.clone())
-                .spawn_scoped(s, || {
-                    store.deploy();
-            });
-        }
-
-        for process in config.process.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(process.object.name.clone())
-                .spawn_scoped(s, || {
-                    process.deploy();
-            });
-        }
-
-        for generate in config.generate.iter_mut() {
-            let _ = thread::Builder::new()
-                .name(generate.object.name.clone())
-                .spawn_scoped(s, || {
-                    generate.deploy();
+                    spawner.deploy();
             });
         }
     });
@@ -237,6 +159,7 @@ fn main() {
 /// # Checks
 ///
 /// - In an ansible enviroment
+/// - Docker deamon running
 pub fn viable_check() {
     match env::var("VIRTUAL_ENV") {
         Ok(_val) => {
@@ -245,6 +168,12 @@ pub fn viable_check() {
         Err(_) => {
             panic!("Not in an ansible environment. Please activate or create a python environment with ansible installed");
         }
+    }
+
+    let runner = Local::new();
+    let result = runner.exec("docker info".to_string());
+    if let Err(error) = result {
+        panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. {}", error);
     }
 }
 
@@ -303,8 +232,8 @@ pub fn setup_docker_networks(manager: &ContainerType) {
     }
 }
 
-pub fn kill_containers(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
-    let nodes = get_nodes(stores, processes, generates);
+pub fn kill_containers(config: &Config) {
+    let nodes = config.get_nodes();
     for node in nodes {
         if let Some(ssh) = node.ssh.as_ref() {
             info!("Removing all docker containers from {}", node.host);
@@ -330,28 +259,26 @@ pub fn kill_containers(stores: &Vec<Store>, processes: &Vec<Process>, generates:
     }
 }
 
-pub fn pre_setup(portainer: &Portainer, stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Generate>) {
+pub fn pre_setup(portainer: &Portainer, config: &Config) {
     info!("Performing pre setup");
 
     info!("Setting up docker networks");
-    for store in stores.iter() {
+    for store in config.store.iter() {
         setup_docker_networks(&store.object.docker_manager); 
     }
 
-    for process in processes.iter() {
+    for process in config.process.iter() {
         setup_docker_networks(&process.object.docker_manager); 
     }
 
-    for generate in generates.iter() {
+    for generate in config.generate.iter() {
         setup_docker_networks(&generate.object.docker_manager); 
     }
    
     info!("Deploying portainer agent on nodes");
-    let nodes = get_nodes(stores, processes, generates);
-
-    if !ARGS.get().unwrap().no_portainer {
+    let nodes = config.get_nodes();
+    if !ARGS.get().unwrap().portainer {
         for node in nodes.iter() {
-            portainer.create_agent(node);
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(portainer.add_agent(node));
 
@@ -384,34 +311,4 @@ pub fn cleanup(stores: &Vec<Store>, processes: &Vec<Process>, generates: &Vec<Ge
     info!("Performing cleanup");
 
     info!("Cleanup complete");
-}
-
-pub fn get_nodes<'a>(stores: &'a Vec<Store>, processes: &'a Vec<Process>, generates: &'a Vec<Generate>) -> Vec<&'a Node> {
-    let mut nodes = Vec::<&'a Node>::new();
-
-    for store in stores.iter() {
-        if let Some(ref node) = store.object.node {
-            if !nodes.iter().any(|x| x.host.eq(&node.host)) {
-                nodes.push(node);
-            }
-        }
-    }
-
-    for process in processes.iter() {
-        if let Some(ref node) = process.object.node {
-            if !nodes.iter().any(|x| x.host.eq(&node.host)) {
-                nodes.push(node);
-            }
-        }
-    }
-
-    for generate in generates.iter() {
-        if let Some(ref node) = generate.object.node {
-            if !nodes.iter().any(|x| x.host.eq(&node.host)) {
-                nodes.push(node);
-            }
-        }
-    } 
-
-    nodes
 }

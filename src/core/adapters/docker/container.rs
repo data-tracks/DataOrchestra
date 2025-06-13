@@ -10,7 +10,7 @@ use crate::core::adapters::{Local, OsSystems};
 
 use super::config::ContainerConfigBuilder;
 use super::source::DockerSourceBuilder;
-use super::{ContainerConfig, DockerSource, Mount, PortMapping};
+use super::{ContainerConfig, DockerSource, Mount, PortMapping, RestartTypes};
 use super::Run;
 
 /// The docker `Container` type. Represents the general information tied to the creation of a
@@ -40,6 +40,7 @@ pub struct Container {
 
 #[derive(Debug)]
 pub struct ContainerBuilder {
+    ignore_ssh: bool,
     containerconfig: ContainerConfigBuilder,
     dockersource: DockerSourceBuilder,
 }
@@ -65,6 +66,7 @@ impl Default for ContainerBuilder {
     fn default() -> Self {
         ContainerBuilder 
         { 
+            ignore_ssh: false,
             containerconfig: ContainerConfigBuilder::default(), 
             dockersource: DockerSourceBuilder::default() 
         }
@@ -83,10 +85,22 @@ impl ContainerBuilder {
     pub fn new() -> ContainerBuilder {
         ContainerBuilder 
         { 
+            ignore_ssh: false,
             containerconfig: ContainerConfigBuilder::default(), 
             dockersource: DockerSourceBuilder::default() 
         }
     }
+
+    pub fn ignore_ssh(mut self, ignore_ssh: bool) -> Self {
+        self.ignore_ssh = ignore_ssh;
+        self
+    }
+
+    pub fn ignore_ssh_mut(&mut self, ignore_ssh: bool) -> &mut Self {
+        self.ignore_ssh = ignore_ssh;
+        self
+    }
+
     pub fn config(mut self, config: ContainerConfigBuilder) -> Self {
         self.containerconfig = config;
         self
@@ -158,24 +172,33 @@ impl ContainerBuilder {
     }
 
     pub fn publish(mut self, port: u16) -> Self {
-        self.containerconfig = self.containerconfig.publish(port);
+        if !(port == 22 && self.ignore_ssh) {
+            self.containerconfig = self.containerconfig.publish(port);
+        }
         self
     }
 
     pub fn publish_mut(&mut self, port: u16) -> &mut Self {
-        self.containerconfig.publish_mut(port);
+        if !(port == 22 && self.ignore_ssh) {
+            self.containerconfig.publish_mut(port);
+        }
         self
     }
 
     pub fn publish_map(mut self, left: u16, right: u16) -> Self {
-        self.containerconfig = self.containerconfig.publish_map(left, right);
+        if !(right == 22 && self.ignore_ssh) {
+            self.containerconfig = self.containerconfig.publish_map(left, right);
+        }
         self
     }
 
     pub fn publish_map_mut(&mut self, left: u16, right: u16) -> &mut Self {
-        self.containerconfig.publish_map_mut(left, right);
+        if !(right == 22 && self.ignore_ssh) {
+            self.containerconfig.publish_map_mut(left, right);
+        }
         self
     }
+
 
     pub fn publish_all(mut self, publish_all: bool) -> Self {
         self.containerconfig = self.containerconfig.publish_all(publish_all);
@@ -244,6 +267,16 @@ impl ContainerBuilder {
 
     pub fn mount_mut(&mut self, mount: Mount) -> &mut Self {
         self.containerconfig.mount_mut(mount);
+        self
+    }
+
+    pub fn restart(mut self, restart: RestartTypes) -> Self {
+        self.containerconfig = self.containerconfig.restart(restart);
+        self
+    }
+
+    pub fn restart_mut(&mut self, restart: RestartTypes) -> &mut Self {
+        self.containerconfig.restart_mut(restart);
         self
     }
 
@@ -364,6 +397,8 @@ impl Run for Container {
             panic!("No id available for docker container");
         }
 
+        self.is_running = true;
+
         let result = self.load_name();
         if let Err(error) = result {
             error!("Unable to get name of container | {}", error);
@@ -397,6 +432,7 @@ impl Run for Container {
 }
 
 impl Container {
+    /// Build dockerfile
     fn build_from_dockerfile(&mut self) -> Result<(), String> {
         if let (Some(dockerfile), Some(image)) = (&self.source.dockerfile, &self.source.image) {
             let mut building_args = String::new();
@@ -416,6 +452,8 @@ impl Container {
 
         Ok(())
     }
+
+    /// Create container from image
     fn build_from_image(&mut self) -> Result<(), String>{
         // Create image
         let id = self.runner.exec(format!("docker run {} -it {}", self.config.parse(), self.source.image.as_ref().unwrap()))?;
@@ -423,6 +461,7 @@ impl Container {
         Ok(())
     }
 
+    /// Load container name
     pub fn load_name(&mut self) -> Result<(), String> {
         let name = self.runner.exec(format!("docker inspect -f {{{{.Name}}}} {}", self.id.as_ref().unwrap()))?;
         let name = name
@@ -433,6 +472,7 @@ impl Container {
         Ok(())
     }
 
+    /// Load container ip
     pub fn load_ip(&mut self) -> Result<(), String> {
         let ip = self.runner.exec(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()))?;
         let ip = ip.replace("\n", "").trim().to_string();
@@ -447,6 +487,7 @@ impl Container {
         Ok(()) 
     }
 
+    /// Load all container port mappings 
     pub fn load_ports(&mut self) -> Result<(), String> {
         let ports = self.runner.exec(format!("docker port {}", self.id.as_ref().unwrap()))?;
         for port in ports.split("\n").filter(|x| !x.is_empty()) {
@@ -459,6 +500,7 @@ impl Container {
         Ok(())
     }
 
+    /// Start ssh session for container
     pub fn load_ssh(&mut self, host: IpAddr) -> Result<(), String> {
         let mut ssh = Ssh::new();
         let _ = ssh.connect_password(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
@@ -467,7 +509,7 @@ impl Container {
         Ok(())
     }
 
-    /// Get os system of container
+    /// Get container os system 
     pub fn load_os(&mut self) -> Result<(), String> {
         let result = self.runner.exec(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()))?;
         let keys = result.split("\n");
@@ -484,11 +526,12 @@ impl Container {
                     }
                 } 
             } 
-            }
+        }
 
         Ok(()) 
     }
 
+    /// Install ssh client on container
     pub fn install_ssh(&self) -> Result<(), String> {
         debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
 
@@ -529,6 +572,7 @@ impl Container {
         }
         
         // Sleep to wait for ssh server to properly start
+        // TODO: Implement polling
         sleep(Duration::from_secs(2));
 
         Ok(())

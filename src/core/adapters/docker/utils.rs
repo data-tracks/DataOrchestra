@@ -2,7 +2,34 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Clone, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
+pub enum RestartTypes {
+    No,
+    OnFailure(usize),
+    Always,
+    UnlessStopped
+}
+
+impl Default for RestartTypes {
+    fn default() -> Self {
+        RestartTypes::No
+    }
+}
+
+impl Display for RestartTypes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = match self {
+            RestartTypes::No => "no".to_string(), 
+            RestartTypes::OnFailure(max_retries) => format!("on-failure[:{max_retries}]"), 
+            RestartTypes::Always => "always".to_string(), 
+            RestartTypes::UnlessStopped => "unless-stopped".to_string(), 
+        };
+
+        write!(f, "{}", string)
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 pub enum BindPropagation {
     Shared,
     Slave,

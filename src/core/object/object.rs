@@ -134,7 +134,10 @@ impl Spawner for Object {
         // Take ownership of ContainerBuilder out of object to prevent partial move
         else if let Some(container) = self.docker_container_builder.take() {
             info!("Setting up docker container");
-            let mut container = container.build();
+            let mut container = container
+                .publish(22)
+                .build();
+
             // If a node was specified, dockerfile needs to be uploaded to node
             if let Some(ref node) = self.node {
                 if let Some(ref ssh) = node.ssh {

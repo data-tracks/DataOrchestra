@@ -51,7 +51,7 @@ pub async fn get_active() -> impl Responder {
 pub async fn get_healthcheck(state: web::Data<Arc<State>>) -> impl Responder {
     let mut health_data = Vec::new();
 
-    let nodes = state.get_config().get_all_nodes();
+    let nodes = state.get_config().get_nodes();
     for node in nodes {
         let result = async_ping_node(&node.host).await;
         health_data.push(
@@ -99,7 +99,7 @@ pub async fn get_healthcheck(state: web::Data<Arc<State>>) -> impl Responder {
 #[put("orchestra/kill/{host}/{name}")]
 pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<State>>) -> impl Responder {
     let (host, name) = data.into_inner();
-    let nodes = state.get_config().get_all_nodes();
+    let nodes = state.get_config().get_nodes();
     for node in nodes {
         if node.host.eq(&host) {
             let ssh = node.get_ssh(state.get_args().ssh_key.as_ref().unwrap());
@@ -120,7 +120,7 @@ pub async fn put_kill(data: web::Path<(IpAddr, String)>, state: web::Data<Arc<St
 
 #[put("orchestra/killall")]
 pub async fn put_killall(state: web::Data<Arc<State>>) -> impl Responder {
-    let nodes = state.get_config().get_all_nodes();
+    let nodes = state.get_config().get_nodes();
     for node in nodes {
         let ssh = node.get_ssh(state.get_args().ssh_key.as_ref().unwrap());
         let result = docker::api::kill_containers(&ssh);

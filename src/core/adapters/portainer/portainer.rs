@@ -4,7 +4,7 @@ use log::{error, info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::core::{adapters::{docker, traits::Runner, Local}, types::Node};
+use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::Object, types::Node};
 
 /// Portainer struct. Holds general configuration of the local portainer container
 #[derive(Debug, Serialize, Deserialize)]
@@ -134,29 +134,26 @@ impl Portainer {
         info!("Finished setting up portainer");
     }
 
-    /// Create a remote portainer agent
-    pub fn create_agent(&self, node: &Node) {
-        info!("Creating portainer agent on {}", node.host);
-        if let Some(ref ssh) = node.ssh {
-            let result = ssh.exec(
-                "docker run -d \
-                -p 9001:9001 \
-                --name portainer_agent \
-                --restart=always \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                -v /var/lib/docker/volumes:/var/lib/docker/volumes \
-                -v /:/host \
-                portainer/agent:2.27.6".to_string()
-            );
-            if let Err(error) = result {
-                error!("{}", error);    
-            } 
-        }
-        else {
-            error!("Unable to setup portainer on node {} due to no availible ssh client", node.host);
-        }
+    /// Create a remote portainer agent as object
+    pub fn create_agent(&self, node: &Node) -> Object {
+        let mut object = Object::default();
 
-        thread::sleep(Duration::from_secs(2));
+        object.name = "portainer-agent".to_string();
+        object.node = Some(node.to_owned());
+
+        let container = ContainerBuilder::new()
+            .ignore_ssh(true)
+            .publish_map(9001, 9001)
+            .name("portainer_agent")
+            .restart(docker::RestartTypes::Always) 
+            .volume("/var/run/docker.sock:/var/run/docker.sock")
+            .volume("/var/lib/docker/volumes:/var/lib/docker/volumes")
+            .volume("/:/host")
+            .image("portainer/agent:2.27.6");
+
+        object.docker_container_builder = Some(container);
+
+        object
     }
 
     /// Add agent environment to portainer

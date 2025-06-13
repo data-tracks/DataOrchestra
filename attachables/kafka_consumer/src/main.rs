@@ -31,7 +31,7 @@ pub async fn kafka_consumer(args: Arguments) {
         .create()
         .expect("Unable to create consumer");
     
-    let topics: Vec<&str> = args.topic
+    let topics: Vec<&str> = args.topics
         .iter()
         .map(|x| x.as_str())
         .collect();

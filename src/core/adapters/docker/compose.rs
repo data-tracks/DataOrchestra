@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::{debug, error, warn};
 use crate::core::adapters::{Local, Runner};
 
-use super::container::ContainerBuilder;
+use super::container::{self, ContainerBuilder};
 use super::{Container, Run};
 
 #[derive(Debug)]
@@ -16,7 +16,8 @@ pub struct ComposeGroup {
 }
 
 impl ComposeGroup {
-    pub fn get_container<T: Into<String>>(&self, name: T) -> Option<&Container> {
+    /// Get all containers that spawned from compose file
+    pub fn get_containers<T: Into<String>>(&self, name: T) -> Option<&Container> {
         let name = name.into();
         for container in self.containers.iter() {
             if let Some(container_name) = container.config.name.as_ref() {
@@ -61,14 +62,18 @@ impl Run for ComposeGroup {
             let id = result.unwrap().replace("\n", "");
             container.set_name(name.clone());
             container.set_id(id.replace("\n", ""));
-            self.containers.push(container);
 
             let result = super::api::poll_container(id, 30, &*self.runner);
             if let Err(error) = result {
                 error!("{}", error);
             }
+
+            container.is_running = true;
+
+            self.containers.push(container);
         }
 
+        // Load data from running docker containers spawned by compose file
         for container in self.containers.iter_mut() {
             debug!("Setting up container {} for compose {}", container.config.name.as_ref().unwrap(), self.compose.as_ref().unwrap());
             let result = container.load_ip();
@@ -134,5 +139,67 @@ impl ComposeGroupBuilder {
 
     pub fn build(self) -> ComposeGroup {
         self.composegroup
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+    use crate::core::adapters::{Run, Runner};
+    use super::{ComposeGroupBuilder, ContainerBuilder};
+
+    #[derive(Debug, Clone)]
+    pub struct DummyRunner {
+        output: Arc<Mutex<String>>,
+    }
+
+    impl Default for DummyRunner {
+        fn default() -> Self {
+            let arc = Arc::new(Mutex::new(String::new()));
+            DummyRunner {output: arc}
+        }
+    }
+
+    impl DummyRunner {
+        #[allow(dead_code)]
+        pub fn new(mutex: Arc<Mutex<String>>) -> Self {
+            DummyRunner {
+                output: mutex,
+            }
+        }
+
+        #[allow(dead_code)]
+        pub fn get_output(&self) -> String {
+            self.output.lock().unwrap().clone()
+        }
+    }
+
+    impl Runner for DummyRunner {
+        fn exec(&self, command: String) -> Result<String, String> {
+            let mut output = self.output.lock().unwrap();
+            *output = command.clone();
+            Ok(command)
+        }
+
+        fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
+            panic!()
+        }
+    }
+
+    ////////////////////////////////////////////////
+    /// Tests    
+    ////////////////////////////////////////////////
+    
+    #[test]
+    #[should_panic]
+    fn docker_no_compose() {
+        let dummy = DummyRunner::default();
+
+        let mut compose = ComposeGroupBuilder::new()
+            .build();
+
+        compose.runner = dummy.to_box_runner();
+
+        let _ = compose.run();
     }
 }
