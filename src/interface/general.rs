@@ -6,19 +6,26 @@ use crate::shared::{Amount, ExtDockerData, ExtNodeData};
 
 use super::{docker::ExtDocker, node::ExtNode};
 
+/// The general object. Represents general attributes of external representation objects
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct General {
+    /// Name of object
     pub name: Option<String>,
     #[serde(default)]
+    /// Graph structure of object
     #[serde(flatten)]
     pub graph: Graph,
+    /// Docker container
     pub docker: Option<ExtDocker>, 
+    /// Remote node connection
     pub node: Option<ExtNode>,
     #[serde(default)]
     pub node_data: Amount<ExtNodeData>,
     #[serde(default)]
     pub docker_data: Amount<ExtDockerData>,
+    /// Ansible configuration script
     pub ansible: Option<String>,
+    /// Attachable configuration
     #[serde(default)]
     #[serde(rename = "attach")]
     pub attach_config: Amount<AttachTypeConfig>,

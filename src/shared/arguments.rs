@@ -7,6 +7,7 @@ use super::ObjectTypes;
 
 pub static ARGS: OnceLock<Arguments> = OnceLock::new();
 
+/// CLI arguments for the Orchestrator
 #[derive(Parser, Debug, Clone)]
 #[command(version, about)]
 pub struct Arguments {

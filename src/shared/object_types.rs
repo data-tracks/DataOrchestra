@@ -4,6 +4,8 @@ use clap::ValueEnum;
 
 use crate::{core::attach::attach_types::AttachTypeConfig, interface::{docker::ExtDocker, generate::ExtGenerate, object::ExtObject, process::ExtProcess, store::ExtStore}};
 
+/// Types of objects availible in the Orchestrator. Used for the `--generate_valid_json` CLI
+/// command. 
 #[derive(Debug, Clone, ValueEnum)]
 pub enum ObjectTypes {
     Store,

@@ -8,7 +8,6 @@ use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer,
 use data_orchestra::core::config::Config;
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::object::Object;
-use data_orchestra::core::process::process_types::{ProcessType, ProcessTypeConfig};
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
