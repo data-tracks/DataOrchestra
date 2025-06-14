@@ -1,8 +1,0 @@
-[package]
-name = "data_orchestra_api"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-actix-web = "4"
-actix-cors = "0.7.1"
