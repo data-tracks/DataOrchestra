@@ -1,10 +1,9 @@
 use std::net::{IpAddr, Ipv4Addr};
-use std::process::Output;
 use serde::{Serialize, Deserialize};
 use crate::core::types::Node;
 use crate::shared::ToInternal;
 
-
+/// External representation of the internal [`Node`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all="camelCase")]
 pub struct ExtNode {

@@ -11,7 +11,7 @@ impl Flink {
     }
 
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
-        docker.set_compose("images/compose-flink.yaml");
+        docker.compose_mut("images/compose-flink.yaml");
     }
 }
 

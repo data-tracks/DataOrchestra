@@ -1,11 +1,13 @@
 use serde_json::Value;
 
+/// The variable tree. Represents the tree structured variable system
 #[derive(Debug)]
 pub struct VariableTree {
     pub root: usize,
     pub nodes: Vec<Node>
 }
 
+/// The node object. Is a item in the [`VariableTree`] object
 #[derive(Debug)]
 pub struct Node {
     pub variable: String,

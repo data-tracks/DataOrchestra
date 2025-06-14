@@ -1,8 +1,11 @@
 use std::{collections::HashMap, path::PathBuf};
 
+/// Node data object. Represents data that gets uploaded onto the node
 #[derive(Debug)]
 pub struct NodeData {
+    /// Path of data in current system
     pub path: String,
+    /// Path of data in remote system
     pub destination: String,
 }
 
@@ -18,13 +21,20 @@ impl NodeData {
     }
 }
 
+/// Docker data object. Represents data that gets uploaded into the docker container
 #[derive(Debug)]
 pub struct DockerData {
+    /// Name of container
     pub name: String,
+    /// Path of data in current system
     pub path: String,
+    /// Path of data in docker container
     pub destination: String,
+    /// Environment variables
     pub env: Option<HashMap<String, String>>,
+    /// Starting script / command
     pub start: String,
+    /// Path of script which has dependencies which need to downloaded / handled
     pub dependency: Option<String>
 }
 
@@ -56,10 +66,16 @@ impl DockerData {
     }
 }
 
+/// Docker SFTP (Secure file transfer protocol) data object. Represents data which is written to
+/// the docker container using SFTP. The file is created in the docker container only and data is
+/// written into the file  
 #[derive(Debug, Clone)]
 pub struct DockerSFTPData {
+    /// Name of docker container
     pub name: String,
+    /// File name 
     pub file: PathBuf,
+    /// Data written into file
     pub data: String
 }
 

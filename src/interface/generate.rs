@@ -4,6 +4,7 @@ use crate::{core::generate::{generate_types::{GeneratorType, GeneratorTypeConfig
 
 use super::general::General;
 
+/// External representation of the internal [`Generate`] object
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtGenerate {
     #[serde(rename = "type")]

@@ -19,7 +19,16 @@
       "name": "node-164",
       "host": "10.34.64.164",
       "username": "ubuntu"
+    },
+    "NODE166": {
+      "name": "node-166",
+      "host": "10.34.64.166",
+      "username": "ubuntu"
     }
+  },
+
+  "api": {
+    "kafka_host": "${NODE166}"
   },
 
   "generate":
@@ -74,9 +83,6 @@
       "to": ["mongodb-adapter", "energy-aggregator"],
       "kafka": {
         "topics": ["EnergyIn", "EnergyFiltered", "EnergyAggregated"]
-      },
-      "docker": {
-        "names": ["kafka-broker", "kafka-rest"]
       }
     },
     {

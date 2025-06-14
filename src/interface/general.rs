@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::Graph;
-use crate::shared::{Amount, DockerFile, NodeFile};
+use crate::shared::{Amount, ExtDockerData, ExtNodeData};
 
 use super::{docker::ExtDocker, node::ExtNode};
 
@@ -15,9 +15,9 @@ pub struct General {
     pub docker: Option<ExtDocker>, 
     pub node: Option<ExtNode>,
     #[serde(default)]
-    pub node_data: Amount<NodeFile>,
+    pub node_data: Amount<ExtNodeData>,
     #[serde(default)]
-    pub docker_data: Amount<DockerFile>,
+    pub docker_data: Amount<ExtDockerData>,
     pub ansible: Option<String>,
     #[serde(default)]
     #[serde(rename = "attach")]
@@ -32,8 +32,8 @@ impl Default for General {
             graph: Graph::default(),
             docker: Some(ExtDocker::default()), 
             node: Some(ExtNode::default()), 
-            node_data: Amount::Single(NodeFile::default()), 
-            docker_data: Amount::Single(DockerFile::default()), 
+            node_data: Amount::Single(ExtNodeData::default()), 
+            docker_data: Amount::Single(ExtDockerData::default()), 
             ansible: Some("".to_string()), 
             attach_config: Amount::Single(AttachTypeConfig::default()),
         }

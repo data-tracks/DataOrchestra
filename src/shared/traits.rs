@@ -1,5 +1,6 @@
 use super::Amount;
 
+/// Represents the pipeline steps of a object type
 pub trait Spawner {
     fn build(&mut self);
     fn setup(&mut self);

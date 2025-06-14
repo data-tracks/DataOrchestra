@@ -7,6 +7,7 @@ use crate::core::attach::attach_types::ToObject;
 use crate::core::config::Config;
 use crate::core::object::Object;
 use crate::shared::{Amount, ToInternal, ToInternalVec};
+use super::api::API;
 use super::store::ExtStore;
 use super::process::ExtProcess;
 use super::object::ExtObject;
@@ -15,6 +16,7 @@ use super::generate::ExtGenerate;
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ExtConfig {
+    pub api: API,
     #[serde(default)]
     pub portainer: Portainer,
     #[serde(default)]
@@ -33,13 +35,19 @@ pub struct ExtConfig {
 
 impl ToInternal<(Config, Portainer)> for ExtConfig {
     fn to_internal(self) -> (Config, Portainer) {
-        let config = Config 
+        let (process, api_port) = self.api.to_internal();
+
+        let mut config = Config 
         {
             generate: self.generate.to_internal(),
             process: self.process.to_internal(),
             store: self.store.to_internal(),
-            object: self.object.to_internal()
+            object: self.object.to_internal(),
+            api_port
         };
+
+        config.process.push(process);
+
         let portainer = self.portainer;
 
         (config, portainer)

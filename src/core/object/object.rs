@@ -4,7 +4,6 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use crate::core::adapters::docker::container::ContainerBuilder;
 use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::types::data::{NodeData, DockerSFTPData};
 use crate::core::types::data::DockerData;
@@ -13,10 +12,13 @@ use crate::core::types::Node;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 
+/// Represents connection in the distributed system
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Graph {
+    /// Where data from the object goes to
     #[serde(default)]
     pub to: Vec<String>,
+    /// If object should be ignored when parsing to the graph structure
     #[serde(default)]
     pub ignore: bool
 }
@@ -143,7 +145,7 @@ impl Spawner for Object {
                 if let Some(ref ssh) = node.ssh {
                     let runner = ssh.to_box_runner();
                     container.runner = runner;
-                    if let Some(dockerfile) = container.source.dockerfile.as_mut() {
+                    if let Some(dockerfile) = container.config.dockerfile.as_mut() {
                         let result = ssh.exec("mkdir docker/".to_string());
                         if let Err(error) = result {
                             error!("Unable to create docker/ folder on node | {}", error);

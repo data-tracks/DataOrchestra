@@ -5,6 +5,7 @@ use crate::core::adapters::docker::ComposeGroupBuilder;
 
 use super::types::{Flink, Kafka, Spark, Storm};
 
+/// Types of pre configured processes 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProcessType {
@@ -26,17 +27,19 @@ impl Display for ProcessType {
     }
 }
 
+//TODO: Rewrite because kafka::default is bad 
 impl ProcessType {
     pub fn new(&self) -> ProcessTypeConfig {
         match self {
             ProcessType::Flink => ProcessTypeConfig::Flink(Flink::new()),
-            ProcessType::Kafka => ProcessTypeConfig::Kafka(Kafka::new()),
+            ProcessType::Kafka => ProcessTypeConfig::Kafka(Kafka::default()),
             ProcessType::Spark => ProcessTypeConfig::Spark(Spark::new()),
             ProcessType::Storm => ProcessTypeConfig::Storm(Storm::new())
         }
     }
 }
 
+/// Configuration for process types in [`ProcessType`]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProcessTypeConfig {

@@ -12,15 +12,13 @@ use crate::core::attach::attach_types::ToObject;
 use crate::interface::object::ExtObject;
 use crate::shared::ToInternal;
 
-// The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
-// and sending them further through a http request
+// The Kafka producer type. Is an attachable object capable of producing data to kafka topic(s)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KafkaProducer {
     // External Object type to allow for the configuration of the producer
     pub object: Option<Box<ExtObject>>,
     #[serde(flatten)]
     pub args: Arguments
-    
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

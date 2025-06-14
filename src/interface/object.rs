@@ -5,23 +5,17 @@ use crate::shared::traits::ToInternal;
 
 use super::general::General;
 
+/// External representation of the internal [`Object`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExtObject {
-    #[serde(default = "default_amount")]
-    pub amount: usize,
     #[serde(flatten)]
     pub general: General
-}
-
-pub fn default_amount() -> usize {
-    1
 }
 
 impl Default for ExtObject {
     fn default() -> Self {
         ExtObject 
         { 
-            amount: default_amount(), 
             general: General::default() 
         }
     }

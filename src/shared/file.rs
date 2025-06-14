@@ -6,15 +6,16 @@ use crate::core::types::data::NodeData;
 use crate::core::types::DockerData;
 use crate::shared::traits::ToInternal;
 
+/// External representation of the internal [`NodeData`] object 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct NodeFile {
+pub struct ExtNodeData {
     pub path: String,
     pub destination: Option<String>
 }
 
-impl Default for NodeFile {
+impl Default for ExtNodeData {
     fn default() -> Self {
-        NodeFile 
+        ExtNodeData 
         { 
             path: "".to_string(), 
             destination: Some("".to_string())
@@ -22,7 +23,7 @@ impl Default for NodeFile {
     }
 }
 
-impl ToInternal<NodeData> for NodeFile {
+impl ToInternal<NodeData> for ExtNodeData {
     fn to_internal(self) -> NodeData {
         let mut data = NodeData::default();
 
@@ -36,8 +37,9 @@ impl ToInternal<NodeData> for NodeFile {
     }
 }
 
+/// External representation of the internal [`DockerData`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct DockerFile {
+pub struct ExtDockerData {
     pub name: Option<String>,
     pub path: String,
     pub destination: Option<String>,
@@ -46,9 +48,9 @@ pub struct DockerFile {
     pub dependency: Option<String>
 }
 
-impl Default for DockerFile {
+impl Default for ExtDockerData {
     fn default() -> Self {
-        DockerFile 
+        ExtDockerData 
         { 
             name: None, 
             path: "".to_string(), 
@@ -60,7 +62,7 @@ impl Default for DockerFile {
     }
 }
 
-impl ToInternal<DockerData> for DockerFile {
+impl ToInternal<DockerData> for ExtDockerData {
     fn to_internal(self) -> DockerData {
         let mut data = DockerData::default();
 

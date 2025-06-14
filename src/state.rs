@@ -2,9 +2,14 @@ use std::sync::RwLock;
 
 use crate::{api::api::BroadcastMessage, core::{config::Config, generate::Generate, object::Object, process::Process, store::Store}, shared::Arguments};
 
+/// The state object. Represents global state used by the orchestrator api to manange and hold
+/// data.
 pub struct State {
+    /// Logging messages
     pub messages: RwLock<Vec<BroadcastMessage>>,
+    /// Orchestra config
     config: Config,
+    /// CLI arguments
     args: Arguments
 }
 
@@ -23,6 +28,8 @@ impl State {
             writer.push(message);
         }
     }
+
+    // Immutable getters for `Config`
 
     pub fn get_config(&self) -> &Config {
         &self.config

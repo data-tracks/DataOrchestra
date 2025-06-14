@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
+/// Runner trait. Trait for system execution objects
 pub trait Runner: Debug where Self: 'static {
+    /// Execute command
     fn exec(&self, command: String) -> Result<String, String>;
     fn clone_box(&self) -> Box<dyn Runner + Send + Sync>;
 
@@ -13,6 +15,7 @@ pub trait Runner: Debug where Self: 'static {
     }
 }
 
+/// Uploader trait. Trait for file uploading
 pub trait Uploader<T, S>: Debug where Self: 'static {
     fn upload_file(&self, file: T, destination: S) -> Result<(), String>;
     fn upload_directory(&self, dir: T, destination: S) -> Result<(), String>;

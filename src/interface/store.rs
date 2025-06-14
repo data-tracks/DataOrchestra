@@ -10,6 +10,7 @@ use crate::shared::Amount;
 
 use super::general::General;
 
+/// External representation of the internal [`Store`] object
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtStore {
     #[serde(rename = "type")]

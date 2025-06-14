@@ -1,35 +1,36 @@
 #[cfg(test)]
 mod tests {
-    use data_orchestra::core::adapters::{BindPropagation, ContainerConfigBuilder, Mount};
+    use data_orchestra::core::adapters::ContainerBuilder;
+    use data_orchestra::core::adapters::{BindPropagation, Mount};
     use rstest::rstest;
 
     #[test]
     fn docker_network() {
-        let config = ContainerConfigBuilder::default()
+        let container = ContainerBuilder::default()
             .network("docker_network")
             .build();
 
-        let command = config.parse(); 
+        let command = container.config.parse_options(); 
         assert!(command.contains("--network=docker_network"), "Expected docker network");
     }
 
     #[test]
     fn docker_name() {
-        let config = ContainerConfigBuilder::default()
+        let container = ContainerBuilder::default()
             .name("rust")
             .build();
 
-        let command = config.parse();
+        let command = container.config.parse_options();
         assert!(command.contains("--name=rust"), "Expected docker name");
     }
 
     #[test]
     fn docker_expose() {
-        let config = ContainerConfigBuilder::default()
+        let container = ContainerBuilder::default()
             .expose(true)
             .build();
         
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         assert!(command.contains(&"--expose"), "Expected expose");
@@ -37,11 +38,11 @@ mod tests {
 
     #[test]
     fn docker_publish_all() {
-        let config = ContainerConfigBuilder::default()
+        let container = ContainerBuilder::default()
             .publish_all(true)
             .build();
         
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         assert!(command.contains(&"-P"), "Expected publish all");
@@ -52,15 +53,15 @@ mod tests {
     #[case(vec![10])]
     #[case(vec![10, 20])]
     fn docker_publish_ports(#[case] ports: Vec<u16>) {
-        let mut config = ContainerConfigBuilder::default();
+        let mut builder = ContainerBuilder::default();
 
         for port in ports.iter() {
-            config.publish_mut(port.to_owned());
+            builder.publish_mut(port.to_owned());
         }
 
-        let config = config.build();
+        let container = builder.build();
         
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         for port in ports.iter() {
@@ -76,15 +77,15 @@ mod tests {
     #[case(vec![(10, 20)])]
     #[case(vec![(10, 20), (30, 40)])]
     fn docker_publish_map(#[case] map: Vec<(u16, u16)>) {
-        let mut config = ContainerConfigBuilder::default();
+        let mut builder = ContainerBuilder::default();
 
         for (left, right) in map.clone() {
-            config.publish_map_mut(left, right);
+            builder.publish_map_mut(left, right);
         }
 
-        let config = config.build();
+        let container = builder.build();
 
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         for (left, right) in map.iter() {
@@ -100,15 +101,15 @@ mod tests {
     #[case(vec![("person", "name")])]
     #[case(vec![("person", "name"), ("key", "value")])]
     fn docker_enviroment_variables(#[case] map: Vec<(&str, &str)>) {
-        let mut config = ContainerConfigBuilder::default();
+        let mut builder = ContainerBuilder::default();
 
         for (left, right) in map.clone() {
-            config.env_var_mut(left, right);
+            builder.env_var_mut(left, right);
         }
 
-        let config = config.build();
+        let container = builder.build();
 
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         for (key, value) in map.iter() {
@@ -124,15 +125,15 @@ mod tests {
     #[case(vec!["/path/to:/other/path"])]
     #[case(vec!["/path/to:/other/path", "/another/path:/other/path"])]
     fn docker_volumes(#[case] volumes: Vec<&str>) {
-        let mut config = ContainerConfigBuilder::default();
+        let mut builder = ContainerBuilder::default();
 
         for volume in volumes.clone() {
-            config.volume_mut(volume);
+            builder.volume_mut(volume);
         }
 
-        let config = config.build();
+        let container = builder.build();
 
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         for volume in volumes.iter() {
@@ -152,15 +153,15 @@ mod tests {
     #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::RSlave))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=rslave"])]
     #[case(vec![Mount::new("/source", "/destination", true, Some(BindPropagation::RPrivate))], vec!["type=bind,src=/source,ro,dst=/destination,bind-propagation=rprivate"])]
     fn docker_mounts(#[case] mounts: Vec<Mount>, #[case] expected: Vec<&str>) {
-        let mut config = ContainerConfigBuilder::default();
+        let mut builder = ContainerBuilder::default();
 
         for mount in mounts.clone() {
-            config.mount_mut(mount);
+            builder.mount_mut(mount);
         }
 
-        let config = config.build();
+        let container = builder.build();
 
-        let command = config.parse();
+        let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
 
         for expect in expected.iter() {

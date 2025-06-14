@@ -2,6 +2,7 @@ use std::process::{Command, Stdio};
 use log::debug;
 use crate::core::adapters::Runner;
 
+/// Local runner object. Executes commands on the local system
 #[derive(Debug, Clone)]
 pub struct Local {}
 

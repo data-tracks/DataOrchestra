@@ -4,6 +4,8 @@ use crate::{core::object::Object, interface::general::General};
 
 use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer};
 
+/// Attachable types to a [`Object`]. Allow for easy creation of systems without having to manually
+/// create adapters for systems
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum AttachType {
@@ -11,6 +13,7 @@ pub enum AttachType {
     KafkaConsumer
 }
 
+/// Configuration of attachable types from [`AttachType`]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum AttachTypeConfig {

@@ -1,15 +1,9 @@
-use std::{net::IpAddr, sync::Arc};
-use actix_cors::Cors;
-use actix_web::{get, http::{self, header::ContentType}, post, put, rt::System, web, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use log::error;
-
-use crate::{core::adapters::{async_ping_node, docker, StateTypes}, state::State};
+#[tokio::main]
+async fn main() {
+    println!("Hello, world!");
+}
 
 pub async fn start_api(state: Arc<State>) {
-    let api_port = state.get_config().api_port.clone();
-
     let _ = HttpServer::new(move || {
         App::new()
             .wrap(
@@ -33,7 +27,7 @@ pub async fn start_api(state: Arc<State>) {
             .service(metric_generate)
             .service(metric_object)
     })
-    .bind(("127.0.0.1", api_port)).unwrap()
+    .bind(("127.0.0.1", 5000)).unwrap()
     .run()
     .await;
 }

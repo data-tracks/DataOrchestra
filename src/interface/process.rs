@@ -4,7 +4,7 @@ use crate::core::process::Process;
 use crate::shared::traits::ToInternal;
 use super::general::General;
 
-
+/// External representation of the internal [`Process`] object
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtProcess {
     #[serde(rename = "type")]

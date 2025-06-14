@@ -18,19 +18,27 @@ impl Spawner for Process {
         // Setup container based on specified config. Default setup if only process_type was provided,
         // otherwise custom
         if let Some(process_config) = self.config.as_mut() {
+            let mut compose = self.object.
+                docker_group_builder.get_or_insert_with(ComposeGroupBuilder::new);
+
             if let Some(node) = self.object.node.as_ref() {
                 match process_config {
                     ProcessTypeConfig::Kafka(ref mut kafka) => {
                         // Set enviroment variable KAFKA_HOST to node to make kafka broker
                         // accessible 
                         kafka.host = node.host.clone();
+
+                        kafka.topics.push("orchestra-log".to_string());
+
+                        compose
+                            .name_mut("kafka-broker")
+                            .name_mut("kafka-rest");
                     },
                     _ => ()
                 }
             }
 
-            let mut compose = self.object.
-                docker_group_builder.get_or_insert_with(ComposeGroupBuilder::new);
+            
 
             process_config.setup_container(&mut compose);
         }

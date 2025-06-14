@@ -2,6 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
+/// Restart type policies for docker container
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 pub enum RestartTypes {
     No,
@@ -29,6 +30,7 @@ impl Display for RestartTypes {
     }
 }
 
+/// Mount bind types for docker container
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 pub enum BindPropagation {
     Shared,
@@ -54,6 +56,7 @@ impl Display for BindPropagation {
     }
 }
 
+/// The container data object. Represents container meta data retrieved through `docker container ls`
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct ContainerData {
@@ -73,6 +76,7 @@ pub struct ContainerData {
     pub status: String
 }
 
+/// States of a docker container
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum StateTypes {
@@ -111,4 +115,21 @@ impl FromStr for StateTypes {
     }
 }
 
+/// The mount object. Represents the mounting configuration of files onto a docker container
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Mount {
+    /// Source data location
+    pub src: String,
+    /// Destination data location
+    pub dst: String,
+    #[serde(default)]
+    pub read_only: bool,
+    /// Type of bind proporgation
+    pub bind_propagation: Option<BindPropagation>
+}
 
+impl Mount {
+    pub fn new(src: impl Into<String>, dst: impl Into<String>, read_only: bool, bind_propagation: Option<BindPropagation>) -> Self {
+        Mount { src: src.into(), dst: dst.into(), read_only, bind_propagation }
+    }
+}

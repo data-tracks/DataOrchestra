@@ -52,17 +52,17 @@ impl ToInternal<ComposeGroupBuilder> for ExtDocker {
     fn to_internal(self) -> ComposeGroupBuilder {
         let mut builder = ComposeGroupBuilder::new();
         if let Some(compose) = self.compose {
-            builder.set_compose(compose);
+            builder.compose_mut(compose);
         }
 
         if let Some(names) = self.names {
             for name in names {
-                builder.add_name(name);
+                builder.name_mut(name);
             }
         }
         
         for (key, value) in self.interpolation_variables {
-            builder.add_interpolation_variable(key, value);
+            builder.interpolation_variable_mut(key, value);
         }
 
         builder
@@ -88,7 +88,7 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
             }
         }
         if let Some(network) = self.network {
-            builder.set_network_mut(network);
+            builder.network_mut(network);
         }
         if let Some(env) = self.enviroment {
             for (key, value) in env {

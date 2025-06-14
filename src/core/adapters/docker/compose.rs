@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::{debug, error, warn};
 use crate::core::adapters::{Local, Runner};
 
-use super::container::{self, ContainerBuilder};
+use super::container::ContainerBuilder;
 use super::{Container, Run};
 
 #[derive(Debug)]
@@ -117,22 +117,42 @@ impl ComposeGroupBuilder {
         }
     }
 
-    pub fn set_compose<T: Into<String>>(&mut self, compose: T) -> &mut Self {
+    pub fn compose(mut self, compose: impl Into<String>) -> Self {
         self.composegroup.compose = Some(compose.into());
         self
     }
 
-    pub fn add_container(&mut self, container: Container) -> &mut Self {
+    pub fn compose_mut(&mut self, compose: impl Into<String>) -> &mut Self {
+        self.composegroup.compose = Some(compose.into());
+        self
+    }
+
+    pub fn container(mut self, container: Container) -> Self {
         self.composegroup.containers.push(container);
         self
     }
 
-    pub fn add_name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+    pub fn container_mut(&mut self, container: Container) -> &mut Self {
+        self.composegroup.containers.push(container);
+        self
+    }
+
+    pub fn name(mut self, name: impl Into<String>) -> Self {
         self.composegroup.names.push(name.into());
         self
     }
 
-    pub fn add_interpolation_variable<T: Into<String>, S: Into<String>>(&mut self, key: T, value: S) -> &mut Self {
+    pub fn name_mut(&mut self, name: impl Into<String>) -> &mut Self {
+        self.composegroup.names.push(name.into());
+        self
+    }
+
+    pub fn interpolation_variable(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.composegroup.interpolation_variables.insert(key.into(), value.into());
+        self
+    }
+
+    pub fn interpolation_variable_mut(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
         self.composegroup.interpolation_variables.insert(key.into(), value.into());
         self
     }
@@ -146,7 +166,7 @@ impl ComposeGroupBuilder {
 mod tests {
     use std::sync::{Arc, Mutex};
     use crate::core::adapters::{Run, Runner};
-    use super::{ComposeGroupBuilder, ContainerBuilder};
+    use super::ComposeGroupBuilder;
 
     #[derive(Debug, Clone)]
     pub struct DummyRunner {

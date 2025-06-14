@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::thread::Scope;
 use std::{env, fs, thread};
 use std::path::Path;
 use std::process::exit;
@@ -9,13 +8,13 @@ use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer,
 use data_orchestra::core::config::Config;
 use data_orchestra::core::generate::Generate;
 use data_orchestra::core::object::Object;
+use data_orchestra::core::process::process_types::{ProcessType, ProcessTypeConfig};
 use data_orchestra::core::process::Process;
 use data_orchestra::core::store::Store;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::{Arguments, ARGS};
-use data_orchestra::shared::Spawner;
 use data_orchestra::state::State;
 use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
@@ -94,6 +93,29 @@ fn main() {
     }
 
     config.object.extend(agents);
+
+    //TODO: Is this heuristic needed or should the user just provide the location of the API kafka
+    //session?
+    /*
+    let mut has_kafka = false;
+    for process in config.process.iter() {
+        has_kafka = 
+            matches!(process.process_type, Some(ProcessType::Kafka))
+            ||
+            matches!(process.config, Some(ProcessTypeConfig::Kafka(_)));
+
+        if has_kafka {
+            break;
+        }
+    }
+
+    if !has_kafka {
+        //TODO: Choose node
+        let mut process = Process::default();
+        process.process_type = Some(ProcessType::Kafka);
+        config.process.push(process);
+    }
+    */
 
     health_check(&config.store, &config.process, &config.generate);
 

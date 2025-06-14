@@ -4,9 +4,6 @@ pub use traits::*;
 pub mod api;
 pub use api::*;
 
-pub mod source;
-pub use source::*;
-
 mod compose;
 pub use compose::*;
 

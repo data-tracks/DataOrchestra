@@ -19,21 +19,27 @@ pub fn default_host() -> IpAddr {
     IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
-impl Kafka {
-    pub fn new() -> Self {
+impl Default for Kafka {
+    fn default() -> Self {
         Kafka 
         { 
             topics: Vec::new(), 
             host: IpAddr::V4(Ipv4Addr::LOCALHOST)
         }
     }
+}
+
+impl Kafka {
+    pub fn new(topics: Vec<String>, host: IpAddr) -> Self {
+        Kafka { topics, host }
+    }
 
     /// Sets up the docker [`ComposeGroupBuilder`] with the configuration specific to the
     /// kafka application
     pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
         docker
-            .set_compose("images/compose-kafka.yaml")
-            .add_interpolation_variable("KAFKA_HOST", &self.host.to_string());
+            .compose_mut("images/compose-kafka.yaml")
+            .interpolation_variable_mut("KAFKA_HOST", &self.host.to_string());
     }
 
     /// Create kafka topics for the broker of the [`Kafka`] `topics` field

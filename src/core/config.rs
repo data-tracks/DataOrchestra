@@ -1,8 +1,10 @@
 use crate::shared::Spawner;
 
-use super::{generate::Generate, object::{self, Object}, process::Process, store::Store, types::Node};
+use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
 
+/// The config object. Contains all object types tasks
 pub struct Config {
+    pub api_port: u16,
     pub store: Vec<Store>,
     pub process: Vec<Process>,
     pub generate: Vec<Generate>,
