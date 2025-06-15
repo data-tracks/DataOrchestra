@@ -7,9 +7,6 @@ pub use amount::*;
 pub mod address;
 pub use address::*;
 
-pub mod file;
-pub use file::*;
-
 pub mod arguments;
 pub use arguments::*;
 

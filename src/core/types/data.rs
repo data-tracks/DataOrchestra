@@ -66,11 +66,10 @@ impl DockerData {
     }
 }
 
-/// Docker SFTP (Secure file transfer protocol) data object. Represents data which is written to
-/// the docker container using SFTP. The file is created in the docker container only and data is
-/// written into the file  
+/// Docker volatile data object. Represents data which is written to file
+/// in the docker container from memory
 #[derive(Debug, Clone)]
-pub struct DockerSFTPData {
+pub struct VolatileDockerData {
     /// Name of docker container
     pub name: String,
     /// File name 
@@ -79,9 +78,9 @@ pub struct DockerSFTPData {
     pub data: String
 }
 
-impl DockerSFTPData {
+impl VolatileDockerData {
     pub fn new(name: impl Into<String>, file: PathBuf, data: impl Into<String>) -> Self {
-        DockerSFTPData 
+        VolatileDockerData 
         {
             name: name.into(),
             data: data.into(),

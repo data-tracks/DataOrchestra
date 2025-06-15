@@ -1,4 +1,4 @@
-use crate::core::types::data::DockerSFTPData;
+use crate::core::types::data::VolatileDockerData;
 use crate::logger::{serialize_levelfilter, deserialize_levelfilter};
 
 use log::LevelFilter;
@@ -105,9 +105,10 @@ impl ToObject for KafkaProducer {
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_name_mut("KafkaProducer")
+                .try_name_mut("kafka-producer")
                 .dockerfile_mut("images/rust.dockerfile")
-                .image_mut("rust_base");
+                .image_mut("rust_base")
+                .publish_mut(self.args.api_port);
         }
 
         let name = object.docker_container_builder
@@ -118,7 +119,7 @@ impl ToObject for KafkaProducer {
 
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
-        object.docker_sftp_data.push(DockerSFTPData::new
+        object.docker_sftp_data.push(VolatileDockerData::new
             (
                 name.to_owned(),
                 "/kafka_producer/config.json".into(),

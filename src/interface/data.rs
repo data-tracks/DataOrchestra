@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use log::error;
 use serde::{Deserialize, Serialize};
-use crate::core::types::data::NodeData;
+use serde_json::Value;
+use crate::core::types::data::{NodeData, VolatileDockerData};
 use crate::core::types::DockerData;
 use crate::shared::traits::ToInternal;
 
@@ -85,5 +87,31 @@ impl ToInternal<DockerData> for ExtDockerData {
         data.dependency = self.dependency;
 
         data
+    }
+}
+
+/// External representation of the internal [`VolatileDockerData`] object
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ExtVolatileDockerData {
+    pub name: String,
+    pub file: PathBuf,
+    pub data: Value
+}
+
+impl Default for ExtVolatileDockerData {
+    fn default() -> Self {
+        ExtVolatileDockerData 
+        { 
+            name: "".to_string(), 
+            file: PathBuf::default(), 
+            data: Value::Null 
+        }
+    }
+}
+
+impl ToInternal<VolatileDockerData> for ExtVolatileDockerData {
+    fn to_internal(self) -> VolatileDockerData {
+        let data = serde_json::to_string_pretty(&self.data).expect("Unable to parse data to string");
+        VolatileDockerData::new(self.name, self.file, data) 
     }
 }

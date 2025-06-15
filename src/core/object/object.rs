@@ -5,7 +5,7 @@ use std::path::Path;
 use crate::core::adapters::docker::container::ContainerBuilder;
 use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
-use crate::core::types::data::{NodeData, DockerSFTPData};
+use crate::core::types::data::{NodeData, VolatileDockerData};
 use crate::core::types::data::DockerData;
 use crate::shared::{Spawner, ARGS};
 use crate::core::types::Node;
@@ -54,7 +54,7 @@ pub struct Object {
     // Data to be uploaded to docker container 
     pub docker_data: Vec<DockerData>,
     // Data to be upload
-    pub docker_sftp_data: Vec<DockerSFTPData>,
+    pub docker_sftp_data: Vec<VolatileDockerData>,
     // Ansible script responsible for the setup of the enviroment
     pub ansible: String,
 }
@@ -389,9 +389,9 @@ impl Object {
     ///
     /// If there is only on container, all entries in `data` get combined with that
     /// specific `container`
-    pub fn iter_combine_sftp_data<'a >(containers: &'a Vec<&'a Container>, data: &'a Vec<DockerSFTPData>) -> impl Iterator<Item = (&'a Container, &'a DockerSFTPData)> {
+    pub fn iter_combine_sftp_data<'a >(containers: &'a Vec<&'a Container>, data: &'a Vec<VolatileDockerData>) -> impl Iterator<Item = (&'a Container, &'a VolatileDockerData)> {
         let mut vec_container = Vec::<&Container>::new();
-        let mut vec_data = Vec::<&DockerSFTPData>::new();
+        let mut vec_data = Vec::<&VolatileDockerData>::new();
 
         // Early return for when data contains nothing
         if data.len() == 0 {

@@ -2,7 +2,7 @@ use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 
-use crate::core::types::data::{DockerData, DockerSFTPData};
+use crate::core::types::data::{DockerData, VolatileDockerData};
 use crate::shared::ToInternal;
 use crate::interface::{general::General, object::ExtObject};
 use crate::core::adapters::ContainerBuilder;
@@ -97,7 +97,7 @@ impl ToObject for KafkaConsumer {
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_name_mut("KafkaConsumer")
+                .try_name_mut("kafka-consumer")
                 .dockerfile_mut("images/rust.dockerfile")
                 .image_mut("rust_base");
         }
@@ -110,7 +110,7 @@ impl ToObject for KafkaConsumer {
 
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
-        object.docker_sftp_data.push(DockerSFTPData::new
+        object.docker_sftp_data.push(VolatileDockerData::new
             (
                 name.to_owned(),
                 "/kafka_consumer/config.json".into(),

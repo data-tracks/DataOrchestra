@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::Graph;
-use crate::shared::{Amount, ExtDockerData, ExtNodeData};
+use crate::shared::Amount;
 
-use super::{docker::ExtDocker, node::ExtNode};
+use super::{data::{ExtDockerData, ExtNodeData}, docker::ExtDocker, node::ExtNode};
 
 /// The general object. Represents general attributes of external representation objects
 #[derive(Debug, Deserialize, Serialize, Clone)]
