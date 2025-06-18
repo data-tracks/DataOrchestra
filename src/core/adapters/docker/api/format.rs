@@ -1,5 +1,5 @@
-use bon::Builder;
-// TODO: Extend this
+use derive_builder::Builder;
+
 #[derive(Debug, Builder)]
 pub struct Format {
     #[builder(default)]
@@ -27,7 +27,7 @@ impl Format {
 }
 
 pub fn test() {
-    let _ = Format::builder()
+    let _ = FormatBuilder::default()
         .id(true)
         .build();
 }

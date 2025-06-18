@@ -13,6 +13,8 @@ pub struct Node {
     pub username: String,
     /// Ssh password
     pub password: Option<String>,
+    /// Path to ssh key
+    pub ssh_key: Option<String>,
     /// Ssh object 
     pub ssh: Option<Ssh>,
     /// Ssh port
@@ -24,9 +26,10 @@ impl Node {
         Node
         {
             name: "Node".to_string(),
-            host: IpAddr::V4(Ipv4Addr::LOCALHOST) ,
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST),
             username: "root".to_string(),
             password: None,
+            ssh_key: None,
             ssh: None,
             ssh_port: 22
         }

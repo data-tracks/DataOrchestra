@@ -1,11 +1,7 @@
-use std::sync::OnceLock;
-
 use clap::Parser;
 use log::LevelFilter;
 
 use super::ObjectTypes;
-
-pub static ARGS: OnceLock<Arguments> = OnceLock::new();
 
 /// CLI arguments for the Orchestrator
 #[derive(Parser, Debug, Clone)]

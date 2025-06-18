@@ -1,4 +1,4 @@
-use std::{collections::HashMap, thread, time::Duration};
+use std::{collections::HashMap, net::IpAddr, thread, time::Duration};
 
 use log::{error, info, warn};
 use reqwest::Client;
@@ -154,6 +154,10 @@ impl Portainer {
         object.docker_container_builder = Some(container);
 
         object
+    }
+
+    pub fn deploy_agents<'a>(&self, hosts: Vec<&'a IpAddr>) {
+
     }
 
     /// Add agent environment to portainer

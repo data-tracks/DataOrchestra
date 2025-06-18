@@ -1,3 +1,5 @@
+use std::thread;
+
 use crate::shared::Spawner;
 
 use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
@@ -61,33 +63,74 @@ impl Config {
 
         for object in self.object.iter_mut() {
             let name = object.name.clone();
-            let spawner = object as &mut (dyn Spawner + Send); 
+            let spawner = object as _; 
             vec_objects.push(spawner);
             vec_names.push(name);
         }
 
         for store in self.store.iter_mut() {
             let name = store.object.name.clone();
-            let spawner = store as &mut (dyn Spawner + Send); 
+            let spawner = store as _; 
             vec_objects.push(spawner);
             vec_names.push(name);
         }
 
         for process in self.process.iter_mut() {
             let name = process.object.name.clone();
-            let spawner = process as &mut (dyn Spawner + Send); 
+            let spawner = process as _; 
             vec_objects.push(spawner);
             vec_names.push(name);
         }
 
         for generate in self.generate.iter_mut() {
             let name = generate.object.name.clone();
-            let spawner = generate as &mut (dyn Spawner + Send); 
+            let spawner = generate as _; 
             vec_objects.push(spawner);
             vec_names.push(name);
         }
 
         vec_objects.into_iter().zip(vec_names)
+    }
+}
+
+impl Spawner for Config {
+    fn build(&mut self) {
+        thread::scope(|s| {
+            let spawners = self.get_mut_spawners();
+            for (spawner, name) in spawners {
+                let _ = thread::Builder::new()
+                    .name(name)
+                    .spawn_scoped(s, || {
+                        spawner.build();
+                });
+            }
+        });
+    }
+
+    fn setup(&mut self) {
+        thread::scope(|s| {
+            let spawners = self.get_mut_spawners();
+            for (spawner, name) in spawners {
+                let _ = thread::Builder::new()
+                    .name(name)
+                    .spawn_scoped(s, || {
+                        spawner.setup();
+                });
+            }
+        });
+    }
+
+    fn deploy(&mut self) {
+        thread::scope(|s| {
+            let spawners = self.get_mut_spawners();
+            for (spawner, name) in spawners {
+                let _ = thread::Builder::new()
+                    .name(name)
+                    .spawn_scoped(s, || {
+                        spawner.deploy();
+                });
+            }
+        });
     }
 }
 

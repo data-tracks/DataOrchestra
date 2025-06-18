@@ -7,7 +7,7 @@ use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::{ping, Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::types::data::{NodeData, VolatileDockerData};
 use crate::core::types::data::DockerData;
-use crate::shared::{Spawner, ARGS};
+use crate::shared::Spawner;
 use crate::core::types::Node;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -55,7 +55,7 @@ pub struct Object {
     pub docker_data: Vec<DockerData>,
     // Data to be upload
     pub docker_sftp_data: Vec<VolatileDockerData>,
-    // Ansible script responsible for the setup of the enviroment
+    // Ansible script responsible for the setup of the environment
     pub ansible: String,
 }
 

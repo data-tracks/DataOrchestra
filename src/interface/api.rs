@@ -1,7 +1,8 @@
+use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::{core::{attach::{attach_types::ToObject, types::kafka_consumer::KafkaConsumer}, object::Object, process::{process_types::ProcessTypeConfig, types::Kafka, Process}}, shared::ToInternal};
-
+use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
 use super::{general::General, node::ExtNode};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -17,12 +18,17 @@ pub fn default_port() -> u16 {
 
 impl ToInternal<(Process, Object, u16)> for API {
     fn to_internal(self) -> (Process, Object, u16) {
+        let args = ArgumentsBuilder::default()
+            .address(format!("http://localhost:{}", self.port))
+            .consumer(format!("{}:9092", self.kafka_host.host.clone()))
+            .topic("orchestra-log")
+            .group_id("logger")
+            .build()
+            .expect("Unable to build arguments");
+
         // Inject consumer which consumes from kafka and sends it to the API
         let mut consumer = KafkaConsumer::default();
-        consumer.args.topics.push("orchestra-log".to_string());
-        consumer.args.group_id = "logger".to_string();
-        consumer.args.consumer = format!("{}:9092", self.kafka_host.host.clone());
-        consumer.args.address = format!("http://localhost:{}", self.port);
+        consumer.args = args;
 
         let mut general = General::default(); 
         general.name = Some("kafka-api-consumer".to_string());

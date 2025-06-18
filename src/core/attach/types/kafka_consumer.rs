@@ -1,8 +1,8 @@
-use actix_web::cookie::time::ext;
+use derive_builder::Builder;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
-use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 
+use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 use crate::core::types::data::{DockerData, VolatileDockerData};
 use crate::shared::ToInternal;
 use crate::interface::general::General;
@@ -19,14 +19,17 @@ pub struct KafkaConsumer {
 }
 
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Builder)]
 pub struct Arguments {
     /// Address where data should be send to
+    #[builder(setter(into))]
     pub address: String,    
     /// Address (host:port) of kafka 
     #[serde(default = "default_consumer")]
+    #[builder(default = "default_consumer()")]
     pub consumer: String,
     /// Group id of consumer
+    #[builder(setter(into))]
     pub group_id: String,
     /// Kafka topics consumer should consume from
     pub topics: Vec<String>,
@@ -34,7 +37,19 @@ pub struct Arguments {
     #[serde(deserialize_with = "deserialize_levelfilter")]
     #[serde(serialize_with = "serialize_levelfilter")]
     #[serde(default = "default_level")]
+    #[builder(default = "default_level()")]
     pub level: LevelFilter
+}
+
+impl ArgumentsBuilder {
+    pub fn topic(&mut self, topic: impl Into<String>) -> &mut Self {
+        if self.topics.is_none() {
+            self.topics = Some(Vec::new());
+        }
+        let topics = self.topics.as_mut().unwrap();
+        topics.push(topic.into());
+        self
+    }
 }
 
 impl Default for Arguments {
