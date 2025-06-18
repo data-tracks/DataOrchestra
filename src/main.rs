@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::exit;
 use actix_web::rt::Runtime;
 use data_orchestra::api::api::start_api;
+use data_orchestra::api::state::State;
 use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::config::Config;
 use data_orchestra::core::generate::Generate;
@@ -14,7 +15,6 @@ use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::{Arguments, ARGS};
-use data_orchestra::state::State;
 use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
 use data_orchestra::logger::init_logger;
@@ -135,8 +135,6 @@ fn main() {
     if ARGS.get().unwrap().remove_all {
         kill_containers(&config);
     }
-
-    exit(-1);
 
     if ARGS.get().unwrap().portainer { 
         portainer.build(); 

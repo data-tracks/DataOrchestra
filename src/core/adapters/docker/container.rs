@@ -1,12 +1,10 @@
 use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
-use std::thread::sleep;
-use std::time::Duration;
 use log::{debug, error};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::Runner;
-use crate::core::adapters::{ping, ping_node, Local, OsSystems};
+use crate::core::adapters::{Local, OsSystems};
 use super::{ContainerConfig, Mount, PortMapping, RestartTypes};
 use super::Run;
 

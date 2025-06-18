@@ -99,10 +99,7 @@ impl Ssh {
         debug!("Creating file {}", file.display());
         sftp.create(file.as_ref()).map_err(|err| err.to_string())
     }
-
-    
 }
-
 
 impl Runner for Ssh {
     /// Execute command over Ssh connection

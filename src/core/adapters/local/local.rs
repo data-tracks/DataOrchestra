@@ -18,7 +18,7 @@ impl Local {
 
 impl Runner for Local {
     fn exec(&self, command: String) -> Result<String, String> {
-        debug!("{}", format!("Running command [{}]", &command));
+        debug!("Running command [{}]", &command);
         let output;
         if cfg!(target_os = "windows") {
             output = Command::new("cmd")
