@@ -38,11 +38,11 @@ impl Default for General {
             name: None,
             graph: Graph::default(),
             docker: Some(ExtDocker::default()), 
-            node: Some(ExtNode::default()), 
-            node_data: Amount::Single(ExtNodeData::default()), 
-            docker_data: Amount::Single(ExtDockerData::default()), 
-            ansible: Some("".to_string()), 
-            attach_config: Amount::Single(AttachTypeConfig::default()),
+            node: None, 
+            node_data: Amount::None, 
+            docker_data: Amount::None, 
+            ansible: Some("scripts/ansible/ansible-setup.yml".to_string()), 
+            attach_config: Amount::None,
         }
     }  
 }

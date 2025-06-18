@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use log::error;
 
-use crate::{core::adapters::{async_ping_node, docker, StateTypes}, state::State};
+use crate::core::adapters::{async_ping_node, docker, StateTypes};
+use super::state::State;
 
 pub async fn start_api(state: Arc<State>) {
     let api_port = state.get_config().api_port.clone();

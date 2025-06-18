@@ -4,7 +4,7 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use crate::core::adapters::docker::container::ContainerBuilder;
 use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::core::adapters::{Container, ContainerType, Local, Run, Runner, Uploader};
+use crate::core::adapters::{ping, Container, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::types::data::{NodeData, VolatileDockerData};
 use crate::core::types::data::DockerData;
 use crate::shared::{Spawner, ARGS};
@@ -208,6 +208,32 @@ impl Spawner for Object {
         let result = self.docker_manager.run();
         if let Err(error) = result {
             error!("{}", error);
+        }
+
+        for container in self.docker_manager.containers_ref_vec() {
+            let ssh_port = container.get_ssh_port();
+            if let Some(ssh_port) = ssh_port {
+                let host: &IpAddr;
+
+                if let Some(node) = self.node.as_ref() {
+                    host = &node.host;
+                }
+                else {
+                    host = &IpAddr::V4(Ipv4Addr::LOCALHOST);
+                }
+
+                debug!("Polling docker container ssh connection ({}:{})", host, ssh_port);
+                let mut successful = false;
+                for _ in 0..10 {
+                    successful = ping(host, ssh_port).is_ok();
+                    if successful {
+                        break;
+                    }
+                }
+                if !successful {
+                    panic!("Failed to get ssh connection to docker container")
+                }
+            }
         }
 
         // Setup ssh connection for all containers
@@ -438,6 +464,9 @@ impl Object {
                 }
                 else if path.is_file() {
                     ssh.upload_file(path, &data.destination)?;
+                }
+                else {
+                    panic!("Unknown data. Neither a valid file nor directory ({})", path.display());
                 }
 
                 if let Some(ref dependency) = data.dependency {

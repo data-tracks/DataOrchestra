@@ -20,8 +20,9 @@ impl ToInternal<(Process, Object, u16)> for API {
         // Inject consumer which consumes from kafka and sends it to the API
         let mut consumer = KafkaConsumer::default();
         consumer.args.topics.push("orchestra-log".to_string());
+        consumer.args.group_id = "logger".to_string();
         consumer.args.consumer = format!("{}:9092", self.kafka_host.host.clone());
-        consumer.args.address = format!("localhost:{}", self.port);
+        consumer.args.address = format!("http://localhost:{}", self.port);
 
         let mut general = General::default(); 
         general.name = Some("kafka-api-consumer".to_string());
@@ -29,6 +30,8 @@ impl ToInternal<(Process, Object, u16)> for API {
         let consumer = consumer.to_object(&general);
 
         let mut process = Process::default();
+
+        process.object.name = "kafka-api".to_string();
 
         let kafka = Kafka::new(vec!["orchestra-log".to_string()], self.kafka_host.host);
         process.config = Some(ProcessTypeConfig::Kafka(kafka));

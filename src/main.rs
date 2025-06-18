@@ -136,6 +136,8 @@ fn main() {
         kill_containers(&config);
     }
 
+    exit(-1);
+
     if ARGS.get().unwrap().portainer { 
         portainer.build(); 
     }

@@ -95,6 +95,8 @@ impl Ssh {
     /// Create and write file using STFP from ssh session
     pub fn create_sftp_file(&self, file: impl AsRef<Path>) -> Result<ssh2::File, String> {
         let sftp = self.get_sftp()?;
+        let file = file.as_ref();
+        debug!("Creating file {}", file.display());
         sftp.create(file.as_ref()).map_err(|err| err.to_string())
     }
 
@@ -147,7 +149,11 @@ impl<T, S> Uploader<T, S> for Ssh where
     fn upload_file(&self, file: T, location: S) -> Result<(), String>{
         let file = file.as_ref();
         let location = location.as_ref();
-        assert!(file.is_file());
+
+        if !file.is_file() {
+            panic!("File {} does not exist. Please check path", file.display());
+        }
+
         debug!("Uploading file {} to {}", file.display(), &location.display());
 
         if let Some(parent) = location.parent() {
@@ -188,7 +194,10 @@ impl<T, S> Uploader<T, S> for Ssh where
         
         let dir = dir.as_ref();
         let destination = destination.as_ref();
-        assert!(dir.is_dir());
+
+        if !dir.is_dir() {
+            panic!("Directory {} does not exist. Please check path", dir.display());
+        }
 
         let _ = self.exec(format!("mkdir -p {}", destination.to_str().unwrap()));
 

@@ -44,7 +44,7 @@ pub async fn data_producer(args: Arguments) {
 
         debug!("Sending package {}", &package);
 
-        let result = client.post("kafka-producer:5000")
+        let result = client.post("http://kafka-producer:5000/kafkaproducer")
             .json(&package)
             .send()
             .await;

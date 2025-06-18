@@ -1,12 +1,17 @@
+use std::env::args;
 use std::fs;
+use std::future::Future;
+use std::process::Output;
 use std::{path::Path, sync::Arc};
 use std::time::Duration;
 use actix_web::{post, web, App, HttpResponse, HttpServer};
 use kafka_producer::arguments::Arguments;
-use log::info;
+use log::{info, error};
+use rdkafka::error::KafkaError;
+use rdkafka::message::OwnedMessage;
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
 use kafka_producer::logger::init_logger;
-use serde_json::from_str;
+use serde_json::{from_str, json};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -14,9 +19,16 @@ async fn main() -> std::io::Result<()> {
 
     let config_path = Path::new("config.json");
     let config = fs::read_to_string(config_path).expect("Unable to read config file");
+    dbg!(&config);
     let args: Arguments = from_str(config.as_str()).expect("Unable to parse config to struct");
 
     init_logger(args.level);
+
+    let producer = get_producer(&"10.34.64.161:9092".to_string());
+    let result = producer_send(&producer, "orchestra-log", &json!({ "from": "kafka-producer", "message": "Starting" }).to_string()).await;
+    if let Err(error) = result {
+        error!("{:?}", error);
+    }
 
     let api_port = args.api_port.clone();
 
@@ -25,35 +37,43 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(Arc::new(args.clone())))
             .service(produce)
     })
-    .bind(("127.0.0.1", api_port))?
+    .bind(("0.0.0.0", api_port))?
     .run()
     .await
 }
 
-#[post("/kafkaproducer")]
-async fn produce(data: web::Path::<String>, args: web::Data<Arc<Arguments>>) -> HttpResponse {
-    let data = data.into_inner();
-
-    info!("Starting kafka producer");
-    let producer: &FutureProducer = &ClientConfig::new()
-        .set("bootstrap.servers", &args.kafka_address)
+fn get_producer(address: &String) -> FutureProducer {
+    ClientConfig::new()
+        .set("bootstrap.servers", address)
         .create()
-        .expect("Unable to create kafka producer");
+        .expect("Unable to create kafka producer")
+}
 
-    if args.topics.is_none() {
+pub async fn producer_send(
+    producer: &FutureProducer,
+    topic: &str,
+    payload: &str,
+) -> Result<(i32, i64), (KafkaError, OwnedMessage)> {
+    producer
+        .send(
+            FutureRecord::to(topic)
+                .payload(payload)
+                .key(""),
+            Duration::from_secs(60),
+        )
+        .await
+}
+
+#[post("/kafkaproducer")]
+async fn produce(data: String, args: web::Data<Arc<Arguments>>) -> HttpResponse {
+    let producer: FutureProducer = get_producer(&args.address);
+
+    if args.topics.is_empty() {
         panic!("No topics provided for kafka");
     }
 
-    for topic in args.vec_topics.iter() {
-        let delivery_status = producer
-            .send(
-                FutureRecord::to(topic)
-                    .payload(&format!("{}", &data))
-                    .key(""),
-                Duration::from_secs(60),
-            )
-            .await;
-
+    for topic in args.topics.iter() {
+        let delivery_status = producer_send(&producer, topic, &format!("{}", &data)).await;
         if let Err(error) = delivery_status {
             return HttpResponse::InternalServerError().body(format!("{:?}", error));
         }

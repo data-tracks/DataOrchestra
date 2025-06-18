@@ -1,29 +1,26 @@
 use log::LevelFilter;
 use serde::{de::Error, Deserialize, Deserializer};
-use serde_json::Value;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Arguments {
+    // Port of logging API
     pub api_port: u16,
-
-    pub topics: Option<String>,
-
-    pub kafka_address: String,
-
+    // Kafka address
+    pub address: String,
+    // Logging level
     #[serde(deserialize_with = "deserialize_levelfilter")]
     pub level: LevelFilter,
-
-    pub vec_topics: Vec<String>
+    // Kafka topics
+    pub topics: Vec<String>
 }
 
 pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value = Value::deserialize(deserializer)?;
-    let first = value.to_string();
+    let s = String::deserialize(deserializer)?;
 
-    match first.to_lowercase().trim() {
+    match s.to_lowercase().trim() {
         "error" => Ok(LevelFilter::Error),
         "warn" => Ok(LevelFilter::Warn),
         "info" => Ok(LevelFilter::Info),
@@ -32,5 +29,4 @@ where
         "off" => Ok(LevelFilter::Off),
         _ => Err(Error::custom("No Value exists"))
     }
-
 }

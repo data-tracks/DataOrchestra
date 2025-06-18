@@ -1,6 +1,5 @@
 use log::LevelFilter;
 use serde::{de::Error, Deserialize, Deserializer};
-use serde_json::Value;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Arguments {
@@ -21,10 +20,9 @@ pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D
 where
     D: Deserializer<'de>,
 {
-    let value = Value::deserialize(deserializer)?;
-    let first = value.to_string();
+    let s = String::deserialize(deserializer)?;
 
-    match first.to_lowercase().trim() {
+    match s.to_lowercase().trim() {
         "error" => Ok(LevelFilter::Error),
         "warn" => Ok(LevelFilter::Warn),
         "info" => Ok(LevelFilter::Info),
@@ -33,5 +31,4 @@ where
         "off" => Ok(LevelFilter::Off),
         _ => Err(Error::custom("No Value exists"))
     }
-
 }

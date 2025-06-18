@@ -9,14 +9,11 @@ use crate::interface::general::General;
 use crate::core::types::DockerData;
 use crate::core::object::Object;
 use crate::core::attach::attach_types::ToObject;
-use crate::interface::object::ExtObject;
 use crate::shared::ToInternal;
 
 // The Kafka producer type. Is an attachable object capable of producing data to kafka topic(s)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KafkaProducer {
-    // External Object type to allow for the configuration of the producer
-    pub object: Option<Box<ExtObject>>,
     #[serde(flatten)]
     pub args: Arguments
 }
@@ -65,12 +62,10 @@ impl Default for KafkaProducer {
     fn default() -> Self {
         KafkaProducer 
         { 
-            object: None,
             args: Arguments::default()
         }
     }
 }
-
 
 impl ToObject for KafkaProducer {
     fn to_object(self, general: &General) -> Object {
@@ -79,21 +74,19 @@ impl ToObject for KafkaProducer {
         let general = general.clone();
 
         let mut object = Object::default();
-        if let Some(ext_object) = self.object {
-            object = ext_object.to_internal();
-        }
 
-        object.name = "kafka-producer".to_string();
-        object.graph.ignore = true;
+        object.name = general.name.unwrap_or("kafka-producer".to_string());
 
         if let Some(node) = general.node {
             object.node = Some(node.to_internal());
         }
 
+        object.graph.ignore = true;
+
         object.docker_data.push(DockerData::new
             (
                 "", 
-                "attachables/kafka_producer/", 
+                "services/attachables/kafka_producer", 
                 "/kafka_producer", 
                 "/kafka_producer/start.sh", 
                 None,

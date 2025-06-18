@@ -6,7 +6,7 @@ use std::time::Duration;
 use log::{debug, error};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::Runner;
-use crate::core::adapters::{Local, OsSystems};
+use crate::core::adapters::{ping, ping_node, Local, OsSystems};
 use super::{ContainerConfig, Mount, PortMapping, RestartTypes};
 use super::Run;
 
@@ -537,10 +537,6 @@ impl Container {
             };
         }
         
-        // Sleep to wait for ssh server to properly start
-        // TODO: Implement polling
-        sleep(Duration::from_secs(2));
-
         Ok(())
     }
 }

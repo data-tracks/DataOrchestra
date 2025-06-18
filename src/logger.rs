@@ -48,10 +48,9 @@ pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D
 where
     D: Deserializer<'de>,
 {
-    let value = Value::deserialize(deserializer)?;
-    let first = value.to_string();
+    let s = String::deserialize(deserializer)?;
 
-    match first.to_lowercase().trim() {
+    match s.to_lowercase().trim() {
         "error" => Ok(LevelFilter::Error),
         "warn" => Ok(LevelFilter::Warn),
         "info" => Ok(LevelFilter::Info),
