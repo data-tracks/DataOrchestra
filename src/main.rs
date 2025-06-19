@@ -85,6 +85,10 @@ fn main() {
 
     config.object.extend(agents);
 
+    for node in config.get_nodes_mut() {
+        node.ssh_key = args.ssh_key.clone();
+    }
+
     configuration_pipeline(&mut config, &mut portainer, &args);
 
     info!("Everything deployed. starting API.");

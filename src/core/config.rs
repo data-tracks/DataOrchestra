@@ -57,6 +57,49 @@ impl Config {
         nodes
     }
 
+    pub fn get_nodes_mut<'a>(&'a mut self) -> Vec<&'a mut Node> {
+        let mut nodes = Vec::new();
+        let mut hosts = Vec::new();
+
+        for generate in self.generate.iter_mut() {
+            if let Some(node) = generate.object.node.as_mut() {
+                if !hosts.contains(&node.host) {
+                    hosts.push(node.host.clone());
+                    nodes.push(node);
+                }
+            }
+        }
+
+        for process in self.process.iter_mut() {
+            if let Some(node) = process.object.node.as_mut() {
+                if !hosts.contains(&node.host) {
+                    hosts.push(node.host.clone());
+                    nodes.push(node);
+                }              
+            }
+        }
+
+        for store in self.store.iter_mut() {
+            if let Some(node) = store.object.node.as_mut() {
+                if !hosts.contains(&node.host) {
+                    hosts.push(node.host.clone());
+                    nodes.push(node);
+                }              
+            }
+        }
+ 
+        for object in self.object.iter_mut() {
+            if let Some(node) = object.node.as_mut() {
+                if !hosts.contains(&node.host) {
+                    hosts.push(node.host.clone());
+                    nodes.push(node);
+                }               
+            }
+        }       
+
+        nodes
+    }
+
     pub fn get_mut_spawners<'a>(&'a mut self) -> impl Iterator<Item = (&'a mut (dyn Spawner + Send + 'a), String)> {
         let mut vec_objects = Vec::new();
         let mut vec_names = Vec::new();

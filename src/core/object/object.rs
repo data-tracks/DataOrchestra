@@ -84,18 +84,6 @@ impl Spawner for Object {
     fn build(&mut self) {
         info!("Building {}", self.name);
 
-        if let Some(ref mut node) = self.node {
-            if let Some(key) = ARGS.get().as_ref().unwrap().ssh_key.as_ref() {
-                let result = node.set_ssh(key);
-                if let Err(error) = result {
-                    panic!("Unable to setup ssh for {} {}", node.host, error);
-                }
-            }
-            else {
-                panic!("No ssh key provided for node");
-            }
-        }
-
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
         if let Some(group) = self.docker_group_builder.take() {
             info!("Setting up docker compose");
