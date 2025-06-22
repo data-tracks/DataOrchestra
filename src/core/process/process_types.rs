@@ -2,11 +2,12 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::docker::ComposeGroupBuilder;
-
+use crate::core::object::Object;
+use crate::core::traits::Configurator;
 use super::types::{Flink, Kafka, Spark, Storm};
 
 /// Types of pre configured processes 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProcessType {
     Flink,
@@ -49,15 +50,13 @@ pub enum ProcessTypeConfig {
     Storm(Storm)
 }
 
-impl ProcessTypeConfig {
-    /// Setup the given docker container with config of specified [`ProcessType`]
-    pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
+impl Configurator for ProcessTypeConfig {
+    fn configure(&mut self, object: &mut Object) {
         match self {
-            ProcessTypeConfig::Flink(flink) => flink.setup_container(docker),
-            ProcessTypeConfig::Kafka(kafka) => kafka.setup_container(docker),
-            ProcessTypeConfig::Spark(spark) => spark.setup_container(docker),
-            ProcessTypeConfig::Storm(storm) => storm.setup_container(docker)
+            ProcessTypeConfig::Kafka(kafka) => kafka.configure(object),
+            ProcessTypeConfig::Flink(flink) => panic!("Flink not implemented yet"),
+            ProcessTypeConfig::Spark(spark) => panic!("Spark implemented yet"),
+            ProcessTypeConfig::Storm(storm) => panic!("Storm not implemented yet")
         }
     }
 }
-

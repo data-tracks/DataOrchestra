@@ -28,8 +28,8 @@ pub struct Arguments {
     pub generate_valid_json: Option<ObjectTypes>,
 
     /// Skip the portainer manager setup
-    #[arg(long = "no_portainer", default_value_t = true)]
-    #[arg(env = "NO_PORTAINER")]
+    #[arg(long = "portainer", default_value_t = true)]
+    #[arg(env = "PORTAINER")]
     pub portainer: bool,
 
     /// Valid private ssh key for validating remote node connection
@@ -37,6 +37,7 @@ pub struct Arguments {
     #[arg(env = "SSH_KEY")]
     pub ssh_key: Option<String>,
 
+    /// Start api only (TODO)
     #[arg(short, long, default_value_t = false)]
     #[arg(env = "API_ONLY")]
     pub api_only: bool

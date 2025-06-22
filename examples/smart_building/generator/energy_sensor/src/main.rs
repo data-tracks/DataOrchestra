@@ -6,6 +6,7 @@ use log::{debug, info};
 use rand::{seq::IndexedRandom, Rng};
 use serde_json::json;
 use fake::{Fake, Faker};
+use chrono;
 
 #[tokio::main]
 async fn main() {
@@ -39,7 +40,8 @@ pub async fn data_producer(args: Arguments) {
 
         let package = json!({
             "id": id,
-            "value": value
+            "value": value,
+            "timestamp": chrono::offset::Local::now()
         });
 
         debug!("Sending package {}", &package);

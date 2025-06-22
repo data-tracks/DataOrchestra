@@ -105,7 +105,7 @@ fn main() {
 pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, args: &Arguments) {
     info!("Starting configuration pipeline");
 
-    health_check(&config);
+    health_check(config);
 
     // pre build
 
@@ -114,14 +114,14 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     // post build
 
     if args.remove_all {
-        kill_containers(&config);
+        kill_containers(config);
     }
 
     if args.portainer { 
         portainer.build(); 
     }
 
-    pre_setup(&portainer, &config, &args);
+    pre_setup(portainer, config, args);
 
     config.setup();
 
@@ -155,7 +155,7 @@ pub fn viable_check() {
     let runner = Local::new();
     let result = runner.exec("docker info".to_string());
     if let Err(error) = result {
-        panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. {}", error);
+        panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. ({})", error);
     }
 }
 

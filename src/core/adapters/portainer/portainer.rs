@@ -157,7 +157,9 @@ impl Portainer {
     }
 
     pub fn deploy_agents<'a>(&self, hosts: Vec<&'a IpAddr>) {
-
+        for host in hosts {
+            //self.add_agent(host);
+        }
     }
 
     /// Add agent environment to portainer

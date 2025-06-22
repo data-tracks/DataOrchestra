@@ -54,9 +54,11 @@ pub struct Object {
     // Data to be uploaded to docker container 
     pub docker_data: Vec<DockerData>,
     // Data to be upload
-    pub docker_sftp_data: Vec<VolatileDockerData>,
+    pub volatile_docker_data: Vec<VolatileDockerData>,
     // Ansible script responsible for the setup of the environment
     pub ansible: String,
+
+    pub runner: Box<dyn Runner + Send + Sync>,
 }
 
 impl Default for Object {
@@ -70,8 +72,9 @@ impl Default for Object {
             node: None, 
             node_data: Vec::new(),
             docker_data: Vec::new(),
-            docker_sftp_data: Vec::new(),
+            volatile_docker_data: Vec::new(),
             ansible: "scripts/ansible/ansible-setup.yml".to_string(),
+            runner: Box::new(Local::new()),
         }
     }
 }
@@ -337,7 +340,6 @@ impl Object {
                     }
                 }
 
-
                 if data.start.ends_with(".sh") {
                     ssh.exec(format!("sh {}", data.start))?;
                 }
@@ -387,10 +389,19 @@ impl Object {
             }
 
             for d in data.iter() {
-                if let Some(container) = mapped_all_containers.get(&d.name) {
-                    vec_container.push(container);
-                    vec_data.push(d);
+                if let Some(name) = d.name.as_ref() {
+                    if let Some(container) = mapped_all_containers.get(name) {
+                        vec_container.push(container);
+                        vec_data.push(d);
+                    }
+                    else {
+                        error!("Couldn't find docker container {} for docker data", name);
+                    }
                 }
+                else {
+                    error!("Multiple docker containers found but docker data does not have name to specific docker container. Cannot upload docker data.")
+                }
+                
             };
         }
 
@@ -431,10 +442,19 @@ impl Object {
             }
 
             for d in data.iter() {
-                if let Some(container) = mapped_all_containers.get(&d.name) {
-                    vec_container.push(container);
-                    vec_data.push(d);
+                if let Some(name) = d.name.as_ref() {
+                    if let Some(container) = mapped_all_containers.get(name) {
+                        vec_container.push(container);
+                        vec_data.push(d);
+                    }
+                    else {
+                        error!("Couldn't find docker container {} for volatile docker data", name);
+                    }
                 }
+                else {
+                    error!("Multiple docker containers found but volatile docker data does not have name to specific docker container. Cannot upload volatile docker data.")
+                }
+                
             };
         }
 
@@ -469,7 +489,7 @@ impl Object {
             }
         }
 
-        for (container, data) in Self::iter_combine_sftp_data(&self.docker_manager.containers_ref_vec(), &self.docker_sftp_data) {
+        for (container, data) in Self::iter_combine_sftp_data(&self.docker_manager.containers_ref_vec(), &self.volatile_docker_data) {
             if let Some(ref ssh) = container.ssh {
                 let result = ssh.create_sftp_file(&data.file);
                 if let Ok(mut file) = result {

@@ -113,7 +113,7 @@ pub fn stop_container<T: Into<String>>(name: T, runner: &dyn Runner) -> Result<(
     Ok(())
 }
 
-/// Check if container is running by continously polling its status every second until `timeout`
+/// Check if container is running by continuously polling its status every second until `timeout`
 ///
 /// # Examples
 /// ```

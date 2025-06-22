@@ -1,4 +1,4 @@
-use crate::core::types::data::VolatileDockerData;
+use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
 use crate::logger::{serialize_levelfilter, deserialize_levelfilter};
 
 use log::LevelFilter;
@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::ContainerBuilder;
 use crate::interface::general::General;
-use crate::core::types::DockerData;
 use crate::core::object::Object;
 use crate::core::attach::attach_types::ToObject;
 use crate::shared::ToInternal;
@@ -83,16 +82,14 @@ impl ToObject for KafkaProducer {
 
         object.graph.ignore = true;
 
-        object.docker_data.push(DockerData::new
-            (
-                "", 
-                "services/attachables/kafka_producer", 
-                "/kafka_producer", 
-                "/kafka_producer/start.sh", 
-                None,
-                None
-            )
-        );
+        let docker_data = DockerDataBuilder::default()
+            .path("services/attachables/kafka_producer")
+            .destination("/kafka_producer")
+            .start("/kafka_producer/start.sh")
+            .build()
+            .expect("Unable to build docker_data");
+
+        object.docker_data.push(docker_data);
         
         object.docker_container_builder.get_or_insert(ContainerBuilder::new());
 
@@ -104,21 +101,15 @@ impl ToObject for KafkaProducer {
                 .publish_mut(self.args.api_port);
         }
 
-        let name = object.docker_container_builder
-            .as_ref()
-            .unwrap()
-            .get_name()
-            .unwrap();
-
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
-        object.docker_sftp_data.push(VolatileDockerData::new
-            (
-                name.to_owned(),
-                "/kafka_producer/config.json".into(),
-                json
-            )
-        );
+        let volatile_data = VolatileDockerDataBuilder::default()
+            .file("/kafka_producer/config.json")
+            .data(json)
+            .build()
+            .expect("Unable to build volatile data");
+
+        object.volatile_docker_data.push(volatile_data);
 
         object
     }

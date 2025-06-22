@@ -4,6 +4,8 @@ use log::{info, error};
 use serde::{Deserialize, Serialize};
 use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::Runner;
+use crate::core::object::Object;
+use crate::core::traits::Configurator;
 
 
 /// The `Kafka` type. Represents the configurability of the Apache kafka application instance
@@ -19,6 +21,24 @@ pub fn default_host() -> IpAddr {
     IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
+impl Configurator for Kafka {
+    fn configure(&mut self, object: &mut Object) {
+        self.host = object.node.as_ref()
+            .map(|n| n.host.to_owned())
+            .unwrap_or(default_host());
+
+        let compose = ComposeGroupBuilder::new()
+            .compose("images/compose-kafka.yaml")
+            .interpolation_variable("KAFKA_HOST", self.host.to_string())
+            .name("kafka-broker")
+            .name("kafka-rest");
+
+        object.docker_group_builder = Some(compose);
+    }
+}
+
+
+
 impl Default for Kafka {
     fn default() -> Self {
         Kafka 
@@ -32,14 +52,6 @@ impl Default for Kafka {
 impl Kafka {
     pub fn new(topics: Vec<String>, host: IpAddr) -> Self {
         Kafka { topics, host }
-    }
-
-    /// Sets up the docker [`ComposeGroupBuilder`] with the configuration specific to the
-    /// kafka application
-    pub fn setup_container(&self, docker: &mut ComposeGroupBuilder) {
-        docker
-            .compose_mut("images/compose-kafka.yaml")
-            .interpolation_variable_mut("KAFKA_HOST", &self.host.to_string());
     }
 
     /// Create kafka topics for the broker of the [`Kafka`] `topics` field

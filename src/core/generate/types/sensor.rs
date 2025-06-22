@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{process::process_types::ProcessType, types::DockerData};
+use crate::core::{object::Object, process::process_types::ProcessType, traits::Configurator, types::data::{DockerDataBuilder, VolatileDockerDataBuilder}};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sensor {
     #[serde(default)]
     pub stream_processor: Option<ProcessType>,
@@ -31,27 +31,6 @@ pub fn default_level() -> LevelFilter {
 }
 
 impl Sensor {
-    pub fn new() -> Self {
-        Sensor { 
-            stream_processor: None,
-            interval: 1,
-            address: String::from("localhost:9092"),
-            topics: Vec::new(),
-            additional: Some(HashMap::new())
-        }
-    }
-
-    pub fn create(&self) -> DockerData {
-        DockerData {
-            name: String::new(),
-            path: String::from("templates/generators/sensor"),
-            destination: String::from("/sensor"),
-            env: None,
-            start: format!("cd /sensor && sh spawn.sh \"Sensor\" \"{}\"", self.parse()),
-            dependency: None
-        }
-    }
-
     pub fn parse(&self) -> String {
         let mut command = String::from("cargo run --");
 
@@ -62,7 +41,7 @@ impl Sensor {
 
         command = format!("{command} --interval {}", self.interval);
 
-        if self.topics.len() > 0 {
+        if !self.topics.is_empty() {
             for topic in self.topics.iter() {
                 command = format!("{command} --topic {}", topic);
             }
@@ -77,5 +56,34 @@ impl Sensor {
         }
 
         command
+    }
+}
+
+impl Configurator for Sensor {
+    fn configure(&mut self, object: &mut Object) {
+        let docker_data = DockerDataBuilder::default()
+            .path("templates/generators/sensor")
+            .destination("/sensor")
+            .start(format!("/sensor/start.sh {}", self.parse()))
+            .build()
+            .expect("Unable to build docker sensor data");
+
+        let json = serde_json::to_string_pretty(self).expect("Unable to parse sensor to string");
+
+        let volatile_data = VolatileDockerDataBuilder::default()
+            .file("/sensor/config.json")
+            .data(json)
+            .build()
+            .expect("Unable to build volatile sensor data");
+
+        let docker = object.docker_container_builder.get_or_insert_default();
+
+        docker
+            .try_name_mut("sensor")
+            .dockerfile_mut("images/rust.dockerfile")
+            .image_mut("rust_base");
+    
+        object.volatile_docker_data.push(volatile_data);
+        object.docker_data.push(docker_data);
     }
 }

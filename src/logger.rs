@@ -2,7 +2,6 @@ use std::io::Write;
 use log::LevelFilter;
 use ansi_term::Colour;
 use serde::{de::Error, Deserialize, Deserializer, Serializer};
-use serde_json::Value;
 
 use std::thread;
 

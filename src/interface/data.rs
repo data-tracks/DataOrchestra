@@ -68,10 +68,8 @@ impl ToInternal<DockerData> for ExtDockerData {
     fn to_internal(self) -> DockerData {
         let mut data = DockerData::default();
 
-        if let Some(name) = self.name {
-            data.name = name;
-        }
-        
+        data.name = self.name;
+
         data.path = self.path;
 
         if let Some(destination) = self.destination {
@@ -93,7 +91,7 @@ impl ToInternal<DockerData> for ExtDockerData {
 /// External representation of the internal [`VolatileDockerData`] object
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtVolatileDockerData {
-    pub name: String,
+    pub name: Option<String>,
     pub file: PathBuf,
     pub data: Value
 }
@@ -102,7 +100,7 @@ impl Default for ExtVolatileDockerData {
     fn default() -> Self {
         ExtVolatileDockerData 
         { 
-            name: "".to_string(), 
+            name: None, 
             file: PathBuf::default(), 
             data: Value::Null 
         }

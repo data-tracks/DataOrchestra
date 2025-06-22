@@ -3,7 +3,7 @@ use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
-use crate::core::types::data::{DockerData, VolatileDockerData};
+use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
 use crate::shared::ToInternal;
 use crate::interface::general::General;
 use crate::core::adapters::ContainerBuilder;
@@ -11,7 +11,7 @@ use crate::core::object::Object;
 use crate::core::attach::attach_types::ToObject;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
-// and sending them further through a http request
+// and sending them further through an http request
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KafkaConsumer {
     #[serde(flatten)]
@@ -27,6 +27,7 @@ pub struct Arguments {
     /// Address (host:port) of kafka 
     #[serde(default = "default_consumer")]
     #[builder(default = "default_consumer()")]
+    #[builder(setter(into))]
     pub consumer: String,
     /// Group id of consumer
     #[builder(setter(into))]
@@ -92,16 +93,14 @@ impl ToObject for KafkaConsumer {
 
         object.graph.ignore = true;
 
-        object.docker_data.push(DockerData::new
-            (
-                "", 
-                "services/attachables/kafka_consumer", 
-                "/kafka_consumer", 
-                "/kafka_consumer/start.sh", 
-                None,
-                None
-            )
-        );
+        let docker_data = DockerDataBuilder::default()
+            .path("services/attachables/kafka_consumer")
+            .destination("/kafka_consumer")
+            .start("/kafka_consumer/start.sh")
+            .build()
+            .expect("Unable to build docker_data");
+
+        object.docker_data.push(docker_data);
 
         object.docker_container_builder.get_or_insert(ContainerBuilder::new());
 
@@ -112,21 +111,15 @@ impl ToObject for KafkaConsumer {
                 .image_mut("rust_base");
         }
 
-        let name = object.docker_container_builder
-            .as_ref()
-            .unwrap()
-            .get_name()
-            .unwrap();
-
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
-        object.docker_sftp_data.push(VolatileDockerData::new
-            (
-                name.to_owned(),
-                "/kafka_consumer/config.json".into(),
-                json
-            )
-        );
+        let volatile_data = VolatileDockerDataBuilder::default()
+            .file("/kafka_consumer/config.json")
+            .data(json)
+            .build()
+            .expect("Unable to build volatile data");
+
+        object.volatile_docker_data.push(volatile_data);
 
         object
     }

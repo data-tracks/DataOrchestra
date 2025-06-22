@@ -1,6 +1,6 @@
 use clap::Parser;
 use energy_store::{init_logger, Args};
-use log::{info, warn, error};
+use log::{info, warn};
 use rdkafka::{consumer::{CommitMode, Consumer, StreamConsumer}, message::Headers, ClientConfig, Message};
 use serde::{Deserialize, Serialize};
 use tokio_postgres::NoTls;

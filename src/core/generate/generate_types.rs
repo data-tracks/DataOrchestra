@@ -1,34 +1,26 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::types::data::DockerData;
+use crate::core::{object::Object, traits::Configurator};
 
 use super::types::sensor::Sensor;
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GeneratorType {
     Sensor
 }
 
-impl GeneratorType {
-    pub fn new(&self) -> GeneratorTypeConfig {
-        match self {
-            Self::Sensor => GeneratorTypeConfig::Sensor(Sensor::new())
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GeneratorTypeConfig {
     Sensor(Sensor)
 }
 
-impl GeneratorTypeConfig {
-    pub fn create(&self) -> DockerData {
+impl Configurator for GeneratorTypeConfig {
+    fn configure(&mut self, object: &mut Object) {
         match self {
-            Self::Sensor(ref sensor) => sensor.create()
+            GeneratorTypeConfig::Sensor(sensor) => sensor.configure(object),
         }
     }
 }
