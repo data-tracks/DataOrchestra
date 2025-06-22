@@ -1,7 +1,6 @@
-use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::{core::{attach::{attach_types::ToObject, types::kafka_consumer::KafkaConsumer}, object::Object, process::{process_types::ProcessTypeConfig, types::Kafka, Process}}, shared::ToInternal};
+use crate::{core::{attach::types::kafka_consumer::KafkaConsumer, object::Object, process::{process_types::ProcessTypeConfig, types::Kafka, Process}, traits::Creator}, shared::ToInternal};
 use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
 use super::{general::General, node::ExtNode};
 
@@ -33,7 +32,7 @@ impl ToInternal<(Process, Object, u16)> for API {
         let mut general = General::default(); 
         general.name = Some("kafka-api-consumer".to_string());
 
-        let consumer = consumer.to_object(&general);
+        let consumer = consumer.create(&general);
 
         let mut process = Process::default();
 

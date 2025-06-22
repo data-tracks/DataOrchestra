@@ -3,9 +3,9 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::Error;
 use serde_json::Value;
 use crate::core::adapters::portainer::portainer::Portainer;
-use crate::core::attach::attach_types::ToObject;
 use crate::core::config::Config;
 use crate::core::object::Object;
+use crate::core::traits::Creator;
 use crate::shared::{Amount, ToInternal, ToInternalVec};
 use super::api::API;
 use super::store::ExtStore;
@@ -62,25 +62,25 @@ impl ExtConfig {
         let mut attach_objects = Vec::new();
         for object in self.object.to_mut_ref_vec() {
             for config in object.general.attach_config.take().to_vec() {
-                attach_objects.push(config.to_object(&object.general));
+                attach_objects.push(config.create(&object.general));
             }
         }
 
         for store in self.store.to_mut_ref_vec() {
             for config in store.general.attach_config.take().to_vec() {
-                attach_objects.push(config.to_object(&store.general));
+                attach_objects.push(config.create(&store.general));
             }
         } 
 
         for process in self.store.to_mut_ref_vec() {
             for config in process.general.attach_config.take().to_vec() {
-                attach_objects.push(config.to_object(&process.general));
+                attach_objects.push(config.create(&process.general));
             }
         }
         
         for generate in self.generate.to_mut_ref_vec() {
             for config in generate.general.attach_config.take().to_vec() {
-                attach_objects.push(config.to_object(&generate.general));
+                attach_objects.push(config.create(&generate.general));
             }
         }
 

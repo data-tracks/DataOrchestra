@@ -2,13 +2,13 @@ use derive_builder::Builder;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
+use crate::core::traits::Creator;
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
 use crate::shared::ToInternal;
 use crate::interface::general::General;
 use crate::core::adapters::ContainerBuilder;
 use crate::core::object::Object;
-use crate::core::attach::attach_types::ToObject;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
 // and sending them further through an http request
@@ -77,8 +77,8 @@ impl Default for KafkaConsumer {
     }
 }
 
-impl ToObject for KafkaConsumer {
-    fn to_object(self, general: &General) -> Object {
+impl Creator<Object> for KafkaConsumer {
+    fn create(self, general: &General) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to
         let general = general.clone();

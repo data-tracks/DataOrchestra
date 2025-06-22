@@ -1,14 +1,13 @@
-use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
-use crate::logger::{serialize_levelfilter, deserialize_levelfilter};
-
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::adapters::ContainerBuilder;
 use crate::interface::general::General;
 use crate::core::object::Object;
-use crate::core::attach::attach_types::ToObject;
 use crate::shared::ToInternal;
+use crate::core::traits::Creator;
+use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
+use crate::logger::{serialize_levelfilter, deserialize_levelfilter};
 
 // The Kafka producer type. Is an attachable object capable of producing data to kafka topic(s)
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -66,8 +65,8 @@ impl Default for KafkaProducer {
     }
 }
 
-impl ToObject for KafkaProducer {
-    fn to_object(self, general: &General) -> Object {
+impl Creator<Object> for KafkaProducer {
+    fn create(self, general: &General) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to
         let general = general.clone();

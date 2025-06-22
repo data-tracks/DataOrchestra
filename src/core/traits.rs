@@ -1,3 +1,5 @@
+use crate::interface::general::General;
+
 use super::object::Object;
 
 pub trait Configurator {
@@ -5,5 +7,5 @@ pub trait Configurator {
 }
 
 pub trait Creator<T> {
-    fn create(self) -> T;
+    fn create(self, general: &General) -> T;
 }

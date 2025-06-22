@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::object::Object, interface::general::General};
+use crate::{core::{object::Object, traits::Creator}, interface::general::General};
 
 use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer};
 
@@ -27,15 +27,11 @@ impl Default for AttachTypeConfig {
     }
 }
 
-pub trait ToObject {
-    fn to_object(self, general: &General) -> Object;
-}
-
-impl ToObject for AttachTypeConfig {
-    fn to_object(self, general: &General) -> Object {
+impl Creator<Object> for AttachTypeConfig {
+    fn create(self, general: &General) ->  Object {
         match self {
-            AttachTypeConfig::KafkaConsumer(consumer) => consumer.to_object(general),
-            AttachTypeConfig::KafkaProducer(producer) => producer.to_object(general),
+            AttachTypeConfig::KafkaConsumer(consumer) => consumer.create(general),
+            AttachTypeConfig::KafkaProducer(producer) => producer.create(general),
         }
-    } 
+    }
 }
