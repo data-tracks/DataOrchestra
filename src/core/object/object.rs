@@ -2,9 +2,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
-use crate::core::adapters::docker::container::ContainerBuilder;
-use crate::core::adapters::docker::ComposeGroupBuilder;
-use crate::core::adapters::{ping, Container, ContainerType, Local, Run, Runner, Uploader};
+use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::types::data::{NodeData, VolatileDockerData};
 use crate::core::types::data::DockerData;
 use crate::shared::Spawner;
@@ -42,7 +40,7 @@ pub struct Object {
     // Data related to graph
     pub graph: Graph,
     // Docker builder for compose 
-    pub docker_group_builder: Option<ComposeGroupBuilder>,
+    pub docker_group_builder: Option<ComposeBuilder>,
     // Docker builder for container
     pub docker_container_builder: Option<ContainerBuilder>,
     // Docker manager. Manages containers for its object
@@ -90,7 +88,9 @@ impl Spawner for Object {
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move 
         if let Some(group) = self.docker_group_builder.take() {
             info!("Setting up docker compose");
-            let mut compose = group.build();
+            let mut compose = group
+                .build()
+                .expect("Unable to build compose");
             // If a node was specified, docker compose file needs to be uploaded to node
             if let Some(ref node) = self.node {
                 if let Some(ref ssh) = node.ssh {
@@ -101,14 +101,14 @@ impl Spawner for Object {
                     if let Err(error) = result {
                         error!("Unable to create docker/ folder | {}", error);
                     }
-                    let local_path = compose.compose.clone().unwrap(); 
-                    if let Some(file_name) = Path::new(compose.compose.as_ref().unwrap())
+                    let local_path = compose.config.compose.clone().unwrap(); 
+                    if let Some(file_name) = Path::new(compose.config.compose.as_ref().unwrap())
                             .file_name()
                             .and_then(|name| name.to_str()) 
                     {
-                        compose.compose = Some(format!("docker/{}", file_name));
+                        compose.config.compose = Some(format!("docker/{}", file_name));
                     }
-                    let result = ssh.upload_file(local_path, compose.compose.as_ref().unwrap());
+                    let result = ssh.upload_file(local_path, compose.config.compose.as_ref().unwrap());
                     if let Err(error) = result {
                         panic!("Unable to upload compose file {}", error);
                     }
@@ -125,11 +125,12 @@ impl Spawner for Object {
             self.docker_manager = ContainerType::Compose(compose);
         }
         // Take ownership of ContainerBuilder out of object to prevent partial move
-        else if let Some(container) = self.docker_container_builder.take() {
+        else if let Some(mut container) = self.docker_container_builder.take() {
             info!("Setting up docker container");
             let mut container = container
                 .publish(22)
-                .build();
+                .build()
+                .expect("Unable to build container");
 
             // If a node was specified, dockerfile needs to be uploaded to node
             if let Some(ref node) = self.node {
@@ -508,5 +509,9 @@ impl Object {
         }
 
         Ok(())
+    }
+
+    pub fn docker_group_builder(&self) -> Option<&ComposeBuilder> {
+        self.docker_group_builder.as_ref()
     }
 }

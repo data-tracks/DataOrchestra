@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::docker::container::ContainerBuilder;
+use crate::core::{store::Store, traits::Configurator};
 
 pub fn default_username() -> String {
     String::from("mongo")
@@ -20,28 +20,24 @@ pub struct MongoDB {
     password: String,
 }
 
-impl MongoDB {
-    pub fn new() -> MongoDB {
+impl Default for MongoDB {
+    fn default() -> MongoDB {
         MongoDB {  
             username: default_username(),
             password: default_password()
         }
     }
-   
-    /// Sets up the docker [`ContainerBuilder`] with the configuration specific to the MongoDB
-    /// application
-    pub fn setup_container(&mut self, docker: &mut ContainerBuilder) {
-        docker.image_mut("mongo:4.4.6");
-        docker
-            .try_name_mut("mongodb")
-            .publish_map_mut(27017, 27017)
-            .env_var_mut("MONGO_INITDB_ROOT_USERNAME", self.username.clone())
-            .env_var_mut("MONGO_INITDB_ROOT_PASSWORD", self.password.clone());
-    }
+}
 
-    pub fn mount_data(&self, mounts: &Vec<String>, mut docker: &mut ContainerBuilder) {
-        for mount in mounts {
-            docker = docker.volume_mut(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
-        }
+impl Configurator<Store> for MongoDB {
+    fn configure(&mut self, parent: &mut Store) {
+        let container = parent.object.docker_container_builder.get_or_insert_default();
+
+        container 
+            .image("mongo:4.4.6")
+            .try_name("mongodb")
+            .publish_map(27017, 27017)
+            .environment("MONGO_INITDB_ROOT_USERNAME", &self.username)
+            .environment("MONGO_INITDB_ROOT_PASSWORD", &self.password);
     }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{object::Object, process::process_types::ProcessType, traits::Configurator, types::data::{DockerDataBuilder, VolatileDockerDataBuilder}};
+use crate::core::{generate::Generate, process::process_types::ProcessType, traits::Configurator, types::data::{DockerDataBuilder, VolatileDockerDataBuilder}};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sensor {
@@ -59,8 +59,8 @@ impl Sensor {
     }
 }
 
-impl Configurator for Sensor {
-    fn configure(&mut self, object: &mut Object) {
+impl Configurator<Generate> for Sensor {
+    fn configure(&mut self, parent: &mut Generate) {
         let docker_data = DockerDataBuilder::default()
             .path("templates/generators/sensor")
             .destination("/sensor")
@@ -76,14 +76,14 @@ impl Configurator for Sensor {
             .build()
             .expect("Unable to build volatile sensor data");
 
-        let docker = object.docker_container_builder.get_or_insert_default();
+        let docker = parent.object.docker_container_builder.get_or_insert_default();
 
         docker
-            .try_name_mut("sensor")
-            .dockerfile_mut("images/rust.dockerfile")
-            .image_mut("rust_base");
+            .try_name("sensor")
+            .dockerfile("images/rust.dockerfile")
+            .image("rust_base");
     
-        object.volatile_docker_data.push(volatile_data);
-        object.docker_data.push(docker_data);
+        parent.object.volatile_docker_data.push(volatile_data);
+        parent.object.docker_data.push(docker_data);
     }
 }

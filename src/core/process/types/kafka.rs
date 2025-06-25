@@ -2,9 +2,8 @@ use std::net::{IpAddr, Ipv4Addr};
 
 use log::{info, error};
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::docker::ComposeGroupBuilder;
 use crate::core::adapters::Runner;
-use crate::core::object::Object;
+use crate::core::process::Process;
 use crate::core::traits::Configurator;
 
 
@@ -21,19 +20,15 @@ pub fn default_host() -> IpAddr {
     IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
-impl Configurator for Kafka {
-    fn configure(&mut self, object: &mut Object) {
-        self.host = object.node.as_ref()
+impl Configurator<Process> for Kafka {
+    fn configure(&mut self, parent: &mut Process) {
+        self.host = parent.object.node.as_ref()
             .map(|n| n.host.to_owned())
             .unwrap_or(default_host());
 
-        let compose = ComposeGroupBuilder::new()
+        parent.object.docker_group_builder.as_mut().unwrap()
             .compose("images/compose-kafka.yaml")
-            .interpolation_variable("KAFKA_HOST", self.host.to_string())
-            .name("kafka-broker")
-            .name("kafka-rest");
-
-        object.docker_group_builder = Some(compose);
+            .interpolation_variable("KAFKA_HOST", self.host.to_string());
     }
 }
 

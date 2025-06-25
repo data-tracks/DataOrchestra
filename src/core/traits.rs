@@ -1,11 +1,13 @@
 use crate::interface::general::General;
 
-use super::object::Object;
-
-pub trait Configurator {
-    fn configure(&mut self, object: &mut Object);
+pub trait Configurator<T> {
+    fn configure(&mut self, parent: &mut T);
 }
 
 pub trait Creator<T> {
     fn create(self, general: &General) -> T;
+}
+
+pub trait Checkable<T> {
+    fn check(&self) -> Result<T, String>;
 }

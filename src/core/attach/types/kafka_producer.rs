@@ -90,14 +90,14 @@ impl Creator<Object> for KafkaProducer {
 
         object.docker_data.push(docker_data);
         
-        object.docker_container_builder.get_or_insert(ContainerBuilder::new());
+        object.docker_container_builder.get_or_insert_default();
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_name_mut("kafka-producer")
-                .dockerfile_mut("images/rust.dockerfile")
-                .image_mut("rust_base")
-                .publish_mut(self.args.api_port);
+                .try_name("kafka-producer")
+                .dockerfile("images/rust.dockerfile")
+                .image("rust_base")
+                .publish(self.args.api_port);
         }
 
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");

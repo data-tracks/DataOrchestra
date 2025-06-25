@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::{object::Object, traits::Configurator};
+use crate::core::traits::Configurator;
 
-use super::types::sensor::Sensor;
+use super::{types::sensor::Sensor, Generate};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,10 +17,10 @@ pub enum GeneratorTypeConfig {
     Sensor(Sensor)
 }
 
-impl Configurator for GeneratorTypeConfig {
-    fn configure(&mut self, object: &mut Object) {
+impl Configurator<Generate> for GeneratorTypeConfig {
+    fn configure(&mut self, parent: &mut Generate) {
         match self {
-            GeneratorTypeConfig::Sensor(sensor) => sensor.configure(object),
+            GeneratorTypeConfig::Sensor(sensor) => sensor.configure(parent),
         }
     }
 }

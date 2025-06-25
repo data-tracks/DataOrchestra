@@ -39,7 +39,7 @@ impl ToInternal<Object> for ExtObject {
 
         // Set Container(s) builder
         if let Some(docker) = self.general.docker {
-            if docker.compose.is_some() || docker.names.is_some() {
+            if docker.compose.is_some() {
                 object.docker_group_builder = Some(docker.to_internal());
             }
             else 

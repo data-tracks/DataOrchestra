@@ -1,5 +1,5 @@
 use log::info;
-use crate::core::adapters::ContainerBuilder;
+use crate::core::traits::Configurator;
 use crate::shared::traits::Spawner;
 
 use super::Store;
@@ -9,21 +9,18 @@ impl Spawner for Store {
         if let Some(db_type) = &self.db_type {
             if self.config.is_none() {
                 info!("No config given for database type. Loading default config");
-                self.config = Some(db_type.new());
+                self.config = Some(db_type.get_default());
             }
         }
 
         // Setup container based on specified config. Default setup if only db_type was provided,
         // otherwise custom
-        if let Some(db_config) = self.config.as_mut() {
-            let mut container = self.object
+        if let Some(mut db_config) = self.config.take() {
+            let _ = self.object
                 .docker_container_builder
-                .get_or_insert_with(ContainerBuilder::new);
+                .get_or_insert_default();
 
-            db_config.setup_container(&mut container);
-            if self.schema.len() > 0 {
-                db_config.mount_data(&self.schema, &mut container);
-            }
+            db_config.configure(self);
         }
 
         self.object.build();
@@ -31,7 +28,6 @@ impl Spawner for Store {
 
     fn setup(&mut self) {
         self.object.setup();
-
     }
 
     fn deploy(&mut self) {

@@ -1,9 +1,9 @@
-use super::{ComposeGroup, Container, Run};
+use super::{Compose, Container, Run};
 
 #[derive(Debug)]
 pub enum ContainerType {
     Empty,
-    Compose(ComposeGroup),
+    Compose(Compose),
     Container(Container)
 }
 

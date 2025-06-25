@@ -9,7 +9,7 @@ use crate::core::adapters::{async_ping_node, docker, StateTypes};
 use super::state::State;
 
 pub async fn start_api(state: Arc<State>) {
-    let api_port = state.get_config().api_port.clone();
+    let api_port = state.get_config().api_port;
 
     let _ = HttpServer::new(move || {
         App::new()

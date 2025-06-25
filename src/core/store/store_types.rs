@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::docker::container::ContainerBuilder;
-use super::types::{MongoDB, Polypheny, PostGres, Redis};
+use crate::core::traits::Configurator;
+use super::{types::{MongoDB, Polypheny, PostGres, Redis}, Store};
 
 /// Store Type. Represents available storage types 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -23,33 +23,23 @@ pub enum StoreTypeConfig {
 }
 
 impl StoreType {
-    pub fn new(&self) -> StoreTypeConfig {
+    pub fn get_default(&self) -> StoreTypeConfig {
         match self {
-            StoreType::PostGres => StoreTypeConfig::PostGres(PostGres::new()),
-            StoreType::Redis => StoreTypeConfig::Redis(Redis::new()),
-            StoreType::MongoDB => StoreTypeConfig::MongoDB(MongoDB::new()),
-            StoreType::Polypheny => StoreTypeConfig::Polypheny(Polypheny::new())
+            StoreType::PostGres => StoreTypeConfig::PostGres(PostGres::default()),
+            StoreType::Redis => StoreTypeConfig::Redis(Redis::default()),
+            StoreType::MongoDB => StoreTypeConfig::MongoDB(MongoDB::default()),
+            StoreType::Polypheny => StoreTypeConfig::Polypheny(Polypheny::default())
         } 
     }
 }
 
-impl StoreTypeConfig {
-    /// Setup the given docker container with config of specified [`StoreType`]
-    pub fn setup_container(&mut self, docker: &mut ContainerBuilder) {
+impl Configurator<Store> for StoreTypeConfig {
+    fn configure(&mut self, parent: &mut Store) {
         match self {
-            StoreTypeConfig::PostGres(postgres) => postgres.setup_container(docker),
-            StoreTypeConfig::Redis(redis) => redis.setup_container(docker),
-            StoreTypeConfig::MongoDB(mongodb) => mongodb.setup_container(docker),
-            StoreTypeConfig::Polypheny(polypheny) => polypheny.setup_container(docker),
-        };
-    }
-
-    pub fn mount_data(&self, data: &Vec<String>, docker: &mut ContainerBuilder) {
-        match self {
-            StoreTypeConfig::PostGres(postgres) => postgres.mount_data(data, docker),
-            StoreTypeConfig::MongoDB(mongodb) => mongodb.mount_data(data, docker),
-            StoreTypeConfig::Redis(_redis) => panic!("No mount data for redis"),
-            StoreTypeConfig::Polypheny(_polypheny) => panic!("No mount data for polypheny")
+            StoreTypeConfig::PostGres(postgres) => postgres.configure(parent),
+            StoreTypeConfig::Redis(redis) => redis.configure(parent),
+            StoreTypeConfig::MongoDB(mongodb) => mongodb.configure(parent),
+            StoreTypeConfig::Polypheny(polypheny) => polypheny.configure(parent),
         };
     }
 }

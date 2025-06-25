@@ -14,8 +14,8 @@ impl Spawner for Generate {
 
         // Setup container based on specified config. Default setup if only process_type was provided,
         // otherwise custom
-        if let Some(generate_config) = self.config.as_mut() {
-            generate_config.configure(&mut self.object);
+        if let Some(mut generate_config) = self.config.take() {
+            generate_config.configure(self);
         }
 
         self.object.build(); 

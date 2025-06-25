@@ -102,13 +102,13 @@ impl Creator<Object> for KafkaConsumer {
 
         object.docker_data.push(docker_data);
 
-        object.docker_container_builder.get_or_insert(ContainerBuilder::new());
+        object.docker_container_builder.get_or_insert_default();
 
         if let Some(builder) = object.docker_container_builder.as_mut() {
             builder
-                .try_name_mut("kafka-consumer")
-                .dockerfile_mut("images/rust.dockerfile")
-                .image_mut("rust_base");
+                .try_name("kafka-consumer")
+                .dockerfile("images/rust.dockerfile")
+                .image("rust_base");
         }
 
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");

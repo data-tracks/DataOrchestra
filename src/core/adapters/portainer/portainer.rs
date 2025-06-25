@@ -141,7 +141,8 @@ impl Portainer {
         object.name = "portainer-agent".to_string();
         object.node = Some(node.to_owned());
 
-        let container = ContainerBuilder::new()
+        let mut container = ContainerBuilder::default();
+        container
             .ignore_ssh(true)
             .publish_map(9001, 9001)
             .name("portainer_agent")

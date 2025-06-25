@@ -8,7 +8,8 @@ mod tests {
     fn docker_network() {
         let container = ContainerBuilder::default()
             .network("docker_network")
-            .build();
+            .build()
+            .expect("Unable to build container");
 
         let command = container.config.parse_options(); 
         assert!(command.contains("--network=docker_network"), "Expected docker network");
@@ -18,7 +19,8 @@ mod tests {
     fn docker_name() {
         let container = ContainerBuilder::default()
             .name("rust")
-            .build();
+            .build()
+            .expect("Unable to build container");
 
         let command = container.config.parse_options();
         assert!(command.contains("--name=rust"), "Expected docker name");
@@ -28,7 +30,8 @@ mod tests {
     fn docker_expose() {
         let container = ContainerBuilder::default()
             .expose(true)
-            .build();
+            .build()
+            .expect("Unable to build container");
         
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
@@ -40,7 +43,8 @@ mod tests {
     fn docker_publish_all() {
         let container = ContainerBuilder::default()
             .publish_all(true)
-            .build();
+            .build()
+            .expect("Unable to build container");
         
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
@@ -56,10 +60,12 @@ mod tests {
         let mut builder = ContainerBuilder::default();
 
         for port in ports.iter() {
-            builder.publish_mut(port.to_owned());
+            builder.publish(port.to_owned());
         }
 
-        let container = builder.build();
+        let container = builder
+            .build()
+            .expect("Unable to build container");
         
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
@@ -80,10 +86,14 @@ mod tests {
         let mut builder = ContainerBuilder::default();
 
         for (left, right) in map.clone() {
-            builder.publish_map_mut(left, right);
+            builder.publish_map(left, right);
         }
 
-        let container = builder.build();
+        let container = builder
+            .build()
+            .expect("Unable to build container");
+
+        dbg!(&container);
 
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
@@ -104,10 +114,12 @@ mod tests {
         let mut builder = ContainerBuilder::default();
 
         for (left, right) in map.clone() {
-            builder.env_var_mut(left, right);
+            builder.environment(left, right);
         }
 
-        let container = builder.build();
+        let container = builder
+            .build()
+            .expect("Unable to build container");
 
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
@@ -128,10 +140,12 @@ mod tests {
         let mut builder = ContainerBuilder::default();
 
         for volume in volumes.clone() {
-            builder.volume_mut(volume);
+            builder.volume(volume);
         }
 
-        let container = builder.build();
+        let container = builder
+            .build()
+            .expect("Unable to build container");
 
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();
@@ -156,10 +170,12 @@ mod tests {
         let mut builder = ContainerBuilder::default();
 
         for mount in mounts.clone() {
-            builder.mount_mut(mount);
+            builder.mount(mount);
         }
 
-        let container = builder.build();
+        let container = builder
+            .build()
+            .expect("Unable to build container");
 
         let command = container.config.parse_options();
         let command = command.split_whitespace().collect::<Vec<_>>();

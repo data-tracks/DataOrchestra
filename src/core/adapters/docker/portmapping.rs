@@ -1,19 +1,22 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PortMapping {
-    host: u16,
+    external: u16,
     internal: u16
 }
 
 impl PortMapping {
-    pub fn new(host: u16, internal: u16) -> Self {
-        PortMapping { host, internal }
+    /// Add new port mapping of the type internal:internal
+    pub fn new(external: u16, internal: u16) -> Self {
+        PortMapping { external, internal }
     }
 
-    pub fn get_host(&self) -> u16 {
-        self.host.clone()
+    /// Get host port
+    pub fn get_external(&self) -> u16 {
+        self.external
     }
 
+    /// Get internal port
     pub fn get_internal(&self) -> u16 {
-        self.internal.clone()
+        self.internal
     }
 }

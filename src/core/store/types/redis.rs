@@ -1,20 +1,24 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::docker::container::ContainerBuilder;
+use crate::core::{store::Store, traits::Configurator};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "redis")]
 pub struct Redis {
 }
 
-impl Redis {
-    pub fn new() -> Redis {
+impl Default for Redis {
+    fn default() -> Redis {
         Redis {  }
     }
+}
 
-    pub fn setup_container(&self, docker: &mut ContainerBuilder) {
-        docker
-            .try_name_mut("redis")
-            .image_mut("redis");
+impl Configurator<Store> for Redis {
+    fn configure(&mut self, parent: &mut Store) {
+        let container = parent.object.docker_container_builder.get_or_insert_default();
+
+        container 
+            .try_name("redis")
+            .image("redis");
     }
 }

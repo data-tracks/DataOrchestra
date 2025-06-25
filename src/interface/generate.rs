@@ -55,7 +55,7 @@ impl ToInternalVec<Generate> for ExtGenerate {
             }
 
             if let Some(mut docker) = self.general.docker.clone() {
-                if docker.compose.is_some() || docker.names.is_some() {
+                if docker.compose.is_some() {
                     generate.object.docker_group_builder = Some(docker.to_internal());
                 }
                 else 

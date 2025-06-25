@@ -1,11 +1,11 @@
 use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
-use log::{debug, error};
+use log::{debug, error, warn};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::Runner;
 use crate::core::adapters::{Local, OsSystems};
-use super::{ContainerConfig, Mount, PortMapping, RestartTypes};
+use super::{ContainerConfig, PortMapping};
 use super::Run;
 
 /// The docker `Container` type. Represents the general information tied to the creation of a
@@ -31,12 +31,6 @@ pub struct Container {
     pub runner: Box<dyn Runner + Send + Sync>
 }
 
-#[derive(Debug)]
-pub struct ContainerBuilder {
-    ignore_ssh: bool,
-    containerconfig: ContainerConfig,
-}
-
 impl Default for Container {
     fn default() -> Self {
         Container 
@@ -52,214 +46,6 @@ impl Default for Container {
         } 
     }
 }
-
-impl Default for ContainerBuilder {
-    fn default() -> Self {
-        ContainerBuilder 
-        { 
-            ignore_ssh: false,
-            containerconfig: ContainerConfig::default() 
-        }
-    }
-}
-
-impl ContainerBuilder {
-    pub fn get_name(&self) -> Option<&String> {
-        self.containerconfig.name.as_ref()
-    }
-}
-
-impl ContainerBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn ignore_ssh(mut self, ignore_ssh: bool) -> Self {
-        self.ignore_ssh = ignore_ssh;
-        self
-    }
-
-    pub fn ignore_ssh_mut(&mut self, ignore_ssh: bool) -> &mut Self {
-        self.ignore_ssh = ignore_ssh;
-        self
-    }
-
-    pub fn name(mut self, name: impl Into<String>) -> Self {
-        self.containerconfig.name = Some(name.into());
-        self
-    }
-
-    pub fn name_mut(&mut self, name: impl Into<String>) -> &mut Self {
-        self.containerconfig.name = Some(name.into());
-        self
-    }
-
-    pub fn try_name(mut self, name: impl Into<String>) -> Self {
-        if self.containerconfig.name.is_none() {
-            self.containerconfig.name = Some(name.into());
-        }
-        self
-    }
-
-    pub fn try_name_mut(&mut self, name: impl Into<String>) -> &mut Self {
-        if self.containerconfig.name.is_none() {
-            self.containerconfig.name = Some(name.into());
-        }
-        self
-    }
-
-    pub fn network(mut self, network: impl Into<String>) -> Self {
-        self.containerconfig.network = network.into();
-        self
-    }
-
-    pub fn network_mut(&mut self, network: impl Into<String>) -> &mut Self {
-        self.containerconfig.network = network.into();
-        self
-    }
-
-    pub fn env_var(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.containerconfig.enviroment.insert(key.into(), value.into());
-        self
-    }
-
-    pub fn env_var_mut(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        self.containerconfig.enviroment.insert(key.into(), value.into());
-        self
-    }
-
-    pub fn volume(mut self, mount: impl Into<String>) -> Self {
-        self.containerconfig.volume.push(mount.into());
-        self
-    }
-
-    pub fn volume_mut(&mut self, mount: impl Into<String>) -> &mut Self {
-        self.containerconfig.volume.push(mount.into());
-        self
-    }
-
-    pub fn publish(mut self, port: u16) -> Self {
-        if !(port == 22 && self.ignore_ssh) {
-            self.containerconfig.publish.push(port);
-        }
-        self
-    }
-
-    pub fn publish_mut(&mut self, port: u16) -> &mut Self {
-        if !(port == 22 && self.ignore_ssh) {
-            self.containerconfig.publish.push(port);
-        }
-        self
-    }
-
-    pub fn publish_map(mut self, left: u16, right: u16) -> Self {
-        if !(right == 22 && self.ignore_ssh) {
-            self.containerconfig.publish_map.push(PortMapping::new(left, right));
-        }
-        self
-    }
-
-    pub fn publish_map_mut(&mut self, left: u16, right: u16) -> &mut Self {
-        if !(right == 22 && self.ignore_ssh) {
-            self.containerconfig.publish_map.push(PortMapping::new(left, right));
-        }
-        self
-    }
-
-    pub fn publish_all(mut self, publish_all: bool) -> Self {
-        self.containerconfig.publish_all = publish_all;
-        self
-    }
-
-    pub fn publish_all_mut(&mut self, publish_all: bool) -> &mut Self {
-        self.containerconfig.publish_all = publish_all;
-        self
-    }
-
-    pub fn expose(mut self, expose: bool) -> Self {
-        self.containerconfig.expose = expose;
-        self
-    }
-
-    pub fn expose_mut(&mut self, expose: bool) -> &mut Self {
-        self.containerconfig.expose = expose;
-        self
-   }
-
-    pub fn mount(mut self, mount: Mount) -> Self {
-        self.containerconfig.mount.push(mount);
-        self
-    }
-
-    pub fn mount_mut(&mut self, mount: Mount) -> &mut Self {
-        self.containerconfig.mount.push(mount);
-        self
-    }
-
-    pub fn restart(mut self, restart: RestartTypes) -> Self {
-        self.containerconfig.restart = restart;
-        self
-    }
-
-    pub fn restart_mut(&mut self, restart: RestartTypes) -> &mut Self {
-        self.containerconfig.restart = restart;
-        self
-    }
-
-    pub fn compose(mut self, compose: impl Into<String>) -> Self {
-        self.containerconfig.compose = Some(compose.into());
-        self
-    }
-
-    pub fn compose_mut(&mut self, compose: impl Into<String>) -> &mut Self {
-        self.containerconfig.compose = Some(compose.into());
-        self
-    }
-
-    pub fn image(mut self, image: impl Into<String>) -> Self {
-        self.containerconfig.image = Some(image.into());
-        self
-    }
-    
-    pub fn image_mut(&mut self, image: impl Into<String>) -> &mut Self {
-        self.containerconfig.image = Some(image.into());
-        self
-    }
-
-    pub fn dockerfile(mut self, dockerfile: impl Into<String>) -> Self {
-        self.containerconfig.dockerfile = Some(dockerfile.into());
-        self
-    }
-
-    pub fn dockerfile_mut(&mut self, dockerfile: impl Into<String>) -> &mut Self {
-        self.containerconfig.dockerfile = Some(dockerfile.into());
-        self
-    }
-
-    pub fn build_arg(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.containerconfig.build_args.insert(key.into(), value.into());
-        self
-    }
-
-    pub fn build_arg_mut(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        self.containerconfig.build_args.insert(key.into(), value.into());
-        self
-    }
-
-    pub fn build(self) -> Container {
-        Container 
-        {
-            id: None,
-            ip: None,
-            os: None,
-            config: self.containerconfig,
-            is_running: false,
-            publish_ports: Vec::new(),
-            ssh: None,
-            runner: Box::new(Local::new()) 
-        }
-    }
-} 
 
 impl Container {
     pub fn new(config: ContainerConfig) -> Self {
@@ -290,23 +76,23 @@ impl Container {
     /// Get the internal port mapped to the `host` port
     pub fn get_internal_port(&self, host: u16) -> Option<u16> {
         for portmap in &self.publish_ports {
-            if portmap.get_host() == host {
+            if portmap.get_external() == host {
                 return Some(portmap.get_internal());
             }
         };
 
-        return None;
+        None
     }
    
     /// Get the host port mapped to the `internal` port
     pub fn get_external_port(&self, internal: u16) -> Option<u16> {
         for portmap in &self.publish_ports {
             if portmap.get_internal() == internal {
-                return Some(portmap.get_host());
+                return Some(portmap.get_external());
             }
         };
 
-        return None;
+        None
     }
 
     /// Add port mapping of type `external`:`internal`
@@ -342,14 +128,7 @@ impl Run for Container {
 
     /// Run docker container using a dockerfile or image
     fn run(&mut self) -> Result<(), String> {
-        // Build and start container
-        if self.config.dockerfile.is_some() {
-            let _ = self.build_from_dockerfile().map_err(|err| panic!("{}", err));
-        }
-
-        if self.config.image.is_some() {
-            let _ = self.build_from_image().map_err(|err| panic!("{}", err));
-        }
+        self.create();
 
         if let Some(id) = self.id.as_ref() {
             let result = super::api::poll_container(id, 30, &*self.runner);
@@ -363,6 +142,25 @@ impl Run for Container {
 
         self.is_running = true;
 
+        self.load(); 
+
+        Ok(())     
+    }
+}
+
+impl Container {
+    pub fn create(&mut self) {
+        // Build and start container
+        if self.config.dockerfile.is_some() {
+            let _ = self.build_from_dockerfile().map_err(|err| panic!("{}", err));
+        }
+
+        if self.config.image.is_some() {
+            let _ = self.build_from_image().map_err(|err| panic!("{}", err));
+        }
+    }
+
+    pub fn load(&mut self) {
         let result = self.load_name();
         if let Err(error) = result {
             error!("Unable to get name of container | {}", error);
@@ -386,16 +184,17 @@ impl Run for Container {
         } 
         
         // Install ssh server
-        let result = self.install_ssh();
-        if let Err(error) = result {
-            error!("Unable to install ssh server on container {} | {}", self.config.name.as_ref().unwrap(), error);
+        if self.get_ssh_port().is_some() {
+            let result = self.install_ssh();
+            if let Err(error) = result {
+                error!("Unable to install ssh server on container {} | {}", self.config.name.as_ref().unwrap(), error);
+            }
         }
-
-        Ok(())     
+        else {
+            warn!("No ssh port exposed for {}. Additional functionality is lost. Consider adding the ssh port 22 to the published ports", self.config.name.as_ref().unwrap()); 
+        }
     }
-}
 
-impl Container {
     /// Build dockerfile
     fn build_from_dockerfile(&mut self) -> Result<(), String> {
         if let (Some(dockerfile), Some(image)) = (&self.config.dockerfile, &self.config.image) {
@@ -411,7 +210,7 @@ impl Container {
             self.runner.exec(format!("docker build -f {} {building_args} -t {} .", dockerfile, image))?;
         }
         else {
-            return Err(format!("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} "));
+            return Err("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} ".to_string());
         }
 
         Ok(())
@@ -542,8 +341,7 @@ impl Container {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
-    use crate::core::adapters::{Run, Runner};
-    use super::ContainerBuilder;
+    use crate::core::adapters::{ContainerBuilder, Run, Runner};
 
     #[derive(Debug, Clone)]
     pub struct DummyRunner {
@@ -594,7 +392,8 @@ mod tests {
 
         let mut container = ContainerBuilder::default()
             .name("rust")
-            .build();
+            .build()
+            .expect("Unable to build container");
 
         container.runner = dummy.to_box_runner();
 
@@ -609,7 +408,8 @@ mod tests {
         let mut container = ContainerBuilder::default()
             .dockerfile("dockerfile")
             .name("rust")
-            .build();
+            .build()
+            .expect("Unable to build container");
 
         container.runner = dummy.to_box_runner();
 

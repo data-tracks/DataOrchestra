@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::docker::{container::ContainerBuilder, ComposeGroupBuilder};
+use crate::core::adapters::{ComposeBuilder, ContainerBuilder};
 use crate::shared::{traits::ToInternal, Amount};
 
 
@@ -24,7 +24,6 @@ pub struct ExtDocker {
     pub dockerfile: Option<String>,
     pub build_args: Option<HashMap<String, String>>,
     pub compose: Option<String>,
-    pub names: Option<Vec<String>>,
     #[serde(default)]
     pub interpolation_variables: HashMap<String, String>
 }
@@ -42,27 +41,20 @@ impl Default for ExtDocker {
             dockerfile: None, 
             build_args: None, 
             compose: None, 
-            names: None, 
             interpolation_variables: HashMap::new() 
         }
     }
 }
 
-impl ToInternal<ComposeGroupBuilder> for ExtDocker {
-    fn to_internal(self) -> ComposeGroupBuilder {
-        let mut builder = ComposeGroupBuilder::new();
+impl ToInternal<ComposeBuilder> for ExtDocker {
+    fn to_internal(self) -> ComposeBuilder {
+        let mut builder = ComposeBuilder::default();
         if let Some(compose) = self.compose {
-            builder.compose_mut(compose);
+            builder.compose(compose);
         }
 
-        if let Some(names) = self.names {
-            for name in names {
-                builder.name_mut(name);
-            }
-        }
-        
         for (key, value) in self.interpolation_variables {
-            builder.interpolation_variable_mut(key, value);
+            builder.interpolation_variable(key, value);
         }
 
         builder
@@ -71,36 +63,36 @@ impl ToInternal<ComposeGroupBuilder> for ExtDocker {
 
 impl ToInternal<ContainerBuilder> for ExtDocker {
     fn to_internal(self) -> ContainerBuilder {
-        let mut builder = ContainerBuilder::new();
+        let mut builder = ContainerBuilder::default();
         
         if let Some(name) = self.name {
-            builder.name_mut(name);
+            builder.name(name);
         }
         if let Some(image) = self.image {
-            builder.image_mut(image);
+            builder.image(image);
         }
         if let Some(dockerfile) = self.dockerfile {
-            builder.dockerfile_mut(dockerfile);
+            builder.dockerfile(dockerfile);
         }
         if let Some(build_args) = self.build_args {
             for (key, value) in build_args {
-                builder.build_arg_mut(key, value);
+                builder.build_arg(key, value);
             }
         }
         if let Some(network) = self.network {
-            builder.network_mut(network);
+            builder.network(network);
         }
         if let Some(env) = self.enviroment {
             for (key, value) in env {
-                builder.env_var_mut(key, value);
+                builder.environment(key, value);
             }
         }
 
         for mount in self.mount.to_vec() {
-            builder.volume_mut(mount);
+            builder.volume(mount);
         }
 
-        builder.publish_all_mut(self.publish_all); 
+        builder.publish_all(self.publish_all); 
 
         builder
     }
