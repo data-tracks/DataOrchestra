@@ -12,6 +12,8 @@ use super::Run;
 /// docker container.
 #[derive(Debug)]
 pub struct Container {
+    /// Container config
+    pub config: ContainerConfig,
     /// Id of container
     pub id: Option<String>,
     /// Ip of container
@@ -25,8 +27,6 @@ pub struct Container {
     pub is_running: bool,
     /// Ssh client connected to container
     pub ssh: Option<Ssh>,
-    /// Container config
-    pub config: ContainerConfig,
     /// Local or remote command runner 
     pub runner: Box<dyn Runner + Send + Sync>
 }

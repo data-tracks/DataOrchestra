@@ -1,7 +1,6 @@
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::ContainerBuilder;
 use crate::interface::general::General;
 use crate::core::object::Object;
 use crate::shared::ToInternal;
