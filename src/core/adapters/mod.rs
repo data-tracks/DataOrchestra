@@ -21,3 +21,6 @@ pub use local::*;
 
 pub mod heartbeats;
 pub use heartbeats::*;
+
+pub mod tmux;
+pub use tmux::*;
