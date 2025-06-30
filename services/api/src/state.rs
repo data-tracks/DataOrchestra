@@ -1,6 +1,8 @@
 use std::sync::RwLock;
 
-use crate::{api::api::BroadcastMessage, core::{config::Config, generate::Generate, object::Object, process::Process, store::Store}, shared::Arguments};
+use data_orchestra::{core::{config::Config, generate::Generate, object::Object, process::Process, store::Store}, shared::Arguments};
+use serde::{Deserialize, Serialize};
+
 
 /// The state object. Represents global state used by the orchestrator api to manange and hold
 /// data.
@@ -11,6 +13,18 @@ pub struct State {
     config: Config,
     /// CLI arguments
     args: Arguments
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State { messages: RwLock::new(Vec::new()), config: Config::default(), args: Arguments::default() }
+    } 
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct BroadcastMessage {
+    pub from: String,
+    pub message: String
 }
 
 impl State {

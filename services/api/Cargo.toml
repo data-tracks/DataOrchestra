@@ -1,11 +1,9 @@
 [package]
-name = "data_orchestra"
-
+name = "api"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# Logger
 log = "0.4"
 
 # Console argument parser
@@ -44,5 +42,4 @@ tracing-appender = "0.2"
 
 thiserror = "2.0.12"
 
-[dev-dependencies]
-rstest = "0.25.0"
+data_orchestra = { path = "../../../DataOrchestra/" }

@@ -38,7 +38,7 @@ impl ProcessType {
 }
 
 /// Configuration for process types in [`ProcessType`]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProcessTypeConfig {
     Flink(Flink),

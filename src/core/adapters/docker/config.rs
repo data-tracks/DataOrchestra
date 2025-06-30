@@ -27,7 +27,7 @@ pub struct ContainerConfig {
     #[builder(setter(each(name = "mount", into)), default)]
     pub mounts: Vec<Mount>,
     /// Published ports
-    #[builder(setter(each(name = "publish")), default)]
+    #[builder(setter(custom), default)]
     pub publishes: Vec<u16>,
     /// Published mapped ports `external`:`internal`
     #[builder(setter(custom), default)]
@@ -76,6 +76,14 @@ impl ContainerBuilder {
         self
     }
 
+    pub fn publish(&mut self, internal: u16) -> &mut Self {
+        if self.ignore_ssh.is_none() || self.ignore_ssh.is_some_and(|ignore| !ignore) {
+            let vec = self.publishes.get_or_insert_default();
+            vec.push(internal);
+        }
+        self
+    }
+
     pub fn build_arg(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
         let hashmap = self.build_args.get_or_insert_default();
         hashmap.insert(key.into(), value.into());
@@ -119,7 +127,7 @@ impl ContainerConfig {
 
         // Parse name variable
         if let Some(ref name) = self.name {
-            command = format!("{command} --name={}", name);
+            command = format!("{command} --name={name}");
         }
 
         // Parse expose all
@@ -134,7 +142,7 @@ impl ContainerConfig {
         else {
             // Parse published ports
             for port in self.publishes.iter() {
-           command = format!("{command} -p {}", port);
+           command = format!("{command} -p {port}");
             }
             // Parse published mapped ports
             for map in self.publish_map.iter() {
@@ -149,7 +157,7 @@ impl ContainerConfig {
 
         // Parse volumes
         for value in &self.volumes {
-            command = format!("{command} -v {}", value);
+            command = format!("{command} -v {value}");
         }
 
         // Parse mounts
@@ -160,7 +168,7 @@ impl ContainerConfig {
             }
             command = format!("{command}dst={}", mount.dst);
             if let Some(bind_propagation) = mount.bind_propagation.as_ref() {
-                command = format!("{command},bind-propagation={}", bind_propagation);
+                command = format!("{command},bind-propagation={bind_propagation}");
             }
         }
 

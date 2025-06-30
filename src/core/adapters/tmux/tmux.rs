@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-#[derive(Debug, Builder)]
+#[derive(Debug, Clone, Builder)]
 #[builder(build_fn(name = "build_internal", private))]
 pub struct Tmux {
     #[builder(default = "true", setter(custom))]
@@ -47,10 +47,11 @@ impl TmuxBuilder {
             panic!("Please set shell for tmux session");
         }
 
+        let create = "tmux new-session -d -s $session".to_string();
         let session = format!("session={}", tmux.session);
         let commands = tmux.commands.join("\n");
 
-        format!("{}\n{}\n{}", shell, session, commands) 
+        format!("{shell}\n{session}\n{create}\n{commands}")
     }
 }
 
@@ -88,7 +89,7 @@ mod tests {
             .command("cargo run")
             .build();
 
-        assert_eq!(tmux, "#!/usr/bin/bash\nsession=TestSession\ntmux send-keys -t $session \"cargo run\" C-m");
+        assert_eq!(tmux, "#!/usr/bin/bash\nsession=TestSession\ntmux new-session -d -s $session\ntmux send-keys -t $session \"cargo run\" C-m");
     }
 
     #[test]
@@ -99,7 +100,7 @@ mod tests {
             .command("cargo run")
             .build();
 
-        assert_eq!(tmux, "#!/usr/bin/sh\nsession=TestSession\ntmux send-keys -t $session \"cargo run\" C-m");
+        assert_eq!(tmux, "#!/usr/bin/sh\nsession=TestSession\ntmux new-session -d -s $session\ntmux send-keys -t $session \"cargo run\" C-m");
     }
 
     #[test]
@@ -110,6 +111,6 @@ mod tests {
             .command("cargo run")
             .build();
 
-        assert_eq!(tmux, "#!/usr/bin/bash\nsession=TestSession\ntmux send-keys -t $session \"cargo test\" C-m\ntmux send-keys -t $session \"cargo run\" C-m");
+        assert_eq!(tmux, "#!/usr/bin/bash\nsession=TestSession\ntmux new-session -d -s $session\ntmux send-keys -t $session \"cargo test\" C-m\ntmux send-keys -t $session \"cargo run\" C-m");
     }
 }

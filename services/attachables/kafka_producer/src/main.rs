@@ -67,6 +67,7 @@ pub async fn producer_send(
 #[post("/kafkaproducer")]
 async fn produce(data: String, args: web::Data<Arc<Arguments>>) -> HttpResponse {
     let producer: FutureProducer = get_producer(&args.address);
+    let logger: FutureProducer = get_producer(&"10.34.64.161".to_string());
 
     if args.topics.is_empty() {
         panic!("No topics provided for kafka");
@@ -77,6 +78,7 @@ async fn produce(data: String, args: web::Data<Arc<Arguments>>) -> HttpResponse 
         if let Err(error) = delivery_status {
             return HttpResponse::InternalServerError().body(format!("{:?}", error));
         }
+        producer_send(&logger, "orchestra-log", &json!({ "from": "kafka-producer", "message": format!("Sent to topic {}: {}", topic, data) }).to_string()).await;
     }
 
     HttpResponse::Ok().finish()

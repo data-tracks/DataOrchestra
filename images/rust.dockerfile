@@ -1,4 +1,4 @@
-FROM rust:1.86
+FROM rust:1.88
 
 # Base installation of applications needed. While DataOrchestra itself also does this, for repeated setup this is quicker as the dependencies do not need to be installed for each startup of the programm
 RUN apt-get update && \
@@ -22,7 +22,7 @@ RUN echo 'export PATH="/usr/local/cargo/bin/rustup:$PATH"' >> ~/.bashrc
 RUN { \
     echo 'if [ -n "$PS1" ]; then'; \
     echo '  ln -s /usr/local/rustup/toolchains /root/.rustup/toolchains 2>/dev/null || true'; \
-    echo '  rustup default 1.86.0-x86_64-unknown-linux-gnu'; \
+    echo '  rustup default 1.88.0-x86_64-unknown-linux-gnu'; \
     echo 'fi'; \
     } >> ~/.bashrc
 

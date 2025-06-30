@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr};
 
-use log::{info, error};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use crate::core::adapters::Runner;
 use crate::core::process::Process;
@@ -8,7 +8,7 @@ use crate::core::traits::Configurator;
 
 
 /// The `Kafka` type. Represents the configurability of the Apache kafka application instance
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Kafka {
     #[serde(default)]
     pub topics: Vec<String>,

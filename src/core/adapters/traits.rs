@@ -1,9 +1,10 @@
 use std::fmt::Debug;
+use thiserror::Error;
 
 /// Runner trait. Trait for system execution objects
 pub trait Runner: Debug where Self: 'static {
     /// Execute command
-    fn exec(&self, command: String) -> Result<String, String>;
+    fn exec(&self, command: String) -> Result<String, RunnerError>;
     fn clone_box(&self) -> Box<dyn Runner + Send + Sync>;
 
     fn to_box_runner<'b>(&'b self) -> Box<dyn Runner + Send + Sync>
@@ -12,6 +13,24 @@ pub trait Runner: Debug where Self: 'static {
         Self: 'b + Sync,
     {
         (Box::new(self.clone()) as Box<dyn Runner + Send + Sync>) as _
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum RunnerError {
+    #[error("Unable to execute command (error {0}) (command {1})")] 
+    CommandExecute(String, String),
+    #[error("Unable to read command output (error {0}) (command {1})")]
+    CommandRead(String, String),
+    #[error("Unable to connect to session (error {0})")]
+    SessionConnect(String),
+    #[error("Unablt to disconnect from session (error {0})")]
+    SessionDisconnect(String)
+}
+
+impl From<RunnerError> for String{
+    fn from(value: RunnerError) -> Self {
+        value.to_string()
     }
 }
 

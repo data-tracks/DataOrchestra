@@ -43,7 +43,7 @@ impl Sensor {
 
         if !self.topics.is_empty() {
             for topic in self.topics.iter() {
-                command = format!("{command} --topic {}", topic);
+                command = format!("{command} --topic {topic}");
             }
         }
 
@@ -83,7 +83,7 @@ impl Configurator<Generate> for Sensor {
             .dockerfile("images/rust.dockerfile")
             .image("rust_base");
     
-        parent.object.volatile_docker_data.push(volatile_data);
-        parent.object.docker_data.push(docker_data);
+        parent.object.volatile_docker_datas.push(volatile_data);
+        parent.object.docker_datas.push(docker_data);
     }
 }

@@ -1,6 +1,6 @@
 use std::process::{Command, Stdio};
 use log::debug;
-use crate::core::adapters::Runner;
+use crate::core::adapters::{Runner, RunnerError};
 
 /// Local runner object. Executes commands on the local system
 #[derive(Debug, Clone)]
@@ -17,36 +17,35 @@ impl Local {
 }
 
 impl Runner for Local {
-    fn exec(&self, command: String) -> Result<String, String> {
+    fn exec(&self, command: String) -> Result<String, RunnerError> {
         debug!("Running command [{}]", &command);
-        let output;
-        if cfg!(target_os = "windows") {
-            output = Command::new("cmd")
+        let output = if cfg!(target_os = "windows") {
+            Command::new("cmd")
                 .arg("/C")
-                .arg(command)
+                .arg(&command)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .output()
         } else {
-            output = Command::new("sh")
+            Command::new("sh")
                 .arg("-c")
-                .arg(command)
+                .arg(&command)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .output()
-        }
+        };
 
         if let Ok(result ) = output {
             if !result.status.success() {
-                return Err(String::from_utf8(result.stderr).unwrap());
+                return Err(RunnerError::CommandRead(String::from_utf8(result.stderr).unwrap(), command));
             }
-            return Ok(String::from_utf8(result.stdout).unwrap());
+            Ok(String::from_utf8(result.stdout).unwrap())
         } 
         else if let Err(error) = output {
-            return Err(error.to_string());
+            return Err(RunnerError::CommandExecute(error.to_string(), command));
         }
         else  {
-            return Err("Unable to execute command".to_string());
+            return Err(RunnerError::CommandExecute("".to_string(), command));
         }
     }
 

@@ -40,5 +40,16 @@ pub struct Arguments {
     /// Start api only (TODO)
     #[arg(short, long, default_value_t = false)]
     #[arg(env = "API_ONLY")]
-    pub api_only: bool
+    pub api_only: bool,
+
+    /// Start only subset if items provided by name from config
+    #[arg(short, long)]
+    #[arg(env = "ISOLATE")]
+    pub isolate: Option<Vec<String>>
+}
+
+impl Default for Arguments {
+    fn default() -> Self {
+        Arguments { file: None, level: LevelFilter::Info, remove_all: false, generate_valid_json: None, portainer: true, ssh_key: None, api_only: false, isolate: None }
+    }
 }

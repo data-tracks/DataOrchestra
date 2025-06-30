@@ -2,12 +2,16 @@ use std::{collections::HashMap, path::PathBuf};
 
 use derive_builder::Builder;
 
+use crate::core::adapters::Tmux;
+
 /// Node data object. Represents data that gets uploaded onto the node
-#[derive(Debug)]
+#[derive(Debug, Clone, Builder)]
 pub struct NodeData {
     /// Path of data in current system
+    #[builder(setter(into))]
     pub path: String,
     /// Path of data in remote system
+    #[builder(setter(into))]
     pub destination: String,
 }
 
@@ -24,10 +28,10 @@ impl NodeData {
 }
 
 /// Docker data object. Represents data that gets uploaded into the docker container
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Clone)]
 pub struct DockerData {
     /// Name of container
-    #[builder(setter(into))]
+    #[builder(setter(into), default)]
     pub name: Option<String>,
     /// Path of data in current system
     #[builder(setter(into))]
@@ -45,7 +49,9 @@ pub struct DockerData {
     /// Path of script which has dependencies which need to downloaded / handled
     #[builder(setter(strip_option, into))]
     #[builder(default)]
-    pub dependency: Option<String>
+    pub dependency: Option<String>,
+    #[builder(default)]
+    pub tmux: Option<Tmux>
 }
 
 impl Default for DockerData {
@@ -57,13 +63,14 @@ impl Default for DockerData {
             destination: "/".to_string(),
             env: Some(HashMap::new()),
             start: String::new(),
-            dependency: None
+            dependency: None,
+            tmux: None
         }
     }
 }
 
 impl DockerData {
-    pub fn new(name: Option<impl Into<String>>, path: impl Into<String>, destination: impl Into<String>, start: impl Into<String>, env: Option<HashMap<String, String>>, dependency: Option<String>) -> Self {
+    pub fn new(name: Option<impl Into<String>>, path: impl Into<String>, destination: impl Into<String>, start: impl Into<String>, env: Option<HashMap<String, String>>, dependency: Option<String>, tmux: Option<Tmux>) -> Self {
         DockerData 
         {
             name: name.map(|n| n.into()),
@@ -71,7 +78,8 @@ impl DockerData {
             destination: destination.into(),
             env,
             start: start.into(),
-            dependency
+            dependency,
+            tmux
         }
     }
 }

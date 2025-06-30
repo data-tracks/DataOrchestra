@@ -1,15 +1,30 @@
-use std::{net::IpAddr, sync::Arc};
+use std::{fs, net::IpAddr, path::Path, sync::Arc};
 use actix_cors::Cors;
 use actix_web::{get, http::{self, header::ContentType}, post, put, rt::System, web, App, HttpResponse, HttpServer, Responder};
+use api::state::{self, BroadcastMessage};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use log::error;
+use log::{error, info};
+use api::state::State;
 
-use crate::core::adapters::{async_ping_node, docker, StateTypes};
-use super::state::State;
+use data_orchestra::core::adapters::{async_ping_node, docker, StateTypes};
 
-pub async fn start_api(state: Arc<State>) {
-    let api_port = state.get_config().api_port;
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Config {
+    port: u16
+}
+
+#[tokio::main]
+async fn main() {
+    // Read config
+    info!("Parsing config file");
+    let config_path = Path::new("config.json");
+    let config = fs::read_to_string(config_path)
+        .expect("Unable to read config file");
+    let config: Config = serde_json::from_str(&config)
+        .expect("Unable to read config file");
+
+    let state = Arc::new(State::default());
 
     let _ = HttpServer::new(move || {
         App::new()
@@ -34,15 +49,9 @@ pub async fn start_api(state: Arc<State>) {
             .service(metric_generate)
             .service(metric_object)
     })
-    .bind(("127.0.0.1", api_port)).unwrap()
+    .bind(("127.0.0.1", config.port)).unwrap()
     .run()
     .await;
-}
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct BroadcastMessage {
-    pub from: String,
-    pub message: String
 }
 
 #[get("orchestra/active")]

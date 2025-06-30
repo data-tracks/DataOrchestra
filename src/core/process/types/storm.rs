@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::adapters::ComposeBuilder;
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Storm {}
 
 impl Storm {

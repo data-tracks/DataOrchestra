@@ -6,7 +6,8 @@ use crate::core::object::Object;
 use crate::shared::ToInternal;
 use crate::core::traits::Creator;
 use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
-use crate::logger::{serialize_levelfilter, deserialize_levelfilter};
+use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
+
 
 // The Kafka producer type. Is an attachable object capable of producing data to kafka topic(s)
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -87,7 +88,7 @@ impl Creator<Object> for KafkaProducer {
             .build()
             .expect("Unable to build docker_data");
 
-        object.docker_data.push(docker_data);
+        object.docker_datas.push(docker_data);
         
         object.docker_container_builder.get_or_insert_default();
 
@@ -107,7 +108,7 @@ impl Creator<Object> for KafkaProducer {
             .build()
             .expect("Unable to build volatile data");
 
-        object.volatile_docker_data.push(volatile_data);
+        object.volatile_docker_datas.push(volatile_data);
 
         object
     }

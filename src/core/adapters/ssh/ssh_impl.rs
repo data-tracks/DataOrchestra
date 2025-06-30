@@ -4,10 +4,21 @@ use std::net::TcpStream;
 use std::path::Path;
 use ssh2::{Channel, Session, Sftp};
 use walkdir::{DirEntry, WalkDir};
-use std::{fs, io};
+use std::fs;
 use log::{debug, error};
 use crate::core::adapters::ssh::ssh::Ssh;
 use crate::core::adapters::traits::{Runner, Uploader};
+use crate::core::adapters::RunnerError;
+
+use super::ssh;
+
+impl Default for Ssh {
+    fn default() -> Self {
+        Ssh { session: Session::new().unwrap()  }
+    }
+}
+
+
 
 impl Ssh {
     pub fn new() -> Ssh {
@@ -15,76 +26,53 @@ impl Ssh {
     }
 
     /// Connect to ssh session using password 
-    pub fn connect_password(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), String> {
-        let address: String = format!("{}:{}", host, port);
+    pub fn connect_password(&mut self, host: &String, port: u16, username: &String, password: &String) -> Result<(), ssh::SshError> {
+        let address: String = format!("{host}:{port}");
         debug!("Connecting to Ssh client {} with {}@{}", &address, &username, password);
-        let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
+        let tcp = TcpStream::connect(address)
+            .map_err(|err| ssh::SshError::Tcp(err.to_string()))?;
     
-        if let Err(ref error) = tcp {
-            error!("Unable to setup tcp stream {}", error);
-        } 
-
-        let tcp = tcp.unwrap();
         self.session.set_tcp_stream(tcp);
         
-        let handshake: Result<(), ssh2::Error> = self.session.handshake();
+        self.session.handshake()
+            .map_err(|err| ssh::SshError::Handshake(err.to_string()))?;
 
-        if let Err(ref error) = handshake {
-            return Err(format!("Unsuccessful handshake {}", error));
-        }
-        let authentication: Result<(), ssh2::Error>;
-
-        authentication = self.session.userauth_password(username, password);
-        
-        if let Err(ref error) = authentication {
-            return Err(format!("Unsuccessful authentication {}", error));
-        }
+        self.session.userauth_password(username, password)
+            .map_err(|err| ssh::SshError::Authentication(err.to_string()))?;
 
         if !self.session.authenticated() {
-            return Err("Session not authenticated".to_string());
-        } 
-
+            return Err(ssh::SshError::Authentication("Session not authenticated".to_string()));
+        }
 
         Ok(())
     }
 
     /// Connect to ssh session using a private ssh key as path
-    pub fn connect_ssh<T: AsRef<Path>>(&mut self, host: &String, port: u16, username: &String, ssh_key: &T) -> Result<(), String> {
-        let address: String = format!("{}:{}", host, port);
+    pub fn connect_ssh<T: AsRef<Path>>(&mut self, host: &String, port: u16, username: &String, ssh_key: &T) -> Result<(), ssh::SshError> {
+        let address: String = format!("{host}:{port}");
         debug!("Connecting to Ssh client {} with {} and ssh_key", &address, &username);
-        let tcp: Result<TcpStream, io::Error> = TcpStream::connect(address);
+        let tcp = TcpStream::connect(address)
+            .map_err(|err| ssh::SshError::Tcp(err.to_string()))?;
     
-        if let Err(ref error) = tcp {
-            error!("Unable to setup tcp stream {}", error);
-        } 
-
-        let tcp = tcp.unwrap();
         self.session.set_tcp_stream(tcp);
         
-        let handshake: Result<(), ssh2::Error> = self.session.handshake();
+        self.session.handshake()
+            .map_err(|err| ssh::SshError::Handshake(err.to_string()))?;
 
-        if let Err(ref error) = handshake {
-            return Err(format!("Unsuccessful handshake {}", error));
-        }
-        let authentication: Result<(), ssh2::Error>;
-
-        authentication = self.session.userauth_pubkey_file(username, None, Path::new(ssh_key.as_ref()), None);
-        
-        if let Err(ref error) = authentication {
-            return Err(format!("Unsuccessful authentication {}", error));
-        }
+        self.session.userauth_pubkey_file(username, None, Path::new(ssh_key.as_ref()), None)
+            .map_err(|err| ssh::SshError::Authentication(err.to_string()))?;
 
         if !self.session.authenticated() {
-            return Err("Session not authenticated".to_string());
-        } 
-
+            return Err(ssh::SshError::Authentication("Session not authenticated".to_string()));
+        }
+        
         Ok(())
     }
 
     /// Disconnect from ssh session
     pub fn disconnect(&self) -> Result<(), String> {
         self.session.disconnect(None, "finished", None)
-            .map_err(|err| format!("Unable to close session {}", err))
+            .map_err(|err| format!("Unable to close session {err}"))
     }
 
     /// Get STFP from ssh session
@@ -103,32 +91,20 @@ impl Ssh {
 
 impl Runner for Ssh {
     /// Execute command over Ssh connection
-    fn exec(&self, command: String) -> Result<String, String> {
+    fn exec(&self, command: String) -> Result<String, RunnerError> {
         debug!("Executing command [{}]", &command);
-        let channel: Result<Channel, ssh2::Error> = self.session.channel_session();
-
-        if let Err(ref error) = channel {
-            error!("Unable to open Ssh channel {}", error);
-        }
-
-        let mut channel = channel.unwrap();
-        let exec: Result<(), ssh2::Error> = channel.exec(&command);
-
-        if let Err(ref error) = exec {
-            error!("Unable to execute command {}", error);
-        }
+        let mut channel = self.session.channel_session()
+            .map_err(|err| RunnerError::SessionConnect(err.to_string()))?;
+        
+        channel.exec(&command)
+            .map_err(|err| RunnerError::CommandExecute(err.to_string(), command.clone()))?;
 
         let mut result = String::new();
-        let read: Result<usize, io::Error> = channel.read_to_string(&mut result);
+        let _ = channel.read_to_string(&mut result)
+            .map_err(|err| RunnerError::CommandRead(err.to_string(), command.clone()))?;
 
-        if let Err(ref error) = read {
-            error!("Unable to read command output {}", error);
-        }
-
-        let close: Result<(), ssh2::Error> = channel.wait_close();
-        if let Err(ref error) = close {
-            error!("Unable to close channel {}", error);
-        }
+        channel.wait_close()
+            .map_err(|err| RunnerError::SessionDisconnect(err.to_string()))?;
 
         Ok(result)
     }
@@ -156,7 +132,7 @@ impl<T, S> Uploader<T, S> for Ssh where
         if let Some(parent) = location.parent() {
             let result = self.exec(format!("mkdir -p {}", parent.display()));
             if let Err(error) = result {
-                error!("{}", error);
+                error!("{error}");
             }
         }
 
@@ -164,7 +140,7 @@ impl<T, S> Uploader<T, S> for Ssh where
         let remote_file: Result<Channel, ssh2::Error> = self.session.scp_send(location, 0o644, fs::metadata(file).unwrap().len(), None);
 
         if let Err(ref error) = remote_file {
-            error!("Unable to upload file {}", error);
+            error!("Unable to upload file {error}");
         }
 
         let mut remote_file = remote_file.unwrap();
@@ -178,7 +154,7 @@ impl<T, S> Uploader<T, S> for Ssh where
         remote_file.close().unwrap();
         remote_file.wait_close().unwrap();  
 
-        return Ok(());
+        Ok(())
     }
 
     /// Upload directory to remote server via Ssh. 
@@ -199,25 +175,23 @@ impl<T, S> Uploader<T, S> for Ssh where
         let _ = self.exec(format!("mkdir -p {}", destination.to_str().unwrap()));
 
         for entry in WalkDir::new(dir) {
-            if let Ok(ref entry) = entry {
+            if let Ok(ref entry) = entry && !ignore(entry) {
                 // Apply filter for DirEntry to ignore unneeded files
-                if !ignore(entry) {
-                    let path = format!("{}", entry.path().display()); 
-                    let stripped_remote_path = path.strip_prefix(dir.to_str().unwrap());
+                let path = format!("{}", entry.path().display()); 
+                let stripped_remote_path = path.strip_prefix(dir.to_str().unwrap());
 
-                    let remote_path = stripped_remote_path.unwrap_or("/");
+                let remote_path = stripped_remote_path.unwrap_or("/");
 
-                    // Copy to / directory
-                    let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
-                    if entry.file_type().is_dir() && !created_paths.contains(&remote_path){
-                        created_paths.push(remote_path.to_string());
-                        let _ = self.exec(format!("mkdir -p {}", remote_path));
-                    }
-                    else {
-                        let result = self.upload_file(entry.path(), &Path::new(&remote_path));
-                        if let Err(ref error) = result {
-                            return Err(format!("Unable to upload file from directory {}", error));
-                        }
+                // Copy to / directory
+                let remote_path = format!("{}{}", destination.to_str().unwrap(), remote_path);
+                if entry.file_type().is_dir() && !created_paths.contains(&remote_path){
+                    created_paths.push(remote_path.to_string());
+                    let _ = self.exec(format!("mkdir -p {remote_path}"));
+                }
+                else {
+                    let result = self.upload_file(entry.path(), &Path::new(&remote_path));
+                    if let Err(ref error) = result {
+                        return Err(format!("Unable to upload file from directory {error}"));
                     }
                 }
             }
@@ -230,8 +204,8 @@ impl<T, S> Uploader<T, S> for Ssh where
 // TODO: Allow for user defined filters
 /// Ignore a directory entry based on predefined filtering for folders and files
 fn ignore(obj: &DirEntry) -> bool {
-    let file_filter = vec!["so", "rmeta", "d", "rlib", "TAG"];
-    let folder_filter = vec!["target"];
+    let file_filter = ["so", "rmeta", "d", "rlib", "TAG"];
+    let folder_filter = ["target", ".git"];
     let path = obj.path();
     let path_str = path.to_str().unwrap();
 
@@ -267,7 +241,7 @@ mod tests {
         for _ in 0..10 {
             for ssh in ssh_sessions.iter() {
                 let result = ssh.exec("pwd".to_string());
-                assert!(matches!(result, Ok(_)));
+                assert!(result.is_ok());
             }
         }
     }

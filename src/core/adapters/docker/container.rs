@@ -2,7 +2,7 @@ use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 use log::{debug, error, warn};
-use crate::core::adapters::ssh::Ssh;
+use crate::core::adapters::ssh::{self, Ssh};
 use crate::core::adapters::traits::Runner;
 use crate::core::adapters::{Local, OsSystems};
 use super::{ContainerConfig, PortMapping};
@@ -133,7 +133,7 @@ impl Run for Container {
         if let Some(id) = self.id.as_ref() {
             let result = super::api::poll_container(id, 30, &*self.runner);
             if let Err(error) = result {
-                panic!("Polling docker container {} timeout after 30 seconds | {}", id, error);
+                panic!("Polling docker container {id} timeout after 30 seconds ({error})");
             }
         }
         else {
@@ -163,7 +163,7 @@ impl Container {
     pub fn load(&mut self) {
         let result = self.load_name();
         if let Err(error) = result {
-            error!("Unable to get name of container | {}", error);
+            error!("Unable to get name of container ({error})");
         }
 
         // get and set ip
@@ -207,7 +207,7 @@ impl Container {
                 building_args = format!("--build-arg {building_args}");
             }
             
-            self.runner.exec(format!("docker build -f {} {building_args} -t {} .", dockerfile, image))?;
+            self.runner.exec(format!("docker build -f {dockerfile} {building_args} -t {image} ."))?;
         }
         else {
             return Err("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} ".to_string());
@@ -219,14 +219,16 @@ impl Container {
     /// Create container from image
     fn build_from_image(&mut self) -> Result<(), String>{
         // Create image
-        let id = self.runner.exec(format!("docker run {} -it {}", self.config.parse_options(), self.config.image.as_ref().unwrap()))?;
+        let id = self.runner.exec(format!("docker run {} -it {}", self.config.parse_options(), self.config.image.as_ref().unwrap()))
+            .map_err(|err| err.to_string())?;
         self.set_id(id.trim().to_string().replace("\n", ""));
         Ok(())
     }
 
     /// Load container name
     pub fn load_name(&mut self) -> Result<(), String> {
-        let name = self.runner.exec(format!("docker inspect -f {{{{.Name}}}} {}", self.id.as_ref().unwrap()))?;
+        let name = self.runner.exec(format!("docker inspect -f {{{{.Name}}}} {}", self.id.as_ref().unwrap()))
+            .map_err(|err| err.to_string())?;
         let name = name
             .replace("/", "")
             .replace("\n", "");
@@ -237,14 +239,15 @@ impl Container {
 
     /// Load container ip
     pub fn load_ip(&mut self) -> Result<(), String> {
-        let ip = self.runner.exec(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()))?;
+        let ip = self.runner.exec(format!("docker inspect -f {{{{range.NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}} {}", self.id.as_ref().unwrap()))
+            .map_err(|err| err.to_string())?;
         let ip = ip.replace("\n", "").trim().to_string();
-        let ip = Ipv4Addr::from_str(ip.as_str());
-        if let Ok(ip) = ip {
+        let ip_parse = Ipv4Addr::from_str(ip.as_str());
+        if let Ok(ip) = ip_parse {
             self.ip = Some(IpAddr::V4(ip));
         }
-        else if let Err(err) = ip {
-            return Err(err.to_string());
+        else if let Err(err) = ip_parse {
+            return Err(format!("{err} ({ip})"));
         }
         
         Ok(()) 
@@ -252,7 +255,8 @@ impl Container {
 
     /// Load all container port mappings 
     pub fn load_ports(&mut self) -> Result<(), String> {
-        let ports = self.runner.exec(format!("docker port {}", self.id.as_ref().unwrap()))?;
+        let ports = self.runner.exec(format!("docker port {}", self.id.as_ref().unwrap()))
+            .map_err(|err| err.to_string())?;
         for port in ports.split("\n").filter(|x| !x.is_empty()) {
             let (int, ext) = port.split_once("/").unwrap();
             let int = int.parse::<u16>().unwrap();
@@ -264,9 +268,9 @@ impl Container {
     }
 
     /// Start ssh session for container
-    pub fn load_ssh(&mut self, host: IpAddr) -> Result<(), String> {
+    pub fn load_ssh(&mut self, host: IpAddr) -> Result<(), ssh::SshError> {
         let mut ssh = Ssh::new();
-        let _ = ssh.connect_password(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string());
+        ssh.connect_password(&host.to_string(), self.get_ssh_port().unwrap(), &"root".to_string(), &"password".to_string())?;
 
         self.ssh = Some(ssh);
         Ok(())
@@ -274,7 +278,8 @@ impl Container {
 
     /// Get container os system 
     pub fn load_os(&mut self) -> Result<(), String> {
-        let result = self.runner.exec(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()))?;
+        let result = self.runner.exec(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()))
+            .map_err(|err| err.to_string())?;
         let keys = result.split("\n");
         for entry in keys {
             let pair = entry.split_once("=").unzip();
@@ -299,14 +304,14 @@ impl Container {
         debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
 
         // Set correct install script for different distros
-        if let Some(ref os) = &self.os {
+        if let Some(os) = &self.os {
             match os {
                 OsSystems::Debian | OsSystems::Ubuntu => {
                     let script = String::from("apt_ssh_setup.sh");
 
                     // Reformat sh script for linux distro
                     if cfg!(target_os = "windows") {
-                        self.runner.exec(format!("dos2unix scripts/docker/{}", script))?;
+                        self.runner.exec(format!("dos2unix scripts/docker/{script}"))?;
                     }
 
                     self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
@@ -321,7 +326,7 @@ impl Container {
 
                     // Reformat sh script for alpine distro
                     if cfg!(target_os = "windows") {
-                        self.runner.exec(format!("dos2unix scripts/docker/{}", script))?;
+                        self.runner.exec(format!("dos2unix scripts/docker/{script}"))?;
                     }
                     
                     self.runner.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
@@ -341,7 +346,7 @@ impl Container {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
-    use crate::core::adapters::{ContainerBuilder, Run, Runner};
+    use crate::core::adapters::{ContainerBuilder, Run, Runner, RunnerError};
 
     #[derive(Debug, Clone)]
     pub struct DummyRunner {
@@ -370,7 +375,7 @@ mod tests {
     }
 
     impl Runner for DummyRunner {
-        fn exec(&self, command: String) -> Result<String, String> {
+        fn exec(&self, command: String) -> Result<String, RunnerError> {
             let mut output = self.output.lock().unwrap();
             *output = command.clone();
             Ok(command)

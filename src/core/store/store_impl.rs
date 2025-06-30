@@ -6,11 +6,9 @@ use super::Store;
 
 impl Spawner for Store {
     fn build(&mut self) {
-        if let Some(db_type) = &self.db_type {
-            if self.config.is_none() {
-                info!("No config given for database type. Loading default config");
-                self.config = Some(db_type.get_default());
-            }
+        if let Some(db_type) = &self.db_type && self.config.is_none() {
+            info!("No config given for database type. Loading default config");
+            self.config = Some(db_type.get_default());
         }
 
         // Setup container based on specified config. Default setup if only db_type was provided,

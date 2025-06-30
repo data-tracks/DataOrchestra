@@ -1,45 +1,28 @@
-use std::io::Write;
 use log::LevelFilter;
-use ansi_term::Colour;
 use serde::{de::Error, Deserialize, Deserializer, Serializer};
+use tracing_appender::rolling;
+use tracing_subscriber::{fmt::{self}, layer::SubscriberExt, util::SubscriberInitExt};
 
-use std::thread;
+pub fn init_logger() {
+    let file_appender = rolling::daily("logs", "orchestrator.log");
+    let (non_blocking_file, _guard) = tracing_appender::non_blocking(file_appender);
 
-/// Initialise custom logger with specified logging `level`
-pub fn init_logger(level: LevelFilter) {
-    env_logger::builder()
-        .filter_level(level)
-        .format(|buf, record| {
-            let thread_name = thread::current()
-                .name()
-                .unwrap_or("unknown")
-                .to_string();
+    let stdout_log = fmt::layer()
+        .with_line_number(true)
+        .with_thread_names(true)
+        .without_time()
+        .with_writer(std::io::stdout);
 
-            let mut colored_level = match record.level() {
-                log::Level::Error => Colour::Red.paint(record.level().to_string()).to_string(),
-                log::Level::Warn => Colour::Yellow.paint(record.level().to_string()).to_string(),
-                log::Level::Info => Colour::Green.paint(record.level().to_string()).to_string(),
-                log::Level::Debug => Colour::Blue.paint(record.level().to_string()).to_string(),
-                log::Level::Trace => Colour::Purple.paint(record.level().to_string()).to_string(),
-            };
+    let file_log = fmt::layer()
+        .with_thread_names(true)
+        .with_line_number(true)
+        .without_time()
+        .with_writer(non_blocking_file);
 
-            // Color with string makes 4 => 13 and 5 => 14
-            if colored_level.len() == 13 {
-                colored_level = format!("{colored_level} ");
-            }
 
-            let file = record.file().unwrap().split('\\').last().unwrap_or("unknown");
-
-            writeln!(
-                buf,
-                "[{:<5}] [{}] [{}:{}] {}",
-                colored_level,
-                thread_name,
-                file,
-                record.line().unwrap_or(0),
-                record.args()
-            )
-        })
+    tracing_subscriber::registry()
+        .with(stdout_log)
+        .with(file_log)
         .init();
 }
 

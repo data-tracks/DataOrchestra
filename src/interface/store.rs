@@ -83,7 +83,7 @@ impl ToInternal<Store> for ExtStore {
         }
 
         store.object.node_data.extend(self.general.node_data.to_internal());
-        store.object.docker_data.extend(self.general.docker_data.to_internal());
+        store.object.docker_datas.extend(self.general.docker_data.to_internal());
 
         debug!("Finished parsing store to internal");
         store

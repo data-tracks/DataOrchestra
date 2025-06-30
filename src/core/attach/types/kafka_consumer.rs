@@ -7,7 +7,6 @@ use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
 use crate::shared::ToInternal;
 use crate::interface::general::General;
-use crate::core::adapters::ContainerBuilder;
 use crate::core::object::Object;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
@@ -100,7 +99,7 @@ impl Creator<Object> for KafkaConsumer {
             .build()
             .expect("Unable to build docker_data");
 
-        object.docker_data.push(docker_data);
+        object.docker_datas.push(docker_data);
 
         object.docker_container_builder.get_or_insert_default();
 
@@ -119,7 +118,7 @@ impl Creator<Object> for KafkaConsumer {
             .build()
             .expect("Unable to build volatile data");
 
-        object.volatile_docker_data.push(volatile_data);
+        object.volatile_docker_datas.push(volatile_data);
 
         object
     }

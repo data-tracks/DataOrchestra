@@ -68,7 +68,7 @@ impl ToInternalVec<Generate> for ExtGenerate {
             } 
 
             generate.object.node_data = self.general.node_data.clone().to_internal();
-            generate.object.docker_data.extend(self.general.docker_data.clone().to_internal());
+            generate.object.docker_datas.extend(self.general.docker_data.clone().to_internal());
 
             debug!("Finished parsing generate to internal");
 

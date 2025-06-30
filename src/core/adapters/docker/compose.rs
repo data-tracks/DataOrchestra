@@ -37,11 +37,11 @@ impl Run for Compose {
         if let Some(ref compose) = self.config.compose {
             let mut interpolation = String::new();
             for (key, value) in self.config.interpolation_variables.iter() {
-                interpolation = format!("{interpolation} {}={}", key, value);
+                interpolation = format!("{interpolation} {key}={value}");
             }
-            let result = self.runner.exec(format!("{interpolation} docker compose -f {} up -d --build", compose));
+            let result = self.runner.exec(format!("{interpolation} docker compose -f {compose} up -d --build"));
             if let Err(error) = result {
-                error!("{}", error);
+                error!("{error}");
             }
         }
         else {
@@ -61,7 +61,7 @@ impl Run for Compose {
 
             let result = super::api::poll_container(id, 30, &*self.runner);
             if let Err(error) = result {
-                error!("{}", error);
+                error!("{error}");
             }
 
             container.is_running = true;
@@ -71,7 +71,7 @@ impl Run for Compose {
 
         // Load data from running docker containers spawned by compose file
         for container in self.containers.iter_mut() {
-            debug!("Setting up container {} for compose {}", container.config.name.as_ref().unwrap(), self.config.compose.as_ref().unwrap());
+            debug!("Setting up container for compose {}", self.config.compose.as_ref().unwrap());
             container.load(); 
         }
 
@@ -84,13 +84,15 @@ impl Compose {
         let mut id_vec = Vec::new();
         let result = self.runner.exec(format!("docker compose -f {} ps -q", self.config.compose.as_ref().unwrap()));
         if let Ok(ids) = result {
-            let ids = ids.split("\n");
+            let ids = ids
+                .split("\n")
+                .filter(|item| !item.is_empty());
             for id in ids {
                 id_vec.push(id.trim().to_string());
             }
         }
         else if let Err(error) = result {
-            error!("{}", error);
+            error!("{error}");
         }
 
         id_vec
@@ -99,7 +101,7 @@ impl Compose {
 
 
 /// Compose config builder sitting ontop of [`Compose`] object.
-#[derive(Debug, Builder)]
+#[derive(Debug, Clone, Builder)]
 #[builder(
     name = "ComposeBuilder",
     build_fn(name = "build_internal"),
@@ -124,7 +126,7 @@ impl ComposeBuilder {
             self.build_internal()
             .expect("Unable to build compose config"); 
 
-        assert!(!config.compose.is_some(), "Docker compose requires a compose file");
+        assert!(config.compose.is_some(), "Docker compose requires a compose file");
 
         let containers = Vec::new();
         let runner = Box::new(Local::new());
@@ -161,7 +163,7 @@ impl Default for Compose {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
-    use crate::core::adapters::{Run, Runner};
+    use crate::core::adapters::{Run, Runner, RunnerError};
     use super::ComposeBuilder;
 
     #[derive(Debug, Clone)]
@@ -191,7 +193,7 @@ mod tests {
     }
 
     impl Runner for DummyRunner {
-        fn exec(&self, command: String) -> Result<String, String> {
+        fn exec(&self, command: String) -> Result<String, RunnerError> {
             let mut output = self.output.lock().unwrap();
             *output = command.clone();
             Ok(command)

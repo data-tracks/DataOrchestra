@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use kafka_consumer::arguments::Arguments;
@@ -5,6 +6,7 @@ use log::{info, error, warn};
 use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
 use rdkafka::{ClientConfig, Message};
 use kafka_consumer::logger::init_logger;
+use serde_json::Value;
 
 #[tokio::main]
 async fn main() {
@@ -51,13 +53,15 @@ pub async fn kafka_consumer(args: Arguments) {
                     Some(Ok(s)) => {
                         let s = s.to_owned();
 
+                        let s: HashMap<String, Value> = serde_json::from_str(&s).expect("Unable to parse string");
+
                         let result = client.post(&args.address)
-                            .body(s)
+                            .json(&s)
                             .send()
                             .await;
 
                         if let Err(error) = result {
-                            error!("{}", error);
+                            error!("{} {error}", &args.address);
                         }
                     },
                     None => {

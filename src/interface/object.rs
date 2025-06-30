@@ -49,7 +49,7 @@ impl ToInternal<Object> for ExtObject {
         }
 
         object.node_data = self.general.node_data.to_internal();
-        object.docker_data = self.general.docker_data.to_internal();
+        object.docker_datas = self.general.docker_data.to_internal();
 
         object
     } 

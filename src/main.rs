@@ -1,20 +1,17 @@
-use std::sync::Arc;
+use std::time::Duration;
 use std::{env, fs};
 use std::path::Path;
 use std::process::exit;
-use actix_web::rt::Runtime;
-use data_orchestra::api::api::start_api;
-use data_orchestra::api::state::State;
 use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::config::Config;
 use data_orchestra::core::object::Object;
 use data_orchestra::interface::config::ExtConfig;
+use data_orchestra::logger::init_logger;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::Arguments;
-use data_orchestra::shared::Spawner;
+use data_orchestra::shared::{repeat_on_err_mut, Spawner};
 use data_orchestra::variables::variables::Variables;
 use log::{info, warn, error};
-use data_orchestra::logger::init_logger;
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
 
@@ -29,6 +26,8 @@ pub fn print_logo() {
 }
 
 fn main() {
+    init_logger(); 
+
     info!("Starting DataOrchestra");
     viable_check();
 
@@ -43,7 +42,7 @@ fn main() {
         exit(0);
     }
    
-    init_logger(args.level);
+    //init_logger(args.level);
 
     if args.file.is_none() {
         panic!("No config file specified. Please specify a config file with -f | --file  <path> argument or via the .env file key FILE=<path>");
@@ -85,19 +84,42 @@ fn main() {
 
     config.object.extend(agents);
 
-    for node in config.get_nodes_mut() {
+    if let Some(isolated_objects) = &args.isolate && !isolated_objects.is_empty() {
+        for isolated_object in isolated_objects.iter() {
+            config.object
+                .retain(|object| object.name.eq(isolated_object));
+
+            config.generate
+                .retain(|generate| generate.object.name.eq(isolated_object));
+
+            config.process
+                .retain(|process| process.object.name.eq(isolated_object));
+
+            config.store
+                .retain(|store| store.object.name.eq(isolated_object));
+        }
+    }
+
+    for node in config.get_object_nodes_mut() {
         node.ssh_key = args.ssh_key.clone();
+        let result = repeat_on_err_mut(|| {
+            node.set_ssh()
+        }, 5, Some(Duration::from_secs(1)));
+        if let Err(error) = result {
+            error!("Unable to set ssh session for node {} ({error})", node.host);
+        }
     }
 
     configuration_pipeline(&mut config, &mut portainer, &args);
 
+    /*
     info!("Everything deployed. starting API.");
     let state = Arc::new(State::new(config, args));
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         start_api(state).await;
     });
-
+    */
     info!("Closing DataOrchestra");
 }
 
@@ -116,6 +138,8 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     if args.remove_all {
         kill_containers(config);
     }
+
+    exit(-1);
 
     if args.portainer { 
         portainer.build(); 
@@ -153,9 +177,10 @@ pub fn viable_check() {
     }
 
     let runner = Local::new();
+    dbg!(&runner.exec("whoami".to_string()));
     let result = runner.exec("docker info".to_string());
     if let Err(error) = result {
-        panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. ({})", error);
+        panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. ({error})");
     }
 }
 

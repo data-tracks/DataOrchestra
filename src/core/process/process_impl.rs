@@ -1,4 +1,4 @@
-use log::info;
+use log::{info, warn};
 use crate::core::adapters::{ContainerType, Local};
 use crate::core::process::process_types::ProcessTypeConfig;
 use crate::core::traits::Configurator;
@@ -17,11 +17,12 @@ impl Spawner for Process {
 
         // Setup container based on specified config. Default setup if only process_type was provided,
         // otherwise custom
-        if let Some(mut process_config) = self.config.take(){
+        if let Some(mut process_config) = self.config.clone(){
             let _ = self.object.docker_group_builder
                 .get_or_insert_default();
 
             process_config.configure(self);
+            self.config = Some(process_config);
         }
 
         self.object.build();
@@ -33,14 +34,12 @@ impl Spawner for Process {
         // Create kafka topic
         if let Some(config) = self.config.as_mut() {
             if let ProcessTypeConfig::Kafka(kafka) = config {
-                if let ContainerType::Compose(group) = &self.object.docker_manager {
-                    if let Some(broker) = group.get_containers("kafka-broker") {
-                        if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
-                            kafka.create_topic(broker.id.as_ref().unwrap(), ssh);
-                        }
-                        else {
-                            kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new());
-                        }
+                if let ContainerType::Compose(group) = &self.object.docker_manager && let Some(broker) = group.get_containers("kafka-broker") {
+                    if let Some(ssh) = self.object.node.as_ref().and_then(|node| node.ssh.as_ref()) {
+                        kafka.create_topic(broker.id.as_ref().unwrap(), ssh);
+                    }
+                    else {
+                        kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new());
                     }
                 }
             }

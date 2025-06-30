@@ -35,7 +35,7 @@ pub struct ExtConfig {
 
 impl ToInternal<(Config, Portainer)> for ExtConfig {
     fn to_internal(self) -> (Config, Portainer) {
-        let (process, consumer, api_port) = self.api.to_internal();
+        let (process, consumer, api, api_port) = self.api.to_internal();
 
         let mut config = Config 
         {
@@ -48,6 +48,7 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
 
         config.process.push(process);
         config.object.push(consumer);
+        config.object.push(api);
 
         let portainer = self.portainer;
 

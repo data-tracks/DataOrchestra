@@ -20,7 +20,7 @@ impl Display for FormatFields {
             FormatFields::Json => "json",
         };
 
-        write!(f, "{}", value)
+        write!(f, "{value}")
     }
 }
 
@@ -31,6 +31,12 @@ pub struct Format {
     attributes: Vec<FormatFields> 
 } 
 
+impl From<FormatBuilder> for String {
+    fn from(value: FormatBuilder) -> Self {
+        value.build()        
+    }
+}
+
 
 impl FormatBuilder {
     pub fn build(&self) -> String {
@@ -40,7 +46,7 @@ impl FormatBuilder {
 
         let mut format_string = "--format".to_string();
         for attribute in format.attributes.iter() {
-            format_string = format!("{format_string} {{{{.{}}}}}", attribute);
+            format_string = format!("{format_string} {{{{.{attribute}}}}}");
         }
 
         format_string

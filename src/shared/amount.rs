@@ -54,7 +54,7 @@ impl<T> Amount<T> {
     #[inline]
     pub fn get_ref_single(&self) -> &T {
         match self {
-            Self::Single(ref value) => value,
+            Self::Single(value) => value,
             _ => panic!("Get single on non single value"),
         }
     }
@@ -67,7 +67,7 @@ impl<T> Amount<T> {
     #[inline]
     pub fn get_ref_mut_single(&mut self) -> &mut T {
         match self {
-            Self::Single(ref mut value) => value,
+            Self::Single(value) => value,
             _ => panic!("Get mut single on non single value"),
         }
     }
@@ -80,7 +80,7 @@ impl<T> Amount<T> {
     #[inline]
     pub fn get_ref_multiple(&self) -> &Vec<T> {
         match self {
-            Self::Multiple(ref values) => values,
+            Self::Multiple(values) => values,
             _ => panic!("Get ref multiple on non multiple value"),
         }
     }
@@ -93,7 +93,7 @@ impl<T> Amount<T> {
     #[inline]
     pub fn get_ref_mut_multiple(&mut self) -> &mut Vec<T> {
         match self {
-            Self::Multiple(ref mut values) => values,
+            Self::Multiple(values) => values,
             _ => panic!("Get ref mut multiple on non multiple value"),
         }
     }
