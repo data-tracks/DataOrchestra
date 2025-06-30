@@ -16,7 +16,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
+    - name: Build main
       run: cargo build --verbose
+    - name: Build kafka producer attachable
+      run: |
+        cd services/attachables/kafka_producer
+        cargo build --verbose
+    - name: Build kafka consumer attachable
+      run: |
+        cd services/attachables/kafka_consumer
+        cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
