@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{generate::Generate, process::process_types::ProcessType, traits::Configurator, types::data::{DockerDataBuilder, VolatileDockerDataBuilder}};
+use crate::core::{generate::Generate, process::process_types::ProcessType, traits::Configurator, types::{data::{DataBuilder, DataTypes, VolatileDataBuilder}, Executables, ScriptBuilder}};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sensor {
@@ -61,21 +61,26 @@ impl Sensor {
 
 impl Configurator<Generate> for Sensor {
     fn configure(&mut self, parent: &mut Generate) {
-        let docker_data = DockerDataBuilder::default()
+        let docker_data = DataBuilder::default()
             .path("templates/generators/sensor")
             .destination("/sensor")
-            .start(format!("/sensor/start.sh {}", self.parse()))
+            //.start()
             .build()
             .expect("Unable to build docker sensor data");
 
+        let script = ScriptBuilder::default()
+            .path(format!("/sensor/start.sh {}", self.parse()))
+            .build()
+            .expect("Unable to build script");
+
         let json = serde_json::to_string_pretty(self).expect("Unable to parse sensor to string");
 
-        let volatile_data = VolatileDockerDataBuilder::default()
+        let volatile_data = VolatileDataBuilder::default()
             .file("/sensor/config.json")
-            .data(json)
+            .content(json)
             .build()
             .expect("Unable to build volatile sensor data");
-
+        
         let docker = parent.object.docker_container_builder.get_or_insert_default();
 
         docker
@@ -83,7 +88,8 @@ impl Configurator<Generate> for Sensor {
             .dockerfile("images/rust.dockerfile")
             .image("rust_base");
     
-        parent.object.volatile_docker_datas.push(volatile_data);
-        parent.object.docker_datas.push(docker_data);
+        parent.object.resources.push(DataTypes::VolatileDockerData(volatile_data));
+        parent.object.resources.push(DataTypes::DockerData(docker_data));
+        parent.object.executables.push(Executables::Script(script));
     }
 }

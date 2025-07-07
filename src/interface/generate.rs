@@ -39,8 +39,11 @@ impl ToInternalVec<Generate> for ExtGenerate {
         for i in 0..self.amount {
             let mut generate = Generate::default();
 
-            generate.object.name = self.general.name.clone().unwrap_or("store".to_string());
+            generate.object.name = self.general.name.clone().unwrap_or("generate".to_string());
 
+            if self.amount > 0 {
+                generate.object.name = format!("{}-{i}", generate.object.name);
+            }
             generate.object.graph = self.general.graph.clone();
 
             generate.generate_type = self.generate_type.clone();
@@ -61,14 +64,20 @@ impl ToInternalVec<Generate> for ExtGenerate {
                 else 
                 {
                     if let Some(name) = docker.name {
-                        docker.name = Some(format!("{}-{}", name, i)); 
+                        docker.name = Some(format!("{name}-{i}")); 
                     }
                     generate.object.docker_container_builder = Some(docker.to_internal());
                 } 
             } 
 
-            generate.object.node_data = self.general.node_data.clone().to_internal();
-            generate.object.docker_datas.extend(self.general.docker_data.clone().to_internal());
+            generate.object.resources = self.general.resources.clone().to_internal();
+            let vec = self.general.executables.clone().to_internal();
+            for (script, data) in vec {
+                if let Some(data) = data {
+                    generate.object.resources.push(data);
+                }
+                generate.object.executables.push(script);
+            }
 
             debug!("Finished parsing generate to internal");
 

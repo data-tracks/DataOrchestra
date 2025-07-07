@@ -59,9 +59,9 @@ impl Run for Compose {
             container.runner = self.runner.clone_box();
             container.set_id(id.clone());
 
-            let result = super::api::poll_container(id, 30, &*self.runner);
+            let result = super::api::poll_container(id.clone(), 30, &*self.runner);
             if let Err(error) = result {
-                error!("{error}");
+                panic!("Polling docker container {id} timeout after 30 seconds ({error})");
             }
 
             container.is_running = true;

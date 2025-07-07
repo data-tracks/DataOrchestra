@@ -69,7 +69,7 @@ impl ContainerBuilder {
     }
 
     pub fn publish_map(&mut self, external: u16, internal: u16) -> &mut Self {
-        if self.ignore_ssh.is_none() || self.ignore_ssh.is_some_and(|ignore| !ignore) {
+        if self.ignore_ssh.is_none_or(|ignore| !ignore) || internal != 22 {
             let vec = self.publish_map.get_or_insert_default();
             vec.push(PortMapping::new(external, internal));
         }
@@ -77,7 +77,7 @@ impl ContainerBuilder {
     }
 
     pub fn publish(&mut self, internal: u16) -> &mut Self {
-        if self.ignore_ssh.is_none() || self.ignore_ssh.is_some_and(|ignore| !ignore) {
+        if self.ignore_ssh.is_none_or(|ignore| !ignore) || internal != 22 {
             let vec = self.publishes.get_or_insert_default();
             vec.push(internal);
         }

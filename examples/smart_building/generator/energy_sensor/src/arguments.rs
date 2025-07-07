@@ -5,7 +5,7 @@ use log::LevelFilter;
 #[command(version, about)]
 pub struct Arguments {
     #[arg(short = 'i', long)]
-    pub interval: u64,
+    pub interval: f64,
 
     #[arg(short = 'l', long, default_value_t = LevelFilter::Info)]
     pub level: LevelFilter

@@ -44,7 +44,7 @@ pub async fn data_producer(args: Arguments) {
             "timestamp": chrono::offset::Local::now()
         });
 
-        debug!("Sending package {}", &package);
+        dbg!("Sending package {}", &package);
 
         let result = client.post("http://kafka-producer:5000/kafkaproducer")
             .json(&package)

@@ -11,7 +11,9 @@ pub struct Arguments {
     #[serde(deserialize_with = "deserialize_levelfilter")]
     pub level: LevelFilter,
     // Kafka topics
-    pub topics: Vec<String>
+    pub topics: Vec<String>,
+    #[serde(default)]
+    pub logger: Option<String>
 }
 
 pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>

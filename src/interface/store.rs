@@ -4,7 +4,7 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::core::store::Store;
-use crate::core::types::data::NodeData;
+use crate::core::types::data::{DataBuilder, DataTypes};
 use crate::shared::traits::ToInternal;
 use crate::shared::Amount;
 
@@ -53,8 +53,14 @@ impl ToInternal<Store> for ExtStore {
                         .and_then(|name| name.to_str()) 
                 {
                     // Alter path to that of the remote location
-                    store.object.node_data.push(NodeData::new(schema.clone().to_owned(), format!("docker/mount/{}", file_name))); 
-                    *schema = format!("docker/mount/{}", file_name);
+                    let data = DataBuilder::default()
+                        .path(schema.clone())
+                        .destination(format!("docker/mount/{file_name}"))
+                        .build()
+                        .expect("Unable to build data for store schema");
+                    store.object.resources.push(DataTypes::NodeData(data)); 
+
+                    *schema = format!("docker/mount/{file_name}");
                 } 
             }
         }
@@ -82,8 +88,14 @@ impl ToInternal<Store> for ExtStore {
             } 
         }
 
-        store.object.node_data.extend(self.general.node_data.to_internal());
-        store.object.docker_datas.extend(self.general.docker_data.to_internal());
+        store.object.resources = self.general.resources.to_internal();
+        let vec = self.general.executables.clone().to_internal();
+        for (script, data) in vec {
+            if let Some(data) = data {
+                store.object.resources.push(data);
+            }
+            store.object.executables.push(script);
+        }
 
         debug!("Finished parsing store to internal");
         store

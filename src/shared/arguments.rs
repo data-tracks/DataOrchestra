@@ -27,7 +27,7 @@ pub struct Arguments {
     #[arg(env = "GENERATE_VALID_JSON")]
     pub generate_valid_json: Option<ObjectTypes>,
 
-    /// Skip the portainer manager setup
+    /// Setup portainer manager
     #[arg(long = "portainer", default_value_t = true)]
     #[arg(env = "PORTAINER")]
     pub portainer: bool,

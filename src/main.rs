@@ -1,37 +1,37 @@
 use std::time::Duration;
-use std::{env, fs};
+use std::{env, fs, thread};
 use std::path::Path;
 use std::process::exit;
 use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
 use data_orchestra::core::config::Config;
 use data_orchestra::core::object::Object;
+use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::logger::init_logger;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::Arguments;
 use data_orchestra::shared::{repeat_on_err_mut, Spawner};
 use data_orchestra::variables::variables::Variables;
-use log::{info, warn, error};
+use log::{info, warn, debug, error};
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
+use data_orchestra::log_time;
+use data_orchestra::shared::TIMESTAMPS;
 
-pub fn print_logo() {
-    println!(r#"
-    ____        __        ____            __              __                
-   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _          |\      _,,,---,,_
-  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/    ZZZzz /,`.-'`'    -.  ;-;;,_
- / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
-/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
-    "#);  
-}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// This is the main entry point of the orchestrator. Here the configuation file is read, arguments
+// are set and other related things. 
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
+    log_time!("Main start"); 
+
+    print_logo();                                                             
+
     init_logger(); 
 
     info!("Starting DataOrchestra");
     viable_check();
-
-    print_logo();                                                             
 
     // Read starting arguments
     dotenvy::dotenv().ok();
@@ -42,8 +42,6 @@ fn main() {
         exit(0);
     }
    
-    //init_logger(args.level);
-
     if args.file.is_none() {
         panic!("No config file specified. Please specify a config file with -f | --file  <path> argument or via the .env file key FILE=<path>");
     }
@@ -85,18 +83,12 @@ fn main() {
     config.object.extend(agents);
 
     if let Some(isolated_objects) = &args.isolate && !isolated_objects.is_empty() {
-        for isolated_object in isolated_objects.iter() {
-            config.object
-                .retain(|object| object.name.eq(isolated_object));
-
-            config.generate
-                .retain(|generate| generate.object.name.eq(isolated_object));
-
-            config.process
-                .retain(|process| process.object.name.eq(isolated_object));
-
-            config.store
-                .retain(|store| store.object.name.eq(isolated_object));
+        if !isolated_objects.is_empty() {
+            let isolated_set: std::collections::HashSet<_> = isolated_objects.iter().collect();
+            config.object.retain(|object| isolated_set.contains(&object.name));
+            config.generate.retain(|generate| isolated_set.contains(&generate.object.name));
+            config.process.retain(|process| isolated_set.contains(&process.object.name));
+            config.store.retain(|store| isolated_set.contains(&store.object.name));
         }
     }
 
@@ -108,19 +100,35 @@ fn main() {
         if let Err(error) = result {
             error!("Unable to set ssh session for node {} ({error})", node.host);
         }
+
     }
+
+    ////////////////////////////////////////////////////////
+    // By here all components are set. No new ones are added. 
+    ////////////////////////////////////////////////////////
+
+
+    log_time!("Configuration start"); 
 
     configuration_pipeline(&mut config, &mut portainer, &args);
 
-    /*
-    info!("Everything deployed. starting API.");
-    let state = Arc::new(State::new(config, args));
-    let rt = Runtime::new().unwrap();
-    rt.block_on(async {
-        start_api(state).await;
-    });
-    */
+    log_time!("Configuration end"); 
+
     info!("Closing DataOrchestra");
+
+    let mut timestamps = String::new();
+    for time in TIMESTAMPS.lock().unwrap().iter() {
+        let mut time_clone = time.clone();
+        time_clone.push('\n');
+        let time_clone = time_clone.as_str();
+        timestamps.push_str(time_clone);
+    }
+
+    let amount_objects = format!("Amount of objects: {}", config.get_mut_spawners().count());
+
+    println!("Stats:");
+    println!("{timestamps}");
+    println!("{amount_objects}");
 }
 
 /// Main creation pipeline of the programm. Processes and executes all main steps of the objects
@@ -130,30 +138,48 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     health_check(config);
 
     // pre build
+    
+    info!("Building");
+    log_time!("Building start"); 
 
     config.build();
+
+    info!("Finished building");
+    log_time!("Building finished");
 
     // post build
 
     if args.remove_all {
-        kill_containers(config);
+        kill_containers(config.get_nodes());
     }
 
-    exit(-1);
-
-    if args.portainer { 
+    if args.portainer {
         portainer.build(); 
     }
 
     pre_setup(portainer, config, args);
 
+    info!("Setting up");
+    log_time!("Setup start");
+
     config.setup();
+
+    info!("Finished setting up");
+    log_time!("Setup finished");
 
     // post setup
 
+    post_setup(portainer, config, args);
+
     // pre deploy
 
+    info!("Deploying");
+    log_time!("Deploy start");
+
     config.deploy();
+
+    info!("Finished deploying");
+    log_time!("Deploy finished");
 
     // post deploy
     
@@ -177,7 +203,6 @@ pub fn viable_check() {
     }
 
     let runner = Local::new();
-    dbg!(&runner.exec("whoami".to_string()));
     let result = runner.exec("docker info".to_string());
     if let Err(error) = result {
         panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. ({error})");
@@ -200,53 +225,65 @@ pub fn health_check(config: &Config) {
     info!("Health check complete. All systems green");
 }
 
+/// Creates needed docker network for all objects
 pub fn setup_docker_networks(manager: &ContainerType) {
     for container in manager.containers_ref_vec() {
         let network = &container.config.network;
-        if network.is_empty() {
+        if network.is_empty() || network.eq("orchestra") {
             continue;
         } 
 
         let existing_networks = docker::api::get_networks(&*container.runner);
         if let Err(ref error) = existing_networks {
-            error!("{}", error);
+            error!("{error}");
         }
         let existing_networks = existing_networks.unwrap();
 
         if !existing_networks.contains(network) {
             let result = docker::api::create_network(network, &*container.runner);
             if let Err(error) = result {
-                error!("{}", error);
+                error!("{error}");
             }
         }
     }
 }
 
-pub fn kill_containers(config: &Config) {
-    let nodes = config.get_nodes();
-    for node in nodes {
-        if let Some(ssh) = node.ssh.as_ref() {
-            info!("Removing all docker containers from {}", node.host);
-            let result = docker::api::stop_containers(ssh);
-            if let Err(error) = result {
-                error!("{}", error);
-            }
-            let result = docker::api::delete_containers(ssh);
-            if let Err(error) = result {
-                error!("{}", error);
-            }
+/// Kill all containers on all nodes
+pub fn kill_containers(nodes: Vec<&Node>) {
+    thread::scope(|s| {
+        for node in nodes {
+            let _ = thread::Builder::new().spawn_scoped(s, || {
+                if let Some(ssh) = node.ssh.as_ref() {
+                    info!("Removing all docker containers from {}", node.host);
+                    let result = docker::api::stop_containers(ssh);
+                    if let Err(error) = result {
+                        error!("{error}");
+                    }
+                    let result = docker::api::delete_containers(ssh);
+                    if let Err(error) = result {
+                        error!("{error}");
+                    }
+                }
+                else {
+                    error!("Node {} doesnt have ssh session", node.host);
+                }
+            });
         }
-    }
 
-    let local = Local::new();
-    let result = docker::api::stop_containers(&local);
-    if let Err(error) = result {
-        error!("{}", error);
-    }
-    let result = docker::api::delete_containers(&local);
-    if let Err(error) = result {
-        error!("{}", error);
-    }
+        let _ = thread::Builder::new().spawn_scoped(s, || {
+            let local = Local::new();
+            let result = docker::api::stop_containers(&local);
+            if let Err(error) = result {
+                error!("{error}");
+            }
+            let result = docker::api::delete_containers(&local);
+            if let Err(error) = result {
+                error!("{error}");
+            }
+        }); 
+    });
+
+    
 }
 
 pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
@@ -267,17 +304,12 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
    
     info!("Deploying portainer agent on nodes");
     let nodes = config.get_nodes();
-    if !args.portainer {
-        for node in nodes.iter() {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(portainer.add_agent(node));
-
-            // Upload data to node
-            if let Some(ref ssh) = node.ssh {
-                let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
-                if let Err(error) = result {
-                    error!("{}", error);
-                }
+    for node in nodes.iter() {
+        // Upload data to node
+        if let Some(ref ssh) = node.ssh {
+            let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
+            if let Err(error) = result {
+                error!("{error}");
             }
         }
     }
@@ -289,10 +321,42 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
                 if !networks.contains(&"orchestra".to_string()) {
                     let result = docker::api::create_network("orchestra", ssh);
                     if let Err(error) = result {
-                        error!("{}", error);
+                        error!("{error}");
                     }
                 }
             }
         }
     }
+}
+
+pub fn post_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
+    let nodes = config.get_nodes();
+    if args.portainer {
+        for node in nodes.iter() {
+            if let Some(ssh) = node.ssh.as_ref() {
+                let containers = docker::api::get_container_names(ssh);
+                if let Ok(containers) = containers {
+                    dbg!(&containers);
+                    if containers.contains(&"portainer_agent".to_string()) {
+                        let rt = tokio::runtime::Runtime::new().unwrap();
+                        rt.block_on(portainer.add_agent(node));
+                    }
+                    else {
+                        error!("No portainer agent on {}", node.host);
+                    }
+                }
+                
+            }
+        }
+    }
+}
+
+pub fn print_logo() {
+    println!(r#"
+    ____        __        ____            __              __                
+   / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _          |\      _,,,---,,_
+  / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/    ZZZzz /,`.-'`'    -.  ;-;;,_
+ / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
+/_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
+    "#);  
 }

@@ -1,11 +1,12 @@
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
+use crate::core::types::{Executables, ScriptBuilder};
 use crate::interface::general::General;
 use crate::core::object::Object;
 use crate::shared::ToInternal;
 use crate::core::traits::Creator;
-use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
+use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 
 
@@ -29,7 +30,10 @@ pub struct Arguments {
     #[serde(default = "default_level")]
     pub level: LevelFilter,
 
-    pub topics: Vec<String>
+    pub topics: Vec<String>,
+
+    #[serde(default)]
+    pub logger: Option<String>
 }
 
 pub fn default_api_port() -> u16 {
@@ -51,7 +55,8 @@ impl Default for Arguments {
             api_port: 5000, 
             address: "localhost:9092".to_string(), 
             level: LevelFilter::Info, 
-            topics: Vec::new() 
+            topics: Vec::new(),
+            logger: None
         }
     }
 }
@@ -81,14 +86,18 @@ impl Creator<Object> for KafkaProducer {
 
         object.graph.ignore = true;
 
-        let docker_data = DockerDataBuilder::default()
+        let docker_data = DataBuilder::default()
             .path("services/attachables/kafka_producer")
             .destination("/kafka_producer")
-            .start("/kafka_producer/start.sh")
             .build()
             .expect("Unable to build docker_data");
 
-        object.docker_datas.push(docker_data);
+        let script = ScriptBuilder::default()
+            .path("/kafka_producer/start.sh")
+            .build()
+            .expect("Unable to build script");
+
+        object.resources.push(DataTypes::DockerData(docker_data));
         
         object.docker_container_builder.get_or_insert_default();
 
@@ -102,14 +111,15 @@ impl Creator<Object> for KafkaProducer {
 
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
-        let volatile_data = VolatileDockerDataBuilder::default()
+        let volatile_data = VolatileDataBuilder::default()
             .file("/kafka_producer/config.json")
-            .data(json)
+            .content(json)
             .build()
             .expect("Unable to build volatile data");
 
-        object.volatile_docker_datas.push(volatile_data);
-
+        object.resources.push(DataTypes::VolatileDockerData(volatile_data));
+        object.executables.push(Executables::Script(script));
+        
         object
     }
 }

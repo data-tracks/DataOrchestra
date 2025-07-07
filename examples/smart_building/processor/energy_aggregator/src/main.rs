@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use clap::Parser;
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use kafka_processor::arguments::Args;
 use kafka_processor::logger::init_logger;
 use log::{debug, error, info, LevelFilter};
@@ -43,6 +43,8 @@ pub struct Energy {
 pub fn process_input<'a>(messages: Vec<OwnedMessage>) -> Result<String, PayloadError> {
     let mut energy_sum = 0.0;
 
+    debug!("{}", messages.len());
+
     for message in messages.iter() {
         match message.payload_view::<str>() {
             Some(Ok(payload)) => {
@@ -82,17 +84,25 @@ pub async fn processor(args: Args) {
         .create()
         .expect("Unable to create producer");
 
-    let chunk_stream = consumer.stream().try_ready_chunks(10);
-    let stream_processor = chunk_stream.try_for_each(|borrowed_messages| {
-        let producer = producer.clone();
-        let output_topic = args.producer_topic.clone();
+    let mut stream = consumer.stream();
+    let mut items = Vec::new();
 
-        async move {
-            let mut owned_messages= Vec::<OwnedMessage>::new();
-            for borrowed_message in borrowed_messages {
-                owned_messages.push(borrowed_message.detach());
-            }
-            tokio::spawn(async move {
+    info!("Starting event loop");
+    while let Some(result) = stream.next().await {
+        if let Ok(borrowed_message) = result {
+            items.push(borrowed_message.detach())
+        }
+        else if let Err(error) = result {
+            error!("{}", error);
+        }
+
+        if items.len() >= 10 {
+            let owned_messages = std::mem::take(&mut items);
+
+            let producer = producer.clone();
+            let output_topic = args.producer_topic.clone();
+
+            tokio::spawn( async move {
                 let payload =
                     tokio::task::spawn_blocking(|| process_input(owned_messages))
                         .await
@@ -116,11 +126,8 @@ pub async fn processor(args: Args) {
                     }
                 }
             });
-            Ok(())
         }
-    });
+    }
 
-    info!("Starting event loop");
-    stream_processor.await.expect("stream processing failed");
     info!("Stream processing terminated");
 }

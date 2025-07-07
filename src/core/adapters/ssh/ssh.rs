@@ -1,12 +1,19 @@
 use core::fmt;
+use log::trace;
 use thiserror::Error;
 
 use ssh2::Session;
 
 /// The ssh object. Wrapper around the ssh2 [`Session`] object
-#[derive(Clone)]
 pub struct Ssh {
     pub session: Session
+}
+
+impl Clone for Ssh {
+    fn clone(&self) -> Self {
+        trace!("CLONING SSH");
+        Ssh { session: self.session.clone() }
+    }
 }
 
 #[derive(Debug, Error)]

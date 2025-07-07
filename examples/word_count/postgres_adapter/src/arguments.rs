@@ -6,7 +6,7 @@ use log::LevelFilter;
 pub struct Args {
     /// Kafka topic from which data is consumed
     #[arg(long)]
-    pub consumer_topic: Vec<String>,
+    pub topic: Vec<String>,
 
     /// Connection from which data is consumed
     #[arg(short = 'c', long, value_name = "HOST:PORT")]

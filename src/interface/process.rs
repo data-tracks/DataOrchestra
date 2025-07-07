@@ -63,8 +63,14 @@ impl ToInternal<Process> for ExtProcess {
             } 
         } 
 
-        process.object.node_data = self.general.node_data.to_internal();
-        process.object.docker_datas = self.general.docker_data.to_internal();
+        process.object.resources = self.general.resources.to_internal();
+        let vec = self.general.executables.clone().to_internal();
+        for (script, data) in vec {
+            if let Some(data) = data {
+                process.object.resources.push(data);
+            }
+            process.object.executables.push(script);
+        }
 
         process
     }

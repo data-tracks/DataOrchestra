@@ -37,6 +37,7 @@ impl Configurator<Store> for MongoDB {
             .image("mongo:4.4.6")
             .try_name("mongodb")
             .publish_map(27017, 27017)
+            .ignore_ssh(true)
             .environment("MONGO_INITDB_ROOT_USERNAME", &self.username)
             .environment("MONGO_INITDB_ROOT_PASSWORD", &self.password);
     }

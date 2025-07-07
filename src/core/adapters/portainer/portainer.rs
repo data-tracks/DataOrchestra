@@ -4,7 +4,7 @@ use log::{error, info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::Object, types::Node};
+use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::{Object, ObjectBuilder}, types::Node};
 
 /// Portainer struct. Holds general configuration of the local portainer container
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,6 +30,12 @@ pub struct Portainer {
     #[serde(skip)]
     #[serde(default = "default_runner")]
     pub runner: Box<dyn Runner + Send + Sync>
+}
+
+#[derive(Debug)]
+struct PortainerResponse {
+    message: String,
+    details: String,
 }
 
 /// Temporary struct to easily deserialize the jwt token
@@ -100,7 +106,7 @@ impl Portainer {
             if !volumes.contains(&String::from("portainer_data")) {
                 let result = self.runner.exec("docker volume create portainer_data".to_string());
                 if let Err(error) = result {
-                    error!("{}", error);
+                    error!("{error}");
                 }
             }
 
@@ -115,7 +121,7 @@ impl Portainer {
                     -v portainer_data:/data portainer/portainer-ce:lts".to_string()
                 );
             if let Err(error) = result {
-                error!("{}", error);
+                error!("{error}");
             }
 
             // poll docker container
@@ -136,11 +142,6 @@ impl Portainer {
 
     /// Create a remote portainer agent as object
     pub fn create_agent(&self, node: &Node) -> Object {
-        let mut object = Object::default();
-
-        object.name = "portainer-agent".to_string();
-        object.node = Some(node.to_owned());
-
         let mut container = ContainerBuilder::default();
         container
             .ignore_ssh(true)
@@ -152,9 +153,12 @@ impl Portainer {
             .volume("/:/host")
             .image("portainer/agent:2.27.6");
 
-        object.docker_container_builder = Some(container);
-
-        object
+        ObjectBuilder::default()
+            .name(format!("portainer-agent-{}", node.host))
+            .node(node.to_owned())
+            .docker_container_builder(container)
+            .build()
+            .expect("Unable to build portainer agent object")
     }
 
     pub fn deploy_agents<'a>(&self, hosts: Vec<&'a IpAddr>) {
@@ -179,14 +183,18 @@ impl Portainer {
             .danger_accept_invalid_certs(true)
             .build().unwrap();
 
-        let response = client
+        let result = client
             .post(format!("https://{}:{}/api/endpoints", self.host, self.port))
             .bearer_auth(self.jwt.clone())
             .form(&params)
             .send().await;
 
-        if let Err(error) = response {
-            error!("{}", error);
+        if let Err(error) = result {
+            error!("{error}");
+        }
+        else if let Ok(response) = result {
+            let body = response.text().await.unwrap();
+            info!("{:?}", body);
         }
     }
 

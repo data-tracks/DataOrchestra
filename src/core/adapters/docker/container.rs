@@ -2,9 +2,11 @@ use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 use log::{debug, error, warn};
+use tracing::field::debug;
 use crate::core::adapters::ssh::{self, Ssh};
 use crate::core::adapters::traits::Runner;
 use crate::core::adapters::{Local, OsSystems};
+use crate::log_time;
 use super::{ContainerConfig, PortMapping};
 use super::Run;
 
@@ -128,9 +130,12 @@ impl Run for Container {
 
     /// Run docker container using a dockerfile or image
     fn run(&mut self) -> Result<(), String> {
+        log_time!("Before Create");
         self.create();
+        log_time!("After Create");
 
         if let Some(id) = self.id.as_ref() {
+            debug!("POLLING CONTAINER");
             let result = super::api::poll_container(id, 30, &*self.runner);
             if let Err(error) = result {
                 panic!("Polling docker container {id} timeout after 30 seconds ({error})");
@@ -142,7 +147,9 @@ impl Run for Container {
 
         self.is_running = true;
 
+        log_time!("Before load");
         self.load(); 
+        log_time!("After load");
 
         Ok(())     
     }
@@ -161,28 +168,33 @@ impl Container {
     }
 
     pub fn load(&mut self) {
+        log_time!("Load name");
         let result = self.load_name();
         if let Err(error) = result {
             error!("Unable to get name of container ({error})");
         }
 
+        log_time!("Load ip");
         // get and set ip
         let result = self.load_ip();
         if let Err(error) = result {
             panic!("Unable to get ip of container | {}", error);
         }
 
+        log_time!("Load os");
         let _ = self.load_os();
         if let Err(error) = result {
             error!("Unable to get os from container {} | {}", self.config.name.as_ref().unwrap(), error);
         }
 
+        log_time!("Load ports");
         // get and set port mappings
         let result = self.load_ports();
         if let Err(error) = result {
             error!("Unable to get ports from container {} | {}", self.config.name.as_ref().unwrap(), error);
-        } 
-        
+        }
+
+        log_time!("Install ssh");
         // Install ssh server
         if self.get_ssh_port().is_some() {
             let result = self.install_ssh();

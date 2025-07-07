@@ -15,9 +15,9 @@
       "host": "10.34.64.163",
       "username": "ubuntu"
     },
-    "NODE166": {
-      "name": "node-166",
-      "host": "10.34.64.166",
+    "NODE164": {
+      "name": "node-164",
+      "host": "10.34.64.164",
       "username": "ubuntu"
     }
   },
@@ -29,23 +29,33 @@
   "generate":
   {
     "node": "${NODE161}",
-    "name": "WordGenerator",
-    "to": ["word-splitter"],
-    "docker_data": {
-      "name": "word-generator",
-      "path": "examples/word_count/generator",
-      "destination": "/word-generator",
-      "start": "/word-generator/start.sh"
+    "name": "sentence_generator",
+    "to": ["kafka"],
+    "resources": {
+      "type": "data",
+      "name": "sentence_generator",
+      "path": "examples/word_count/sentence_generator",
+      "destination": "/sentence_generator"
+    },
+    "executables": {
+      "type": "tmux",
+      "session": "SentenceGenerator",
+      "path": "/sentence_generator/start.sh",
+      "commands": [
+        "cd /sentence_generator",
+        "cargo run -- --producer 10.34.64.162:9092 --topic SentenceGenerator -l debug --interval 1"
+      ]
     },
     "docker": {
       "dockerfile": "images/rust.dockerfile",
       "image": "rust_base",
-      "name": "word-generator"
+      "name": "sentence_generator"
     },
     "attach": {
-      "kafkaproducer": {
-        "topics": ["EnergyIn"],
+      "kafka_producer": {
+        "topics": ["Sentence"],
         "address": "${NODE162.host}:9092",
+        "logger": "${NODE164.host}:9092",
         "api_port": 5000
       }
     }
@@ -55,17 +65,33 @@
   [
     {
       "node": "${NODE162}",
-      "name": "word-splitter",
-      "to": ["postgres"],
+      "name": "sentence_splitter",
+      "to": ["kafka"],
+      "resources": {
+        "type": "data",
+        "name": "sentence_splitter",
+        "path": "examples/word_count/sentence_splitter",
+        "destination": "/sentence_splitter"
+      },
+      "executables": {
+        "type": "tmux",
+        "session": "SentenceSplitter",
+        "path": "/sentence_splitter/start.sh",
+        "commands": [
+          "cd /sentence_splitter",
+          "cargo run -- --consumer broker:29092 --producer broker:29092 --consumer-topic Sentence --producer-topic Word -l debug"
+        ]
+      },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "word-splitter"
+        "name": "sentence_splitter"
       }
     },
     {
       "node": "${NODE162}",
-      "name": "Apache Kafka",
+      "name": "kafka",
+      "to": ["postgres_adapter"],
       "kafka": {
         "topics": ["Sentence", "Word"]
       }
@@ -75,23 +101,34 @@
   "store":
   [
     {
-      "name": "postgres-adapter",
-      "docker_data": {
+      "node": "${NODE163}",
+      "name": "postgres_adapter",
+      "to": ["postgres"],
+      "resources": {
+        "type": "data",
         "name": "word-generator",
-        "path": "examples/word_count/store",
-        "destination": "/postgres-adapter",
-        "start": "/postgres-adapter/start.sh"
+        "path": "examples/word_count/postgres_adapter",
+        "destination": "/postgres_adapter"
+      },
+      "executables": {
+        "type": "tmux",
+        "session": "PostgresAdapter",
+        "path": "/postgres_adapter/start.sh",
+        "commands": [
+          "cd /postgres_adapter",
+          "cargo run -- -l debug --topic Word --consumer 10.34.64.162:9092"
+        ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "postgres-adapter"
+        "name": "postgres_adapter"
       }
     },
     {
       "node": "${NODE163}",
       "name": "postgres",
-      "schema": "examples/word_count/store/words.sql",
+      "schema": "examples/word_count/postgres_adapter/words.sql",
       "postgres": {
         "postgres_db": "words"
       }

@@ -12,6 +12,10 @@ pub trait ToInternal<T> {
     fn to_internal(self) -> T;
 }
 
+pub trait ToAPI<T> {
+    fn to_api(self) -> T;
+}
+
 /// Parsing external structure to internal structure, when one object is capable of creating copies
 /// of itself
 pub trait ToInternalVec<T> {

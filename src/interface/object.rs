@@ -48,8 +48,14 @@ impl ToInternal<Object> for ExtObject {
             } 
         }
 
-        object.node_data = self.general.node_data.to_internal();
-        object.docker_datas = self.general.docker_data.to_internal();
+        object.resources = self.general.resources.to_internal();
+        let vec = self.general.executables.clone().to_internal();
+        for (script, data) in vec {
+            if let Some(data) = data {
+                object.resources.push(data);
+            }
+            object.executables.push(script);
+        }
 
         object
     } 

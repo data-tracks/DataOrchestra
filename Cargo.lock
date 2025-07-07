@@ -574,6 +574,7 @@ dependencies = [
  "derive_builder",
  "dotenvy",
  "log",
+ "once_cell",
  "regex",
  "reqwest",
  "rstest",

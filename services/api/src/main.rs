@@ -1,13 +1,14 @@
 use std::{fs, net::IpAddr, path::Path, sync::Arc};
 use actix_cors::Cors;
 use actix_web::{get, http::{self, header::ContentType}, post, put, rt::System, web, App, HttpResponse, HttpServer, Responder};
-use api::state::{self, BroadcastMessage};
+use api::state::BroadcastMessage;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use log::{error, info};
 use api::state::State;
 
 use data_orchestra::core::adapters::{async_ping_node, docker, StateTypes};
+use data_orchestra::core::config::Config as OrchestraConfig;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
@@ -56,6 +57,11 @@ async fn main() {
 
 #[get("orchestra/active")]
 pub async fn get_active() -> impl Responder {
+    HttpResponse::Ok()
+}
+
+#[post("orchestra/set_config")]
+pub async fn post_set_config(body: web::Json<OrchestraConfig>) -> impl Responder {
     HttpResponse::Ok()
 }
 

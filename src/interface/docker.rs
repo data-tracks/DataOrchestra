@@ -12,7 +12,7 @@ pub struct ExtDocker {
     // Network of container
     pub network: Option<String>,
     // Additional options of container
-    pub enviroment: Option<HashMap<String, String>>,
+    pub environment: Option<HashMap<String, String>>,
     // Mounts of container
     #[serde(default)]
     pub mount: Amount<String>,
@@ -34,7 +34,7 @@ impl Default for ExtDocker {
         { 
             name: None, 
             network: None, 
-            enviroment: None, 
+            environment: None,
             mount: Amount::None, 
             publish_all: true, 
             image: None, 
@@ -82,7 +82,7 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
         if let Some(network) = self.network {
             builder.network(network);
         }
-        if let Some(env) = self.enviroment {
+        if let Some(env) = self.environment {
             for (key, value) in env {
                 builder.environment(key, value);
             }

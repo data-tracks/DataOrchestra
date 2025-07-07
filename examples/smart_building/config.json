@@ -29,15 +29,23 @@
   "generate":
   [
     {
-      "amount": 4,
+      "amount": 6,
       "node": "${NODE161}",
       "name": "energy-sensor",
       "to": ["energy-filter"],
-      "docker_data": {
+      "resources": {
         "name": "rust",
         "path": "examples/smart_building/generator/energy_sensor",
-        "destination": "/energy_sensor",
-        "start": "/energy_sensor/start.sh"
+        "destination": "/energy_sensor"
+      },
+      "executables": {
+        "type": "tmux",
+        "session": "EnergySensor",
+        "path": "/energy_sensor/start.sh",
+        "commands": [
+          "cd /energy_sensor",
+          "cargo run -- -l debug --interval 0.25"
+        ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
@@ -48,6 +56,7 @@
         "kafkaproducer": {
           "topics": ["EnergyIn"],
           "address": "${NODE162.host}:9092",
+          "logger": "${NODE161.host}:9092",
           "api_port": 5000
         }
       }
@@ -60,7 +69,7 @@
       "node": "${NODE162}",
       "name": "energy-filter",
       "to": ["kafka"],
-      "docker_data": {
+      "resources": {
         "name": "rust-filter",
         "path": "examples/smart_building/processor/energy_filter",
         "destination": "/energy_filter",
@@ -84,7 +93,7 @@
       "node": "${NODE162}",
       "name": "energy-aggregator",
       "to": ["postgres-adapter"],
-      "docker_data": {
+      "resources": {
         "name": "rust-aggregator",
         "path": "examples/smart_building/processor/energy_aggregator",
         "destination": "/energy_aggregator",
@@ -117,7 +126,7 @@
       "node": "${NODE163}",
       "name": "mongodb-adapter",
       "to": ["mongodb"],
-      "docker_data": {
+      "resources": {
         "name": "rust",
         "path": "examples/smart_building/store/energy_store_mongodb",
         "destination": "/energy_store_mongodb",
@@ -133,7 +142,7 @@
       "node": "${NODE164}",
       "name": "postgres-adapter",
       "to": ["postgres"],
-      "docker_data": {
+      "resources": {
         "name": "rust",
         "path": "examples/smart_building/store/energy_store_postgres",
         "destination": "/energy_store_postgres",

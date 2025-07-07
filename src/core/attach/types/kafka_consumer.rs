@@ -3,8 +3,9 @@ use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::traits::Creator;
+use crate::core::types::{Executables, ScriptBuilder};
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
-use crate::core::types::data::{DockerDataBuilder, VolatileDockerDataBuilder};
+use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
 use crate::shared::ToInternal;
 use crate::interface::general::General;
 use crate::core::object::Object;
@@ -92,14 +93,18 @@ impl Creator<Object> for KafkaConsumer {
 
         object.graph.ignore = true;
 
-        let docker_data = DockerDataBuilder::default()
+        let docker_data = DataBuilder::default()
             .path("services/attachables/kafka_consumer")
             .destination("/kafka_consumer")
-            .start("/kafka_consumer/start.sh")
             .build()
             .expect("Unable to build docker_data");
 
-        object.docker_datas.push(docker_data);
+        let script = ScriptBuilder::default()
+            .path("/kafka_consumer/start.sh")
+            .build()
+            .expect("Unable to build script");
+
+        object.resources.push(DataTypes::DockerData(docker_data));
 
         object.docker_container_builder.get_or_insert_default();
 
@@ -112,14 +117,15 @@ impl Creator<Object> for KafkaConsumer {
 
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
-        let volatile_data = VolatileDockerDataBuilder::default()
+        let volatile_data = VolatileDataBuilder::default()
             .file("/kafka_consumer/config.json")
-            .data(json)
+            .content(json)
             .build()
             .expect("Unable to build volatile data");
 
-        object.volatile_docker_datas.push(volatile_data);
-
+        object.resources.push(DataTypes::VolatileDockerData(volatile_data));
+        object.executables.push(Executables::Script(script));
+        
         object
     }
 }

@@ -5,11 +5,6 @@ use rdkafka::{consumer::{CommitMode, Consumer, StreamConsumer}, message::Headers
 use serde::{Deserialize, Serialize};
 use tokio_postgres::NoTls;
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Value {
-    pub value: f64
-}
-
 #[tokio::main]
 async fn main() {
     info!("Starting");
@@ -21,7 +16,7 @@ async fn main() {
 }
 
 pub async fn kafka_consumer(args: Args) -> ! {
-    let connection_string = format!("host=postgres port=5432 user=postgres password=postgres dbname=energy");
+    let connection_string = format!("host=postgres port=5432 user=postgres password=postgres dbname=words");
     let (client, connection) = tokio_postgres::connect(&connection_string, NoTls).await.unwrap();
 
     tokio::spawn(async move {
@@ -41,7 +36,7 @@ pub async fn kafka_consumer(args: Args) -> ! {
         .create()
         .expect("Unable to create consumer");
     
-    let topics: Vec<&str> = args.consumer_topic
+    let topics: Vec<&str> = args.topic
         .iter()
         .map(|x| x.as_str())
         .collect();
@@ -55,11 +50,10 @@ pub async fn kafka_consumer(args: Args) -> ! {
         match consumer.recv().await {
             Err(e) => warn!("Kafka error: {}", e),
             Ok(m) => {
-                let payload: Result<f64, ()> = match m.payload_view::<str>() {
+                let payload: Result<String, ()> = match m.payload_view::<str>() {
                     Some(Ok(s)) => {
                         info!("{}", s);
-                        let package: Value = serde_json::from_str(&s).expect("Unable to parse json to struct");
-                        Ok(package.value)
+                        Ok(s.to_string())
                     },
                     None => Err(()),
                     Some(Err(e)) => {
@@ -67,7 +61,8 @@ pub async fn kafka_consumer(args: Args) -> ! {
                         Err(())
                     }
                 };
-                let result = client.execute("INSERT INTO energy (value) VALUES ($1)", &[&payload.unwrap()]).await.unwrap();
+                let word = payload.unwrap();
+                let result = client.execute("INSERT INTO words (word, count) VALUES ($1, 1) ON CONFLICT (word) DO UPDATE SET count = words.count + 1", &[&word]).await.unwrap();
                 dbg!(result);
                 consumer.commit_message(&m, CommitMode::Async).unwrap();
             }

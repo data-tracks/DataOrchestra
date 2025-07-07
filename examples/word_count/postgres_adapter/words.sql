@@ -1,4 +1,4 @@
 CREATE TABLE Words (
-    word TEXT,
+    word TEXT PRIMARY KEY,
     count BIGINT
-)
+);

@@ -1,7 +1,12 @@
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Builder)]
-#[builder(build_fn(name = "build_internal", private))]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+#[builder(
+    build_fn(name = "build_internal", private),
+    derive(Debug, Serialize, Deserialize)
+)]
+#[serde(rename_all = "snake_case")]
 pub struct Tmux {
     #[builder(default = "true", setter(custom))]
     bash: bool,
@@ -26,8 +31,7 @@ impl TmuxBuilder {
 
     pub fn command(&mut self, command: impl Into<String>) -> &mut Self {
         let vec = self.commands.get_or_insert_default();
-        let command = format!("tmux send-keys -t $session \"{}\" C-m", command.into());
-        vec.push(command);
+        vec.push(command.into());
         self
     }
 
@@ -47,9 +51,18 @@ impl TmuxBuilder {
             panic!("Please set shell for tmux session");
         }
 
+        let mut formatted_commands = Vec::new();
+
+        if let Some(commands) = self.commands.as_ref() {
+            for command in commands.iter() {
+                let formatted_command = format!("tmux send-keys -t $session \"{command}\" C-m");
+                formatted_commands.push(formatted_command);
+            }
+        }
+
         let create = "tmux new-session -d -s $session".to_string();
         let session = format!("session={}", tmux.session);
-        let commands = tmux.commands.join("\n");
+        let commands = formatted_commands.join("\n");
 
         format!("{shell}\n{session}\n{create}\n{commands}")
     }

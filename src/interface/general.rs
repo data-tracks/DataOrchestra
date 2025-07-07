@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::attach::attach_types::AttachTypeConfig;
+use crate::core::{attach::attach_types::AttachTypeConfig, types::Executables};
 use crate::core::object::Graph;
+use crate::interface::data::ExtDataTypes;
 use crate::shared::Amount;
 
-use super::{data::{ExtDockerData, ExtNodeData}, docker::ExtDocker, node::ExtNode};
+use super::execute::ExtExecutables;
+use super::{docker::ExtDocker, node::ExtNode};
 
 /// The general object. Represents general attributes of external representation objects
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -19,16 +21,16 @@ pub struct General {
     pub docker: Option<ExtDocker>, 
     /// Remote node connection
     pub node: Option<ExtNode>,
-    #[serde(default)]
-    pub node_data: Amount<ExtNodeData>,
-    #[serde(default)]
-    pub docker_data: Amount<ExtDockerData>,
     /// Ansible configuration script
     pub ansible: Option<String>,
     /// Attachable configuration
     #[serde(default)]
     #[serde(rename = "attach")]
     pub attach_config: Amount<AttachTypeConfig>,
+    #[serde(default)]
+    pub resources: Amount<ExtDataTypes>,
+    #[serde(default)]
+    pub executables: Amount<ExtExecutables>
 }
 
 impl Default for General {
@@ -39,10 +41,10 @@ impl Default for General {
             graph: Graph::default(),
             docker: Some(ExtDocker::default()), 
             node: None, 
-            node_data: Amount::None, 
-            docker_data: Amount::None, 
             ansible: Some("scripts/ansible/ansible-setup.yml".to_string()), 
             attach_config: Amount::None,
+            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, path: "".to_string(), destination: "".to_string(), dependency: None })),
+            executables: Amount::None
         }
     }  
 }

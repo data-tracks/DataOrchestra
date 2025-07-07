@@ -1,6 +1,8 @@
 use std::thread;
 
 use crate::shared::Spawner;
+use crate::log_time;
+use log::debug;
 
 use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
 
@@ -98,8 +100,8 @@ impl Config {
 
     /// Get mutable reference to all objects in config which implement the [`Spawner`] trait.
     pub fn get_mut_spawners<'a>(&'a mut self) -> impl Iterator<Item = (&'a mut (dyn Spawner + Send + 'a), String)> {
-        let mut vec_objects = Vec::new();
-        let mut vec_names = Vec::new();
+        let mut vec_objects: Vec<&'a mut (dyn Spawner + Send + 'a)> = Vec::new();
+        let mut vec_names: Vec<String> = Vec::new();
 
         for object in self.object.iter_mut() {
             let name = object.name.clone();
@@ -135,40 +137,40 @@ impl Config {
 
 impl Spawner for Config {
     fn build(&mut self) {
+        let spawners = self.get_mut_spawners();
         thread::scope(|s| {
-            let spawners = self.get_mut_spawners();
             for (spawner, name) in spawners {
-                let _ = thread::Builder::new()
+                thread::Builder::new()
                     .name(name)
-                    .spawn_scoped(s, || {
+                    .spawn_scoped(s, move || {
                         spawner.build();
-                });
+                }).unwrap();
             }
         });
     }
 
     fn setup(&mut self) {
+        let spawners = self.get_mut_spawners();
         thread::scope(|s| {
-            let spawners = self.get_mut_spawners();
             for (spawner, name) in spawners {
-                let _ = thread::Builder::new()
+                thread::Builder::new()
                     .name(name)
-                    .spawn_scoped(s, || {
+                    .spawn_scoped(s, move || {
                         spawner.setup();
-                });
+                }).unwrap();
             }
         });
     }
 
     fn deploy(&mut self) {
+        let spawners = self.get_mut_spawners();
         thread::scope(|s| {
-            let spawners = self.get_mut_spawners();
             for (spawner, name) in spawners {
-                let _ = thread::Builder::new()
+                thread::Builder::new()
                     .name(name)
-                    .spawn_scoped(s, || {
+                    .spawn_scoped(s, move || {
                         spawner.deploy();
-                });
+                }).unwrap();
             }
         });
     }

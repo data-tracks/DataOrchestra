@@ -1,7 +1,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::{core::{adapters::{ContainerBuilder, TmuxBuilder}, attach::types::kafka_consumer::KafkaConsumer, object::{Object, ObjectBuilder}, process::{process_types::ProcessTypeConfig, types::Kafka, Process}, traits::Creator, types::data::{DockerDataBuilder, VolatileDockerDataBuilder}}, shared::ToInternal};
+use crate::core::adapters::{ContainerBuilder, TmuxBuilder};
+use crate::core::types::{Script, ScriptBuilder};
+use crate::shared::ToInternal;
+use crate::core::types::data::{DataBuilder, VolatileDataBuilder};
+use crate::core::traits::Creator;
+use crate::core::process::{process_types::ProcessTypeConfig, types::Kafka, Process};
+use crate::core::object::{Object, ObjectBuilder};
+use crate::core::attach::types::kafka_consumer::KafkaConsumer;
 use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
 use super::{general::General, node::ExtNode};
 
@@ -43,30 +50,36 @@ impl ToInternal<(Process, Object, Object, u16)> for API {
             .command("cargo run")
             .build();
 
-        let config = VolatileDockerDataBuilder::default()
+        let config = VolatileDataBuilder::default()
             .file("/DataOrchestra/services/api/config.json")
-            .data(json!({ "port": self.port }).to_string())
+            .content(json!({ "port": self.port }).to_string())
             .build()
             .expect("Unable to build config file");
 
-        let shell = VolatileDockerDataBuilder::default()
-            .name(docker_name)
+        let shell = VolatileDataBuilder::default()
+            .name(docker_name.clone())
             .file("/DataOrchestra/services/api/start.sh")
-            .data(tmux)
+            .content(tmux)
             .build()
             .expect("Unable to build shell script");
 
-        let docker_data = DockerDataBuilder::default()
+        let docker_data = DataBuilder::default()
             .path("../DataOrchestra")
             .destination("/DataOrchestra")
-            .start("/DataOrchestra/services/api/start.sh")
             .build()
             .expect("Unable to build docker data");
+
+        let script = ScriptBuilder::default()
+            .name(docker_name.clone())
+            .path("/DataOrchestra/services/api/start.sh")
+            .build()
+            .expect("Unable to build script");
 
 
         let api = ObjectBuilder::default()
             .name("orchestra-api".to_string())
             .docker_container_builder(container)
+            .script(script)
             .volatile_docker_data(config)
             .volatile_docker_data(shell)
             .docker_data(docker_data)

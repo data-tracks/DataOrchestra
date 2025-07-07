@@ -6,7 +6,7 @@ use std::{path::Path, sync::Arc};
 use std::time::Duration;
 use actix_web::{post, web, App, HttpResponse, HttpServer};
 use kafka_producer::arguments::Arguments;
-use log::{info, error};
+use log::{info, error, logger};
 use rdkafka::error::KafkaError;
 use rdkafka::message::OwnedMessage;
 use rdkafka::{producer::{FutureProducer, FutureRecord}, ClientConfig};
@@ -24,10 +24,12 @@ async fn main() -> std::io::Result<()> {
 
     init_logger(args.level);
 
-    let producer = get_producer(&"10.34.64.161:9092".to_string());
-    let result = producer_send(&producer, "orchestra-log", &json!({ "from": "kafka-producer", "message": "Starting" }).to_string()).await;
-    if let Err(error) = result {
-        error!("{:?}", error);
+    if let Some(log_address) = args.logger.as_ref() {
+        let producer = get_producer(log_address);
+        let result = producer_send(&producer, "orchestra-log", &json!({ "from": "kafka-producer", "message": "Starting" }).to_string()).await;
+        if let Err(error) = result {
+            error!("{:?}", error);
+        }
     }
 
     let api_port = args.api_port.clone();
@@ -67,8 +69,10 @@ pub async fn producer_send(
 #[post("/kafkaproducer")]
 async fn produce(data: String, args: web::Data<Arc<Arguments>>) -> HttpResponse {
     let producer: FutureProducer = get_producer(&args.address);
-    let logger: FutureProducer = get_producer(&"10.34.64.161".to_string());
-
+    let mut logger: Option<FutureProducer> = None;
+    if let Some(log_address) = args.logger.as_ref() {
+        logger = Some(get_producer(log_address));
+    }
     if args.topics.is_empty() {
         panic!("No topics provided for kafka");
     }
@@ -78,7 +82,9 @@ async fn produce(data: String, args: web::Data<Arc<Arguments>>) -> HttpResponse 
         if let Err(error) = delivery_status {
             return HttpResponse::InternalServerError().body(format!("{:?}", error));
         }
-        producer_send(&logger, "orchestra-log", &json!({ "from": "kafka-producer", "message": format!("Sent to topic {}: {}", topic, data) }).to_string()).await;
+        if let Some(logger) = logger.as_ref() {
+            producer_send(logger, "orchestra-log", &json!({ "from": "kafka-producer", "message": format!("Sent to topic {}: {}", topic, data) }).to_string()).await;
+        }
     }
 
     HttpResponse::Ok().finish()

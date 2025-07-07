@@ -38,6 +38,7 @@ impl Configurator<Store> for PostGres {
         container
             .try_name("postgres")
             .image("postgres")
+            .ignore_ssh(true)
             .environment("POSTGRES_DB", self.postgres_db.clone())
             .environment("POSTGRES_USER", self.postgres_user.clone())
             .environment("POSTGRES_PASSWORD", self.postgres_password.clone())

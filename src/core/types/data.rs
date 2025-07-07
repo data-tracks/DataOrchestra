@@ -1,8 +1,102 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use derive_builder::Builder;
 
-use crate::core::adapters::Tmux;
+#[derive(Debug, Clone)]
+pub enum DataTypes {
+    VolatileNodeData(VolatileData),
+    VolatileDockerData(VolatileData),
+    DockerData(Data),
+    NodeData(Data)
+}
+
+pub trait GetData {
+    fn get_volatile_docker_data(&self) -> Vec<&VolatileData>;
+    fn get_volatile_node_data(&self) -> Vec<&VolatileData>;
+    fn get_docker_data(&self) -> Vec<&Data>;
+    fn get_node_data(&self) -> Vec<&Data>;
+}
+
+impl GetData for Vec<DataTypes> {
+    fn get_volatile_docker_data(&self) -> Vec<&VolatileData> {
+        let mut vec = Vec::new();
+        for item in self {
+            match item {
+                DataTypes::VolatileDockerData(data) => vec.push(data),        
+                _ => ()
+            }
+        }
+
+        vec
+    }
+
+    fn get_volatile_node_data(&self) -> Vec<&VolatileData> {
+        let mut vec = Vec::new();
+        for item in self {
+            match item {
+                DataTypes::VolatileNodeData(data) => vec.push(data),        
+                _ => ()
+            }
+        }
+
+        vec
+    }
+
+    fn get_node_data(&self) -> Vec<&Data> {
+        let mut vec = Vec::new();
+        for item in self {
+            match item {
+                DataTypes::NodeData(data) => vec.push(data),        
+                _ => ()
+            }
+        }
+
+        vec
+    }
+
+    fn get_docker_data(&self) -> Vec<&Data> {
+        let mut vec = Vec::new();
+        for item in self {
+            match item {
+                DataTypes::DockerData(data) => vec.push(data),        
+                _ => ()
+            }
+        }
+
+        vec
+    }
+}
+
+
+#[derive(Debug, Clone, Builder)]
+pub struct VolatileData {
+    /// Name of docker container
+    #[builder(setter(strip_option, into), default)]
+    pub name: Option<String>,
+    /// File name
+    #[builder(setter(into))]
+    pub file: PathBuf,
+    /// Data written into file
+    #[builder(setter(into))]
+    pub content: String
+}
+
+#[derive(Debug, Clone, Builder)]
+pub struct Data {
+    /// Name of container
+    #[builder(setter(strip_option, into), default)]
+    pub name: Option<String>,
+    /// Path of data in current system
+    #[builder(setter(into))]
+    pub path: String,
+    /// Path of data in docker container
+    #[builder(setter(into))]
+    pub destination: String,
+    #[builder(setter(strip_option, into))]
+    #[builder(default)]
+    pub dependency: Option<String>,
+}
+/*
 
 /// Node data object. Represents data that gets uploaded onto the node
 #[derive(Debug, Clone, Builder)]
@@ -97,7 +191,11 @@ pub struct VolatileDockerData {
     pub file: PathBuf,
     /// Data written into file
     #[builder(setter(into))]
-    pub data: String
+    pub content: String
+}
+
+pub struct VolatileNodeData {
+
 }
 
 impl VolatileDockerData {
@@ -105,9 +203,10 @@ impl VolatileDockerData {
         VolatileDockerData 
         {
             name: name.map(|n| n.into()),
-            data: data.into(),
+            content: data.into(),
             file
         }
     }
 }
+*/
 

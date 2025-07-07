@@ -7,14 +7,17 @@ pub struct Args {
     #[arg(short = 's', long)]
     pub stream_processor: Option<StreamProcessor>,
 
-    #[arg(short = 'i', long)]
-    pub interval: u64,
+    #[arg(long)]
+    pub consumer_topic: Vec<String>,
 
-    #[arg(short = 't', long)]
-    pub topic: Option<Vec<String>>,
+    #[arg(long)]
+    pub producer_topic: Vec<String>,
 
-    #[arg(short = 'a', long, value_name = "HOST:PORT")]
-    pub address: String,
+    #[arg(short = 'c', long, value_name = "HOST:PORT")]
+    pub consumer: String,
+
+    #[arg(short = 'p', long, value_name = "HOST:PORT")]
+    pub producer: String,
 
     #[arg(short = 'l', long, default_value_t = LevelFilter::Info)]
     pub level: LevelFilter
