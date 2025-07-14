@@ -43,13 +43,11 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
             process: self.process.to_internal(),
             store: self.store.to_internal(),
             object: self.object.to_internal(),
-            api_port
         };
 
         config.process.push(process);
         config.object.push(consumer);
-        config.object.push(api);
-
+        //config.object.push(api);
         let portainer = self.portainer;
 
         (config, portainer)
@@ -61,25 +59,25 @@ impl ExtConfig {
     /// own objects
     pub fn extract_attachables(&mut self) -> Vec<Object> {
         let mut attach_objects = Vec::new();
-        for object in self.object.to_mut_ref_vec() {
+        for object in self.object.as_mut_ref_vec() {
             for config in object.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&object.general));
             }
         }
 
-        for store in self.store.to_mut_ref_vec() {
+        for store in self.store.as_mut_ref_vec() {
             for config in store.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&store.general));
             }
         } 
 
-        for process in self.store.to_mut_ref_vec() {
+        for process in self.store.as_mut_ref_vec() {
             for config in process.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&process.general));
             }
         }
         
-        for generate in self.generate.to_mut_ref_vec() {
+        for generate in self.generate.as_mut_ref_vec() {
             for config in generate.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&generate.general));
             }

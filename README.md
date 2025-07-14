@@ -5,7 +5,7 @@
 
 # Data-Orchestra
 
-A rust based dynamic heterogeneous distributed data landscape generator. Using a config and custom-made components one can easily deploy and test distributed landscape.
+A rust based dynamic heterogeneous distributed data landscape generator. Using a config and custom-made components one can easily deploy and test distributed landscapes.
 
 ## Quickstart
 

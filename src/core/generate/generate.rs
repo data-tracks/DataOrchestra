@@ -1,6 +1,6 @@
 use crate::core::object::Object;
 
-use super::generate_types::{GeneratorType, GeneratorTypeConfig};
+use super::generate_types::{GeneratorTypeConfig}; //GeneratorType
 
 #[derive(Debug)]
 pub struct Generate {
@@ -8,7 +8,7 @@ pub struct Generate {
      * Default object information
      */
     pub object: Object,
-    pub generate_type: Option<GeneratorType>,
+    //pub generate_type: Option<GeneratorType>,
     pub config: Option<GeneratorTypeConfig>,
 }
 
@@ -17,7 +17,7 @@ impl Default for Generate {
         Generate 
         { 
             object: Object::default(),
-            generate_type: None,
+            //generate_type: None,
             config: None
         }
     }

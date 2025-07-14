@@ -1,19 +1,8 @@
 use super::Amount;
 
-/// Represents the pipeline steps of a object type
-pub trait Spawner {
-    fn build(&mut self);
-    fn setup(&mut self);
-    fn deploy(&mut self);
-}
-
 /// Parsing external structure to internal structure
 pub trait ToInternal<T> {
     fn to_internal(self) -> T;
-}
-
-pub trait ToAPI<T> {
-    fn to_api(self) -> T;
 }
 
 /// Parsing external structure to internal structure, when one object is capable of creating copies
@@ -21,7 +10,6 @@ pub trait ToAPI<T> {
 pub trait ToInternalVec<T> {
     fn to_internal(self) -> Vec<T>;
 }
-
 
 /// ToInternal implementation for the Amount enum to get Vec<S -> T>
 impl<T, S> ToInternal<Vec<T>> for Amount<S> 
@@ -45,8 +33,6 @@ where
         values_vec
     }
 }
-
-
 
 /// ToInternal implementation for the Amount enum to get Vec<S -> Vec<T>>. This is specifically for
 /// objects which implement the ToInternalVec

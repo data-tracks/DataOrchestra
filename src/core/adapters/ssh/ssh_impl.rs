@@ -6,7 +6,7 @@ use ssh2::{Channel, Session, Sftp};
 use walkdir::{DirEntry, WalkDir};
 use std::fs;
 use log::{debug, error};
-use crate::core::adapters::ssh::ssh::Ssh;
+use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::{Runner, Uploader};
 use crate::core::adapters::RunnerError;
 

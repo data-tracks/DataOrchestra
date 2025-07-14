@@ -29,12 +29,12 @@
   "generate":
   [
     {
-      "amount": 6,
+      "amount": 4,
       "node": "${NODE161}",
-      "name": "energy-sensor",
-      "to": ["energy-filter"],
+      "name": "energy_sensor",
+      "to": ["kafka"],
       "resources": {
-        "name": "rust",
+        "type": "data",
         "path": "examples/smart_building/generator/energy_sensor",
         "destination": "/energy_sensor"
       },
@@ -44,16 +44,16 @@
         "path": "/energy_sensor/start.sh",
         "commands": [
           "cd /energy_sensor",
-          "cargo run -- -l debug --interval 0.25"
+          "cargo run -- -l debug --interval 250"
         ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "rust"
+        "name": "energy_sensor"
       },
       "attach": {
-        "kafkaproducer": {
+        "kafka_producer": {
           "topics": ["EnergyIn"],
           "address": "${NODE162.host}:9092",
           "logger": "${NODE161.host}:9092",
@@ -67,42 +67,58 @@
   [
     {
       "node": "${NODE162}",
-      "name": "energy-filter",
+      "name": "energy_filter",
       "to": ["kafka"],
       "resources": {
-        "name": "rust-filter",
+        "type": "data",
         "path": "examples/smart_building/processor/energy_filter",
-        "destination": "/energy_filter",
-        "start": "/energy_filter/start.sh"
+        "destination": "/energy_filter"
+      },
+      "executables": {
+        "type": "tmux",
+        "path": "/energy_filter/start.sh",
+        "session": "EnergyFilter",
+        "commands": [
+          "cd /energy_filter",
+          "cargo run -- --consumer broker:29092 --producer broker:29092 --consumer-topic EnergyIn --producer-topic EnergyFiltered -l debug"
+        ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "rust-filter"
+        "name": "energy_filter"
       }
     },
     {
       "node": "${NODE162}",
       "name": "kafka",
-      "to": ["mongodb-adapter", "energy-aggregator"],
+      "to": ["energy_filter", "energy_aggregator","mongodb_adapter", "postgres_adapter"],
       "kafka": {
         "topics": ["EnergyIn", "EnergyFiltered", "EnergyAggregated"]
       }
     },
     {
       "node": "${NODE162}",
-      "name": "energy-aggregator",
-      "to": ["postgres-adapter"],
+      "name": "energy_aggregator",
+      "to": ["kafka"],
       "resources": {
-        "name": "rust-aggregator",
+        "type": "data",
         "path": "examples/smart_building/processor/energy_aggregator",
-        "destination": "/energy_aggregator",
-        "start": "/energy_aggregator/start.sh"
+        "destination": "/energy_aggregator"
+      },
+      "executables": {
+        "type": "tmux",
+        "path": "/energy_aggregator/start.sh",
+        "session": "EnergyAggregator",
+        "commands": [
+          "cd /energy_aggregator",
+          "cargo run -- --consumer broker:29092 --producer broker:29092 --consumer-topic EnergyFiltered --producer-topic EnergyAggregated -l debug"
+        ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "rust-aggregator"
+        "name": "energy_aggregator"
       }
     }
   ],
@@ -124,29 +140,45 @@
     },
     {
       "node": "${NODE163}",
-      "name": "mongodb-adapter",
+      "name": "mongodb_adapter",
       "to": ["mongodb"],
       "resources": {
-        "name": "rust",
+        "type": "data",
         "path": "examples/smart_building/store/energy_store_mongodb",
-        "destination": "/energy_store_mongodb",
-        "start": "/energy_store_mongodb/start.sh"
+        "destination": "/energy_store_mongodb"
+      },
+      "executables": {
+        "type": "tmux",
+        "path": "/energy_store_mongodb/start.sh",
+        "session": "MongodbAdapter",
+        "commands": [
+          "cd /energy_store_mongodb",
+          "cargo run -- -l debug --consumer-topic EnergyFiltered --consumer 10.34.64.162:9092 --database testdb --collection testcollection --mongo-address mongodb:27017 --user mongo --password mongo"
+        ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",
         "image": "rust_base",
-        "name": "rust"
+        "name": "mongodb_adapter"
       }
     },
     {
       "node": "${NODE164}",
-      "name": "postgres-adapter",
+      "name": "postgres_adapter",
       "to": ["postgres"],
       "resources": {
-        "name": "rust",
+        "type": "data",
         "path": "examples/smart_building/store/energy_store_postgres",
-        "destination": "/energy_store_postgres",
-        "start": "/energy_store_postgres/start.sh"
+        "destination": "/energy_store_postgres"
+      },
+      "executables": {
+        "type": "tmux",
+        "path": "/energy_store_postgres/start.sh",
+        "session": "PostgresAdapter",
+        "commands": [
+          "cd /energy_store_postgres",
+          "cargo run -- -l debug --consumer-topic EnergyAggregated --consumer 10.34.64.162:9092"
+        ]
       },
       "docker": {
         "dockerfile": "images/rust.dockerfile",

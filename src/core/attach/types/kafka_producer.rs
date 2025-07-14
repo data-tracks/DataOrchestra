@@ -1,4 +1,4 @@
-use log::LevelFilter;
+use tracing_subscriber::filter::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::types::{Executables, ScriptBuilder};
@@ -45,16 +45,16 @@ pub fn default_address() -> String {
 }
 
 pub fn default_level() -> LevelFilter {
-    LevelFilter::Info
+    LevelFilter::INFO
 }
 
 impl Default for Arguments {
     fn default() -> Self {
         Arguments 
         { 
-            api_port: 5000, 
-            address: "localhost:9092".to_string(), 
-            level: LevelFilter::Info, 
+            api_port: default_api_port(),
+            address: default_address(),
+            level: default_level(),
             topics: Vec::new(),
             logger: None
         }
@@ -87,7 +87,7 @@ impl Creator<Object> for KafkaProducer {
         object.graph.ignore = true;
 
         let docker_data = DataBuilder::default()
-            .path("services/attachables/kafka_producer")
+            .source("services/attachables/kafka_producer")
             .destination("/kafka_producer")
             .build()
             .expect("Unable to build docker_data");
@@ -112,7 +112,7 @@ impl Creator<Object> for KafkaProducer {
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
         let volatile_data = VolatileDataBuilder::default()
-            .file("/kafka_producer/config.json")
+            .destination("/kafka_producer/config.json")
             .content(json)
             .build()
             .expect("Unable to build volatile data");

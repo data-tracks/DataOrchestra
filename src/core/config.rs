@@ -1,15 +1,11 @@
 use std::thread;
 
-use crate::shared::Spawner;
-use crate::log_time;
-use log::debug;
-
+use crate::core::traits::Spawner;
 use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
 
 /// The config object. Contains all object types tasks
 #[derive(Debug)]
 pub struct Config {
-    pub api_port: u16,
     pub store: Vec<Store>,
     pub process: Vec<Process>,
     pub generate: Vec<Generate>,
@@ -18,7 +14,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { api_port: 5000, store: Vec::new(), process: Vec::new(), generate: Vec::new(), object: Vec::new() }
+        Config { store: Vec::new(), process: Vec::new(), generate: Vec::new(), object: Vec::new() }
     }
 }
 

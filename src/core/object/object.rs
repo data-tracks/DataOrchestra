@@ -5,12 +5,13 @@ use std::path::Path;
 use std::time::Duration;
 use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Run, Runner, Uploader};
 use crate::core::types::data::{Data, DataTypes, GetData, VolatileData};
-use crate::shared::{repeat_on_err, repeat_on_err_mut, Spawner};
+use crate::shared::{repeat_on_err, repeat_on_err_mut};
 use crate::log_time;
 use crate::core::types::{Executables, GetExecutables, Node, Script};
 use derive_builder::Builder;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
+use crate::core::traits::Spawner;
 
 /// Represents connection in the distributed system
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,6 +69,12 @@ pub struct Object {
 }
 
 impl ObjectBuilder {
+    pub fn ignore_graph(mut self, ignore_graph: bool) -> Self {
+        let graph = self.graph.get_or_insert_default();
+        graph.ignore = ignore_graph;
+        self
+    }
+
     pub fn node_data(self, data: Data) -> Self {
         self.resource(DataTypes::NodeData(data))
     }
@@ -90,7 +97,7 @@ impl ObjectBuilder {
 }
 
 pub fn default_ansible() -> String {
-    "scripts/ansible/ansible-setup.yml".to_string()
+    "services/scripts/ansible/ansible-setup.yml".to_string()
 }
 
 pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
@@ -204,23 +211,21 @@ impl Spawner for Object {
         // Upload all node data to relevant node. This is done before the setup as the
         // specialization setup may start before object setup, thus data could be missing
         debug!("Uploading node data");
-        if let Some(node) = self.node.as_ref() {
-            if let Some(ssh) = node.ssh.as_ref() {
-                for data in self.resources.get_node_data() {
-                    let path = Path::new(&data.path);
-                    if path.is_dir() {
-                        let result = ssh.upload_directory(path, &data.destination);
-                        if let Err(error) = result {
-                            error!("{error}");
-                        }
+        if let Some(node) = self.node.as_ref() && let Some(ssh) = node.ssh.as_ref(){
+            for data in self.resources.get_node_data() {
+                let path = Path::new(&data.source);
+                if path.is_dir() {
+                    let result = ssh.upload_directory(path, &data.destination);
+                    if let Err(error) = result {
+                        error!("{error}");
                     }
-                    else if path.is_file() {
-                        let result = ssh.upload_file(path, &data.destination);
-                        if let Err(error) = result {
-                            error!("{error}");
-                        }
+                }
+                else if path.is_file() {
+                    let result = ssh.upload_file(path, &data.destination);
+                    if let Err(error) = result {
+                        error!("{error}");
                     }
-                } 
+                }
             }
         }
 
@@ -582,7 +587,7 @@ impl Object {
     pub fn upload_data(&self) -> Result<(), String> {
         for (container, data) in Self::iter_combine_data(&self.docker_manager.containers_ref_vec(), self.resources.get_docker_data()) {
             if let Some(ref ssh) = container.ssh {
-                let path = Path::new(&data.path);
+                let path = Path::new(&data.source);
                 if path.is_dir() {
                     ssh.upload_directory(path, &data.destination)?;
                 }
@@ -607,7 +612,7 @@ impl Object {
 
         for (container, data) in Self::iter_combine_sftp_data(&self.docker_manager.containers_ref_vec(), self.resources.get_volatile_docker_data()) {
             if let Some(ref ssh) = container.ssh {
-                let result = ssh.create_sftp_file(&data.file);
+                let result = ssh.create_sftp_file(&data.destination);
                 if let Ok(mut file) = result {
                     let result = file.write_all(data.content.as_bytes());
                     if let Err(error) = result {
@@ -624,9 +629,5 @@ impl Object {
         }
 
         Ok(())
-    }
-
-    pub fn docker_group_builder(&self) -> Option<&ComposeBuilder> {
-        self.docker_group_builder.as_ref()
     }
 }

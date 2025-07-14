@@ -47,8 +47,8 @@ impl Clone for Node {
     }
 }
 
-impl Node {
-    pub fn new() -> Self {
+impl Default for Node {
+    fn default() -> Self {
         Node
         {
             name: "Node".to_string(),
@@ -60,7 +60,9 @@ impl Node {
             ssh_port: 22
         }
     }
+}
 
+impl Node {
     /// Load ssh session from node and set ssh field in node object
     pub fn set_ssh(&mut self) -> Result<(), String> {
         let ssh = self.get_ssh();

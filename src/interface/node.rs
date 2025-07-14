@@ -5,7 +5,7 @@ use crate::shared::ToInternal;
 
 /// External representation of the internal [`Node`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all="camelCase")]
+#[serde(rename_all="snake_case")]
 pub struct ExtNode {
     pub name: Option<String>,
     pub host: IpAddr,
@@ -34,7 +34,7 @@ impl Default for ExtNode {
 
 impl ToInternal<Node> for ExtNode {
     fn to_internal(self) -> Node {
-        let mut node = Node::new();
+        let mut node = Node::default();
 
         if let Some(name) = self.name {
             node.name = name;

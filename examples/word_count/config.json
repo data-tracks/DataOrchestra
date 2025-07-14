@@ -43,7 +43,7 @@
       "path": "/sentence_generator/start.sh",
       "commands": [
         "cd /sentence_generator",
-        "cargo run -- --producer 10.34.64.162:9092 --topic SentenceGenerator -l debug --interval 1"
+        "cargo run -- --producer ${NODE162.host}:9092 --topic SentenceGenerator -l debug --interval 1"
       ]
     },
     "docker": {
@@ -116,7 +116,7 @@
         "path": "/postgres_adapter/start.sh",
         "commands": [
           "cd /postgres_adapter",
-          "cargo run -- -l debug --topic Word --consumer 10.34.64.162:9092"
+          "cargo run -- -l debug --topic Word --consumer ${NODE162.host}:9092"
         ]
       },
       "docker": {

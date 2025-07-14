@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 use std::{env, fs, thread};
 use std::path::Path;
@@ -10,32 +11,34 @@ use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::logger::init_logger;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::Arguments;
-use data_orchestra::shared::{repeat_on_err_mut, Spawner};
+use data_orchestra::shared::repeat_on_err_mut;
 use data_orchestra::variables::variables::Variables;
-use log::{info, warn, debug, error};
+use log::{debug, error, info, warn};
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
 use data_orchestra::log_time;
 use data_orchestra::shared::TIMESTAMPS;
-
+use tokio::sync::RwLock;
+use data_orchestra::api::api::start_api;
+use data_orchestra::api::state::APIState;
+use data_orchestra::core::traits::Spawner;
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// This is the main entry point of the orchestrator. Here the configuation file is read, arguments
+// This is the main entry point of the orchestrator. Here the configuration file is read, arguments
 // are set and other related things. 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
     log_time!("Main start"); 
 
-    print_logo();                                                             
+    print_logo();
 
-    init_logger(); 
+    dotenvy::dotenv().ok();
+    let args: Arguments = Arguments::parse();
+
+    init_logger(args.level);
 
     info!("Starting DataOrchestra");
     viable_check();
-
-    // Read starting arguments
-    dotenvy::dotenv().ok();
-    let args: Arguments = Arguments::parse();
 
     if let Some(json_type) = args.generate_valid_json.as_ref() {
         json_type.print_json(); 
@@ -50,7 +53,6 @@ fn main() {
         warn!("No ssh key was provided. A ssh key is necessary when tasks are created on nodes. Please specify a ssh key with -s | --ssh-key <path> argument or via the .env file key SSH_KEY=<path>");
     }
 
-    // Read config
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
     let config= fs::read_to_string(config_path)
@@ -82,6 +84,7 @@ fn main() {
 
     config.object.extend(agents);
 
+    // If isolated objects are given, remove all object not matching given objects
     if let Some(isolated_objects) = &args.isolate && !isolated_objects.is_empty() {
         if !isolated_objects.is_empty() {
             let isolated_set: std::collections::HashSet<_> = isolated_objects.iter().collect();
@@ -92,6 +95,7 @@ fn main() {
         }
     }
 
+    // Create ssh session for all objects
     for node in config.get_object_nodes_mut() {
         node.ssh_key = args.ssh_key.clone();
         let result = repeat_on_err_mut(|| {
@@ -100,7 +104,6 @@ fn main() {
         if let Err(error) = result {
             error!("Unable to set ssh session for node {} ({error})", node.host);
         }
-
     }
 
     ////////////////////////////////////////////////////////
@@ -109,6 +112,15 @@ fn main() {
 
 
     log_time!("Configuration start"); 
+    let api_state = Arc::new(RwLock::new(APIState::default()));
+    let clone_api_state = api_state.clone();
+    let api_thread = thread::Builder::new()
+        .name("api".to_string())
+        .spawn(|| {
+            info!("Starting API");
+            let rt =  tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(start_api(clone_api_state));
+        }).unwrap();
 
     configuration_pipeline(&mut config, &mut portainer, &args);
 
@@ -129,6 +141,15 @@ fn main() {
     println!("Stats:");
     println!("{timestamps}");
     println!("{amount_objects}");
+
+    // Send config to API
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        let mut state = api_state.write().await;
+        state.set_config(config);
+    });
+
+    //let _ = api_thread.join();
 }
 
 /// Main creation pipeline of the programm. Processes and executes all main steps of the objects
@@ -149,10 +170,12 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
 
     // post build
 
+    log_time!("Removing container");
     if args.remove_all {
         kill_containers(config.get_nodes());
     }
 
+    log_time!("Building portainer");
     if args.portainer {
         portainer.build(); 
     }
@@ -186,11 +209,11 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     info!("Finished configuration pipeline");
 }
 
-/// Check if programm is able to fully run. 
+/// Check if program is able to fully run.
 ///
 /// # Checks
 ///
-/// - In an ansible enviroment
+/// - In an ansible environment
 /// - Docker deamon running
 pub fn viable_check() {
     match env::var("VIRTUAL_ENV") {
@@ -205,13 +228,13 @@ pub fn viable_check() {
     let runner = Local::new();
     let result = runner.exec("docker info".to_string());
     if let Err(error) = result {
-        panic!("Docker deamon not running. Make sure docker deamon is running before starting the programm. ({error})");
+        panic!("Docker deamon not running. Make sure docker deamon is running before starting the program. ({error})");
     }
 }
 
 /// Perform health check on all remote nodes by ping
 pub fn health_check(config: &Config) {
-    info!("Perfoming health check");
+    info!("Performing health check");
 
     let nodes = config.get_nodes();
     for node in nodes {
@@ -302,12 +325,12 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
         setup_docker_networks(&generate.object.docker_manager); 
     }
    
-    info!("Deploying portainer agent on nodes");
+    info!("Uploading scripts on nodes");
     let nodes = config.get_nodes();
     for node in nodes.iter() {
         // Upload data to node
         if let Some(ref ssh) = node.ssh {
-            let result = ssh.upload_directory("scripts", "/home/ubuntu/scripts");
+            let result = ssh.upload_directory("../services/scripts", "/home/ubuntu/scripts");
             if let Err(error) = result {
                 error!("{error}");
             }
@@ -317,12 +340,10 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
     for node in nodes.iter() {
         if let Some(ssh) = node.ssh.as_ref() {
             let result = docker::api::get_networks(ssh);
-            if let Ok(networks) = result {
-                if !networks.contains(&"orchestra".to_string()) {
-                    let result = docker::api::create_network("orchestra", ssh);
-                    if let Err(error) = result {
-                        error!("{error}");
-                    }
+            if let Ok(networks) = result && !networks.contains(&"orchestra".to_string()) {
+                let result = docker::api::create_network("orchestra", ssh);
+                if let Err(error) = result {
+                    error!("{error}");
                 }
             }
         }
@@ -336,7 +357,6 @@ pub fn post_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
             if let Some(ssh) = node.ssh.as_ref() {
                 let containers = docker::api::get_container_names(ssh);
                 if let Ok(containers) = containers {
-                    dbg!(&containers);
                     if containers.contains(&"portainer_agent".to_string()) {
                         let rt = tokio::runtime::Runtime::new().unwrap();
                         rt.block_on(portainer.add_agent(node));

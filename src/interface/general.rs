@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::{attach::attach_types::AttachTypeConfig, types::Executables};
+use crate::core::{attach::attach_types::AttachTypeConfig};
 use crate::core::object::Graph;
 use crate::interface::data::ExtDataTypes;
 use crate::shared::Amount;
@@ -41,11 +41,10 @@ impl Default for General {
             graph: Graph::default(),
             docker: Some(ExtDocker::default()), 
             node: None, 
-            ansible: Some("scripts/ansible/ansible-setup.yml".to_string()), 
+            ansible: Some("services/scripts/ansible/ansible-setup.yml".to_string()), 
             attach_config: Amount::None,
             resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, path: "".to_string(), destination: "".to_string(), dependency: None })),
             executables: Amount::None
         }
     }  
 }
-

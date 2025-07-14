@@ -53,6 +53,6 @@ pub async fn data_producer(args: Arguments) {
 
         debug!("{:?}", result);
 
-        thread::sleep(Duration::from_secs(args.interval));
+        thread::sleep(Duration::from_millis(args.interval));
     }
 }

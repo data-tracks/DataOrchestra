@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use log::LevelFilter;
+use tracing_subscriber::filter::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::traits::Creator;
@@ -65,7 +65,7 @@ pub fn default_consumer() -> String {
 }
 
 pub fn default_level() -> LevelFilter {
-    LevelFilter::Info
+    LevelFilter::INFO
 }
 
 impl Default for KafkaConsumer {
@@ -94,7 +94,7 @@ impl Creator<Object> for KafkaConsumer {
         object.graph.ignore = true;
 
         let docker_data = DataBuilder::default()
-            .path("services/attachables/kafka_consumer")
+            .source("services/attachables/kafka_consumer")
             .destination("/kafka_consumer")
             .build()
             .expect("Unable to build docker_data");
@@ -118,7 +118,7 @@ impl Creator<Object> for KafkaConsumer {
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
         let volatile_data = VolatileDataBuilder::default()
-            .file("/kafka_consumer/config.json")
+            .destination("/kafka_consumer/config.json")
             .content(json)
             .build()
             .expect("Unable to build volatile data");

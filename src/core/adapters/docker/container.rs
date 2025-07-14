@@ -2,7 +2,6 @@ use core::panic;
 use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 use log::{debug, error, warn};
-use tracing::field::debug;
 use crate::core::adapters::ssh::{self, Ssh};
 use crate::core::adapters::traits::Runner;
 use crate::core::adapters::{Local, OsSystems};

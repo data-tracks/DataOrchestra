@@ -12,7 +12,8 @@ use chrono::{self, DateTime, Local};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Energy {
     pub id: u16,
-    pub value: f64
+    pub value: f64,
+    pub timestamp: DateTime<Local>
 }
 
 #[tokio::main]

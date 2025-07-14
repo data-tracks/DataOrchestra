@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::LevelFilter;
+use tracing_subscriber::filter::LevelFilter;
 
 use super::ObjectTypes;
 
@@ -13,7 +13,7 @@ pub struct Arguments {
     pub file: Option<String>,
 
     /// Logging level
-    #[arg(short, long, default_value_t = LevelFilter::Info)]
+    #[arg(short, long, default_value_t = LevelFilter::INFO)]
     #[arg(env = "LEVEL")]
     pub level: LevelFilter,
 
@@ -50,6 +50,6 @@ pub struct Arguments {
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments { file: None, level: LevelFilter::Info, remove_all: false, generate_valid_json: None, portainer: true, ssh_key: None, api_only: false, isolate: None }
+        Arguments { file: None, level: LevelFilter::INFO, remove_all: false, generate_valid_json: None, portainer: true, ssh_key: None, api_only: false, isolate: None }
     }
 }

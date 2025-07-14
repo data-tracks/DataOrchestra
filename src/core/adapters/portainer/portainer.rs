@@ -4,7 +4,7 @@ use log::{error, info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::{Object, ObjectBuilder}, types::Node};
+use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::{Graph, Object, ObjectBuilder}, types::Node};
 
 /// Portainer struct. Holds general configuration of the local portainer container
 #[derive(Debug, Serialize, Deserialize)]
@@ -154,6 +154,7 @@ impl Portainer {
             .image("portainer/agent:2.27.6");
 
         ObjectBuilder::default()
+            .ignore_graph(true)
             .name(format!("portainer-agent-{}", node.host))
             .node(node.to_owned())
             .docker_container_builder(container)

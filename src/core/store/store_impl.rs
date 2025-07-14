@@ -1,6 +1,6 @@
 use log::info;
 use crate::core::traits::Configurator;
-use crate::shared::traits::Spawner;
+use crate::core::traits::Spawner;
 
 use super::Store;
 

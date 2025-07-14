@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::core::adapters::{ComposeBuilder, ContainerBuilder};
+use crate::core::adapters::{ComposeBuilder, ContainerBuilder, Mount, RestartTypes};
 use crate::shared::{traits::ToInternal, Amount};
 
 
@@ -11,21 +11,28 @@ pub struct ExtDocker {
     pub name: Option<String>,
     // Network of container
     pub network: Option<String>,
-    // Additional options of container
+    // Environemnt variables of container
     pub environment: Option<HashMap<String, String>>,
-    // Mounts of container
-    #[serde(default)]
-    pub mount: Amount<String>,
     // Publish all ports
     #[serde(default)]
     pub publish_all: bool,
     // How container(s) are created
     pub image: Option<String>,
     pub dockerfile: Option<String>,
-    pub build_args: Option<HashMap<String, String>>,
     pub compose: Option<String>,
+    // Building arguments for dockerfile
+    pub build_args: Option<HashMap<String, String>>,
+    // Interpolation variables (Environment variables) for compose file
+    pub interpolation_variables: Option<HashMap<String, String>>,
+    // Container restart policy
     #[serde(default)]
-    pub interpolation_variables: HashMap<String, String>
+    pub restart: RestartTypes,
+    // Volumes attached to container
+    #[serde(default)]
+    pub volumes: Amount<String>,
+    // Mounts attached to container 
+    #[serde(default)]
+    pub mounts: Amount<Mount>,
 }
 
 impl Default for ExtDocker {
@@ -35,13 +42,15 @@ impl Default for ExtDocker {
             name: None, 
             network: None, 
             environment: None,
-            mount: Amount::None, 
-            publish_all: true, 
+            volumes: Amount::None, 
+            publish_all: false, 
             image: None, 
             dockerfile: None, 
             build_args: None, 
             compose: None, 
-            interpolation_variables: HashMap::new() 
+            interpolation_variables: None,
+            restart: RestartTypes::default(),
+            mounts: Amount::None
         }
     }
 }
@@ -53,8 +62,10 @@ impl ToInternal<ComposeBuilder> for ExtDocker {
             builder.compose(compose);
         }
 
-        for (key, value) in self.interpolation_variables {
-            builder.interpolation_variable(key, value);
+        if let Some(variables) = self.interpolation_variables {
+            for (key, value) in variables {
+                builder.interpolation_variable(key, value);
+            }
         }
 
         builder
@@ -88,11 +99,13 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
             }
         }
 
-        for mount in self.mount.to_vec() {
+        for mount in self.volumes.to_vec() {
             builder.volume(mount);
         }
 
         builder.publish_all(self.publish_all); 
+        builder.mounts(self.mounts.to_vec());
+        builder.restart(self.restart);
 
         builder
     }

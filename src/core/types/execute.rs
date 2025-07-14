@@ -17,6 +17,15 @@ pub struct Script {
     pub path: String
 }
 
+impl Executables {
+    pub fn get_script(&self) -> &Script {
+        match self {
+            Executables::Script(script) => script,
+            _ => panic!("Get script for non-script")
+        }
+    }
+}
+
 pub trait GetExecutables {
     fn get_scripts(&self) -> Vec<&Script>;
 }

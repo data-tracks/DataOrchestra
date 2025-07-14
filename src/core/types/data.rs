@@ -10,6 +10,64 @@ pub enum DataTypes {
     NodeData(Data)
 }
 
+impl DataTypes {
+    pub fn get_volatile_node_data_ref(&self) -> &VolatileData {
+        match self {
+            DataTypes::VolatileNodeData(data) => data,
+            _ => panic!("Get volatile node on non-volatile node")
+        }
+    }
+
+    pub fn get_volatile_docker_data_ref(&self) -> &VolatileData {
+        match self {
+            DataTypes::VolatileDockerData(data) => data,
+            _ => panic!("Get volatile node on non-volatile docker")
+        }
+    }
+
+    pub fn get_node_data_ref(&self) -> &Data {
+        match self {
+            DataTypes::NodeData(data) => data,
+            _ => panic!("Get data node on non-data node")
+        }
+    }
+
+    pub fn get_docker_data_ref(&self) -> &Data {
+        match self {
+            DataTypes::DockerData(data) => data,
+            _ => panic!("Get volatile node on non-volatile docker")
+        }
+    }
+
+    pub fn get_volatile_node_data_mut(&mut self) -> &mut VolatileData {
+        match self {
+            DataTypes::VolatileNodeData(data) => data,
+            _ => panic!("Get volatile node on non-volatile node")
+        }
+    }
+
+    pub fn get_volatile_docker_data_mut(&mut self) -> &mut VolatileData {
+        match self {
+            DataTypes::VolatileDockerData(data) => data,
+            _ => panic!("Get volatile node on non-volatile docker")
+        }
+    }
+
+    pub fn get_node_data_mut(&mut self) -> &mut Data {
+        match self {
+            DataTypes::DockerData(data) => data,
+            _ => panic!("Get volatile node on non-volatile node")
+        }
+    }
+
+    pub fn get_docker_data_mut(&mut self) -> &mut Data {
+        match self {
+            DataTypes::NodeData(data) => data,
+            _ => panic!("Get volatile node on non-volatile docker")
+        }
+    }
+}
+
 pub trait GetData {
     fn get_volatile_docker_data(&self) -> Vec<&VolatileData>;
     fn get_volatile_node_data(&self) -> Vec<&VolatileData>;
@@ -75,7 +133,7 @@ pub struct VolatileData {
     pub name: Option<String>,
     /// File name
     #[builder(setter(into))]
-    pub file: PathBuf,
+    pub destination: PathBuf,
     /// Data written into file
     #[builder(setter(into))]
     pub content: String
@@ -88,7 +146,7 @@ pub struct Data {
     pub name: Option<String>,
     /// Path of data in current system
     #[builder(setter(into))]
-    pub path: String,
+    pub source: String,
     /// Path of data in docker container
     #[builder(setter(into))]
     pub destination: String,
@@ -96,117 +154,3 @@ pub struct Data {
     #[builder(default)]
     pub dependency: Option<String>,
 }
-/*
-
-/// Node data object. Represents data that gets uploaded onto the node
-#[derive(Debug, Clone, Builder)]
-pub struct NodeData {
-    /// Path of data in current system
-    #[builder(setter(into))]
-    pub path: String,
-    /// Path of data in remote system
-    #[builder(setter(into))]
-    pub destination: String,
-}
-
-impl Default for NodeData {
-    fn default() -> Self {
-        NodeData { path: String::new(), destination: String::from("data/") }
-    }
-}
-
-impl NodeData {
-    pub fn new(path: impl Into<String>, destination: impl Into<String>) -> Self {
-        NodeData { path: path.into(), destination: destination.into() }
-    }
-}
-
-/// Docker data object. Represents data that gets uploaded into the docker container
-#[derive(Debug, Builder, Clone)]
-pub struct DockerData {
-    /// Name of container
-    #[builder(setter(into), default)]
-    pub name: Option<String>,
-    /// Path of data in current system
-    #[builder(setter(into))]
-    pub path: String,
-    /// Path of data in docker container
-    #[builder(setter(into))]
-    pub destination: String,
-    /// Environment variables
-    #[builder(setter(each = "entry", into))]
-    #[builder(default)]
-    pub env: Option<HashMap<String, String>>,
-    /// Starting script / command
-    #[builder(setter(into))]
-    pub start: String,
-    /// Path of script which has dependencies which need to downloaded / handled
-    #[builder(setter(strip_option, into))]
-    #[builder(default)]
-    pub dependency: Option<String>,
-    #[builder(default)]
-    pub tmux: Option<Tmux>
-}
-
-impl Default for DockerData {
-    fn default() -> Self {
-        DockerData 
-        {
-            name: None,
-            path: String::new(),
-            destination: "/".to_string(),
-            env: Some(HashMap::new()),
-            start: String::new(),
-            dependency: None,
-            tmux: None
-        }
-    }
-}
-
-impl DockerData {
-    pub fn new(name: Option<impl Into<String>>, path: impl Into<String>, destination: impl Into<String>, start: impl Into<String>, env: Option<HashMap<String, String>>, dependency: Option<String>, tmux: Option<Tmux>) -> Self {
-        DockerData 
-        {
-            name: name.map(|n| n.into()),
-            path: path.into(),
-            destination: destination.into(),
-            env,
-            start: start.into(),
-            dependency,
-            tmux
-        }
-    }
-}
-
-/// Docker volatile data object. Represents data which is written to file
-/// in the docker container from memory
-#[derive(Debug, Clone, Builder)]
-pub struct VolatileDockerData {
-    /// Name of docker container
-    #[builder(default)]
-    #[builder(setter(strip_option, into))]
-    pub name: Option<String>,
-    /// File name 
-    #[builder(setter(into))]
-    pub file: PathBuf,
-    /// Data written into file
-    #[builder(setter(into))]
-    pub content: String
-}
-
-pub struct VolatileNodeData {
-
-}
-
-impl VolatileDockerData {
-    pub fn new(name: Option<impl Into<String>>, file: PathBuf, data: impl Into<String>) -> Self {
-        VolatileDockerData 
-        {
-            name: name.map(|n| n.into()),
-            content: data.into(),
-            file
-        }
-    }
-}
-*/
-

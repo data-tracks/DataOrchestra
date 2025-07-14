@@ -14,6 +14,7 @@ use rdkafka::consumer::Consumer;
 use rdkafka::message::OwnedMessage;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::Message;
+use chrono::{DateTime, Local};
 
 use serde_json;
 
@@ -39,7 +40,8 @@ pub enum PayloadError {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Energy {
     pub id: u16,
-    pub value: f64
+    pub value: f64,
+    pub timestamp: DateTime<Local>
 }
 
 pub fn process_input<'a>(message: OwnedMessage) -> Result<String, PayloadError> {

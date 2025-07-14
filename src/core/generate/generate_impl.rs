@@ -1,5 +1,5 @@
-use crate::{core::traits::Configurator, shared::traits::Spawner};
-
+use crate::core::traits::Configurator;
+use crate::core::traits::Spawner;
 use super::Generate;
 
 impl Spawner for Generate {

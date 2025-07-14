@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum OsSystems {
     Debian,
     Alpine,

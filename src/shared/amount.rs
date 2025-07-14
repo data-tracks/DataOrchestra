@@ -110,7 +110,7 @@ impl<T> Amount<T> {
     
     /// Transform Amount enum value into vector of references
     #[inline]
-    pub fn to_ref_vec<'a>(&'a self) -> Vec<&'a T> {
+    pub fn as_ref_vec(&self) -> Vec<&T> {
         match self {
             Amount::None => Vec::new(),
             Amount::Single(value) => vec![value],
@@ -120,7 +120,7 @@ impl<T> Amount<T> {
 
     /// Transform Amount enum value into vector of mutable references
     #[inline]
-    pub fn to_mut_ref_vec<'a>(&'a mut self) -> Vec<&'a mut T> {
+    pub fn as_mut_ref_vec(&mut self) -> Vec<&mut T> {
         match self {
             Amount::None => Vec::new(),
             Amount::Single(value) => vec![value],

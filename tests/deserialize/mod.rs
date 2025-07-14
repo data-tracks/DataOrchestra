@@ -1,0 +1,7 @@
+pub mod generate_deserialize_tests;
+pub mod docker_deserialize_tests;
+mod node_deserialize_tests;
+mod resources_deserialize_tests;
+mod executables_deserialize_tests;
+mod graph_deserialize_tests;
+mod attach_deserialize_tests;

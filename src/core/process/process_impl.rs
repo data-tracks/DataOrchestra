@@ -2,7 +2,7 @@ use log::{info, warn};
 use crate::core::adapters::{ContainerType, Local};
 use crate::core::process::process_types::ProcessTypeConfig;
 use crate::core::traits::Configurator;
-use crate::shared::traits::Spawner;
+use crate::core::traits::Spawner;
 
 use super::Process;
 

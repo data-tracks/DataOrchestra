@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr};
 
-use log::{debug, error, info};
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 use crate::core::adapters::Runner;
 use crate::core::process::Process;

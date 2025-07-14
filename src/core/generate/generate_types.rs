@@ -4,15 +4,9 @@ use crate::core::traits::Configurator;
 
 use super::{types::sensor::Sensor, Generate};
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GeneratorType {
-    Sensor
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "type")]
 pub enum GeneratorTypeConfig {
     Sensor(Sensor)
 }

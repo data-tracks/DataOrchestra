@@ -54,17 +54,18 @@ impl ToInternal<Store> for ExtStore {
                 {
                     // Alter path to that of the remote location
                     let data = DataBuilder::default()
-                        .path(schema.clone())
+                        .source(schema.clone())
                         .destination(format!("docker/mount/{file_name}"))
                         .build()
                         .expect("Unable to build data for store schema");
                     store.object.resources.push(DataTypes::NodeData(data)); 
 
                     *schema = format!("docker/mount/{file_name}");
+
                 } 
             }
         }
-    
+
         // Set Database Type and config
         store.db_type = self.db_type;
         store.config = self.config;
@@ -88,7 +89,7 @@ impl ToInternal<Store> for ExtStore {
             } 
         }
 
-        store.object.resources = self.general.resources.to_internal();
+        store.object.resources.extend(self.general.resources.to_internal());
         let vec = self.general.executables.clone().to_internal();
         for (script, data) in vec {
             if let Some(data) = data {

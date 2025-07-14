@@ -5,9 +5,6 @@ pub use traits::*;
 pub mod amount;
 pub use amount::*;
 
-pub mod address;
-pub use address::*;
-
 pub mod arguments;
 pub use arguments::*;
 

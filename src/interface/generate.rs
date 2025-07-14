@@ -1,16 +1,16 @@
 use log::debug;
 use serde::{Deserialize, Serialize};
-use crate::{core::generate::{generate_types::{GeneratorType, GeneratorTypeConfig}, Generate}, shared::traits::{ToInternal, ToInternalVec}};
+use crate::{core::generate::{generate_types::{GeneratorTypeConfig}, Generate}, shared::traits::{ToInternal, ToInternalVec}};
 
 use super::general::General;
 
 /// External representation of the internal [`Generate`] object
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtGenerate {
-    #[serde(rename = "type")]
-    pub generate_type: Option<GeneratorType>,
-    #[serde(flatten)]
-    pub config: Option<GeneratorTypeConfig>,
+    //#[serde(rename = "type")]
+    //pub generate_type: Option<GeneratorType>,
+    //#[serde(flatten)]
+    pub template: Option<GeneratorTypeConfig>,
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]
@@ -25,8 +25,8 @@ impl Default for ExtGenerate {
     fn default() -> Self {
         ExtGenerate 
         {
-            generate_type: None,
-            config: None,
+            //generate_type: None,
+            template: None,
             amount: default_amount(),
             general: General::default()
         }
@@ -46,8 +46,8 @@ impl ToInternalVec<Generate> for ExtGenerate {
             }
             generate.object.graph = self.general.graph.clone();
 
-            generate.generate_type = self.generate_type.clone();
-            generate.config = self.config.clone();
+            //generate.generate_type = self.generate_type.clone();
+            generate.config = self.template.clone();
 
             if let Some(node) = self.general.node.clone() {
                 generate.object.node = Some(node.to_internal());

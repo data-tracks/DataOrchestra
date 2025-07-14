@@ -5,6 +5,5 @@ pub mod object;
 pub mod process;
 pub mod store;
 pub mod types;
-pub mod env;
 pub mod traits;
 pub mod config;

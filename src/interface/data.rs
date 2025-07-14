@@ -1,9 +1,13 @@
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use crate::core::types::data::{Data, DataTypes, VolatileData};
 use crate::shared::traits::ToInternal;
 
 use super::location::Location;
 
+/// Data types. Represents different types of data which can be uploaded.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
@@ -12,8 +16,46 @@ pub enum ExtDataTypes {
     Data(ExtData)
 }
 
+impl ExtDataTypes {
+    pub fn is_volatile(&self) -> bool {
+        matches!(self, ExtDataTypes::Volatile(_))
+    }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+    pub fn is_data(&self) -> bool {
+        matches!(self, ExtDataTypes::Data(_))
+    }
+
+    pub fn get_volatile_ref(&self) -> &ExtVolatile {
+        match self {
+            ExtDataTypes::Volatile(volatile) => volatile,
+            _ => panic!("Get volatile on non-volatile")
+        }
+    }
+
+    pub fn get_data_ref(&self) -> &ExtData {
+        match self {
+            ExtDataTypes::Data(data) => data,
+            _ => panic!("Get data on non-data")
+        }
+    }
+
+    pub fn get_volatile_mut(&mut self) -> &mut ExtVolatile {
+        match self {
+            ExtDataTypes::Volatile(volatile) => volatile,
+            _ => panic!("Get volatile on non-volatile")
+        }
+    }
+
+    pub fn get_data_mut(&mut self) -> &mut ExtData {
+        match self {
+            ExtDataTypes::Data(data) => data,
+            _ => panic!("Get data on non-data")
+        }
+    }
+}
+
+/// Data type. Represents existing data which is uploaded to a remote location
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct ExtData {
     #[serde(default)]
     pub location: Location,
@@ -30,7 +72,7 @@ impl ToInternal<DataTypes> for ExtData {
         let data = Data 
         {
             name: self.name,
-            path: self.path,
+            source: self.path,
             destination: self.destination,
             dependency: self.dependency
         };
@@ -42,13 +84,15 @@ impl ToInternal<DataTypes> for ExtData {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Volatile type. Represents non-existing data, where the content of `volatile_types` is written to a file on the remote location
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ExtVolatile {
     #[serde(default)]
     pub location: Location,
     pub name: Option<String>,
-    pub content: String,
-    pub destination: String
+    pub destination: String,
+    #[serde(flatten)]
+    pub volatile_types: VolatileTypes
 }
 
 impl ToInternal<DataTypes> for ExtVolatile {
@@ -56,8 +100,8 @@ impl ToInternal<DataTypes> for ExtVolatile {
         let data = VolatileData 
         {
             name: self.name,
-            file: self.destination.into(),
-            content: self.content
+            destination: self.destination.into(),
+            content: self.volatile_types.to_string()
         };
 
         match self.location {
@@ -75,123 +119,34 @@ impl ToInternal<DataTypes> for ExtDataTypes {
         }
     }
 }
-/*
 
-/// External representation of the internal [`NodeData`] object 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ExtNodeData {
-    pub path: String,
-    pub destination: Option<String>
+/// Types of structured volatile data.
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum VolatileTypes {
+    Content(String),
+    Json(Map<String, Value>),
+    Env(HashMap<String, String>),
 }
 
 
+impl Display for VolatileTypes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VolatileTypes::Content(content) => write!(f, "{content}"),
+            VolatileTypes::Env(env) => {
+                let mut string = String::new();
+                for (key, value) in env.iter() {
+                    string.push_str(format!("{}={}\n", key, value).as_str())
+                }
+                string.pop();
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ExtTmux {
-    #[serde(default)]
-    session: Option<String>,
-    #[serde(default)]
-    command: Amount<String>
-}
-
-impl Default for ExtNodeData {
-    fn default() -> Self {
-        ExtNodeData 
-        { 
-            path: "".to_string(), 
-            destination: Some("".to_string())
-        }
-    }
-}
-
-impl ToInternal<NodeData> for ExtNodeData {
-    fn to_internal(self) -> NodeData {
-        let mut data = NodeData::default();
-
-        data.path = self.path;
-
-        if let Some(destination) = self.destination {
-            data.destination = destination;
-        }
-
-        data
-    }
-}
-
-/// External representation of the internal [`DockerData`] object
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ExtDockerData {
-    pub name: Option<String>,
-    pub path: String,
-    pub destination: Option<String>,
-    pub env: Option<HashMap<String, String>>,
-    pub start: Option<String>,
-    pub dependency: Option<String>,
-    pub tmux: Option<ExtTmux>
-}
-
-impl Default for ExtDockerData {
-    fn default() -> Self {
-        ExtDockerData 
-        { 
-            name: None, 
-            path: "".to_string(), 
-            destination: None, 
-            env: None,
-            start: None, 
-            dependency: None,
-            tmux: None
-        }
-    }
-}
-
-impl ToInternal<DockerData> for ExtDockerData {
-    fn to_internal(self) -> DockerData {
-        let mut data = DockerData::default();
-
-        data.name = self.name;
-
-        data.path = self.path;
-
-        if let Some(destination) = self.destination {
-            if !destination.starts_with("/") {
-                error!("File path doesn't start with /<path>");
+                write!(f, "{string}")
+            },
+            VolatileTypes::Json(json) => {
+                let string = serde_json::to_string_pretty(&json).expect("Unable to parse volatile json to string");
+                write!(f, "{string}")
             }
-            data.destination = destination;
-        }
-        if let Some(start) = self.start {
-            data.start = start;
-        }
-
-        data.dependency = self.dependency;
-
-        data
-    }
-}
-
-/// External representation of the internal [`VolatileDockerData`] object
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ExtVolatileDockerData {
-    pub name: Option<String>,
-    pub file: PathBuf,
-    pub data: Value
-}
-
-impl Default for ExtVolatileDockerData {
-    fn default() -> Self {
-        ExtVolatileDockerData 
-        { 
-            name: None, 
-            file: PathBuf::default(), 
-            data: Value::Null 
         }
     }
 }
-
-impl ToInternal<VolatileDockerData> for ExtVolatileDockerData {
-    fn to_internal(self) -> VolatileDockerData {
-        let data = serde_json::to_string_pretty(&self.data).expect("Unable to parse data to string");
-        VolatileDockerData::new(self.name, self.file, data) 
-    }
-}
-*/

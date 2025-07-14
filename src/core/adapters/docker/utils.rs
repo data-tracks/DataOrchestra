@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Restart type policies for docker container
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
+#[serde(rename_all = "PascalCase")]
 pub enum RestartTypes {
     No,
     OnFailure(usize),
@@ -26,12 +27,13 @@ impl Display for RestartTypes {
             RestartTypes::UnlessStopped => "unless-stopped".to_string(), 
         };
 
-        write!(f, "{}", string)
+        write!(f, "{string}")
     }
 }
 
 /// Mount bind types for docker container
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
+#[serde(rename_all = "PascalCase")]
 pub enum BindPropagation {
     Shared,
     Slave,
@@ -52,7 +54,7 @@ impl Display for BindPropagation {
             BindPropagation::RPrivate => "rprivate"
         };
 
-        write!(f, "{}", string)
+        write!(f, "{string}")
     }
 }
 
@@ -116,7 +118,8 @@ impl FromStr for StateTypes {
 }
 
 /// The mount object. Represents the mounting configuration of files onto a docker container
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash)]
+#[serde(rename_all = "snake_case")]
 pub struct Mount {
     /// Source data location
     pub src: String,
@@ -124,7 +127,8 @@ pub struct Mount {
     pub dst: String,
     #[serde(default)]
     pub read_only: bool,
-    /// Type of bind proporgation
+    /// Type of bind propagation
+    #[serde(default)]
     pub bind_propagation: Option<BindPropagation>
 }
 

@@ -15,7 +15,7 @@ pub struct Sensor {
     pub address: String,
     #[serde(default)]
     pub topics: Vec<String>,
-    additional: Option<HashMap<String, String>>,
+    //pub additional: Option<HashMap<String, String>>,
 }
 
 pub fn default_interval() -> u64 {
@@ -49,11 +49,13 @@ impl Sensor {
 
         command = format!("{command} --address {}", self.address);
 
+        /*
         if let Some(ref options) = self.additional {
             for (key, value) in options.iter() {
                 command = format!("{command} -{key} {value}");
             }
         }
+        */
 
         command
     }
@@ -62,7 +64,7 @@ impl Sensor {
 impl Configurator<Generate> for Sensor {
     fn configure(&mut self, parent: &mut Generate) {
         let docker_data = DataBuilder::default()
-            .path("templates/generators/sensor")
+            .source("templates/generators/sensor")
             .destination("/sensor")
             //.start()
             .build()
@@ -76,7 +78,7 @@ impl Configurator<Generate> for Sensor {
         let json = serde_json::to_string_pretty(self).expect("Unable to parse sensor to string");
 
         let volatile_data = VolatileDataBuilder::default()
-            .file("/sensor/config.json")
+            .destination("/sensor/config.json")
             .content(json)
             .build()
             .expect("Unable to build volatile sensor data");

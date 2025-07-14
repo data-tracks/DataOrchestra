@@ -2,14 +2,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::core::adapters::{ContainerBuilder, TmuxBuilder};
-use crate::core::types::{Script, ScriptBuilder};
-use crate::shared::ToInternal;
+use crate::core::types::ScriptBuilder;
 use crate::core::types::data::{DataBuilder, VolatileDataBuilder};
 use crate::core::traits::Creator;
 use crate::core::process::{process_types::ProcessTypeConfig, types::Kafka, Process};
 use crate::core::object::{Object, ObjectBuilder};
 use crate::core::attach::types::kafka_consumer::KafkaConsumer;
 use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
+use crate::shared::ToInternal;
 use super::{general::General, node::ExtNode};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -29,7 +29,7 @@ impl ToInternal<(Process, Object, Object, u16)> for API {
 
         // Build the api object
         let args = ArgumentsBuilder::default()
-            .address(format!("http://orchestra-api:{}/orchestra/broadcast", self.port))
+            .address(format!("http://host.docker.internal:{}/orchestra/broadcast", self.port))
             .consumer(format!("{}:9092", self.kafka_host.host.clone()))
             .topic("orchestra-log")
             .group_id("logger")
@@ -51,20 +51,20 @@ impl ToInternal<(Process, Object, Object, u16)> for API {
             .build();
 
         let config = VolatileDataBuilder::default()
-            .file("/DataOrchestra/services/api/config.json")
+            .destination("/DataOrchestra/services/api/config.json")
             .content(json!({ "port": self.port }).to_string())
             .build()
             .expect("Unable to build config file");
 
         let shell = VolatileDataBuilder::default()
             .name(docker_name.clone())
-            .file("/DataOrchestra/services/api/start.sh")
+            .destination("/DataOrchestra/services/api/start.sh")
             .content(tmux)
             .build()
             .expect("Unable to build shell script");
 
         let docker_data = DataBuilder::default()
-            .path("../DataOrchestra")
+            .source("../DataOrchestra")
             .destination("/DataOrchestra")
             .build()
             .expect("Unable to build docker data");

@@ -1,9 +1,9 @@
-use log::LevelFilter;
 use serde::{de::Error, Deserialize, Deserializer, Serializer};
 use tracing_appender::rolling;
 use tracing_subscriber::{fmt::{self}, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::filter::LevelFilter;
 
-pub fn init_logger() {
+pub fn init_logger(level: LevelFilter) {
     let file_appender = rolling::daily("logs", "orchestrator.log");
     let (non_blocking_file, _guard) = tracing_appender::non_blocking(file_appender);
 
@@ -21,6 +21,7 @@ pub fn init_logger() {
 
 
     tracing_subscriber::registry()
+        .with(level)
         .with(stdout_log)
         .with(file_log)
         .init();
@@ -33,12 +34,12 @@ where
     let s = String::deserialize(deserializer)?;
 
     match s.to_lowercase().trim() {
-        "error" => Ok(LevelFilter::Error),
-        "warn" => Ok(LevelFilter::Warn),
-        "info" => Ok(LevelFilter::Info),
-        "debug" => Ok(LevelFilter::Debug),
-        "trace" => Ok(LevelFilter::Trace),
-        "off" => Ok(LevelFilter::Off),
+        "error" => Ok(LevelFilter::ERROR),
+        "warn" => Ok(LevelFilter::WARN),
+        "info" => Ok(LevelFilter::INFO),
+        "debug" => Ok(LevelFilter::DEBUG),
+        "trace" => Ok(LevelFilter::TRACE),
+        "off" => Ok(LevelFilter::OFF),
         _ => Err(Error::custom("No Value exists"))
     }
 
@@ -49,12 +50,12 @@ where
     S: Serializer,
 {
     let level_str = match level {
-        LevelFilter::Off => "off",
-        LevelFilter::Error => "error",
-        LevelFilter::Warn => "warn",
-        LevelFilter::Info => "info",
-        LevelFilter::Debug => "debug",
-        LevelFilter::Trace => "trace",
+        &LevelFilter::OFF => "off",
+        &LevelFilter::ERROR => "error",
+        &LevelFilter::WARN => "warn",
+        &LevelFilter::INFO => "info",
+        &LevelFilter::DEBUG => "debug",
+        &LevelFilter::TRACE => "trace",
     };
 
     s.serialize_str(level_str)

@@ -97,13 +97,22 @@ or
 }
 ```
 
+Basic fields are
+
+| Field     | Type           | Required | Description                                 | Default                                      |
+|-----------|----------------|----------|---------------------------------------------|----------------------------------------------|
+| `name`    | `string`       | no       | Name of object                              | `object`                                     |
+| `to`      | `list(string)` | no       | Which objects it send data to for the graph | Empty list                                   |
+| `ignore`  | `bool`         | no       | If object should be ignored for the graph   | `false`                                      |
+| `ansible` | `string`       | no       | Path of ansible setup script                | `services/scripts/ansible/ansible-setup.yml` |
+
+#### Example
+
 ```json
 {
   "object": {
-    "name": "STRING",
-    "to": ["STRING"],
-    "ignore": "BOOL",
-    "ansible": "PATH"
+    "name": "website",
+    "ignore": "true"
   }
 }
 ```
@@ -124,42 +133,50 @@ Every object has a node definition which defines where the containers and data g
 
 ```json
 {
-  "node": {
-    "name": "node-76",
-    "host": "100.30.154.76",
-    "username": "root"
+  "object": {
+    "node": {
+      "name": "node-76",
+      "host": "100.30.154.76",
+      "username": "root"
+    }
   }
 }
 ```
 
 ### Docker container
 
-| Field                     | Type             | Required | Description                               | Default                      |
-|---------------------------|------------------|----------|-------------------------------------------|------------------------------|
-| `name`                    | `string`         | no       | Name of docker container                  | (docker default on creation) |
-| `network`                 | `string`         | no       | Network of docker container               | orchestra                    |
-| `environment`             | `map`            | no       | Environment variables                     | -                            |
-| `mount`                   | `string \| list` | no       | File / folder mounts for docker container | -                            |
-| `compose`                 | `string`         | yes*     | Docker compose file                       | -                            |
-| `dockerfile`              | `string`         | yes*     | Docker dockerfile                         | -                            |
-| `image`                   | `string`         | yes*     | Docker image                              | -                            |
-| `publish_all`             | `bool`           | no       | Publish all ports                         | false                        |
-| `build_args`              | `map`            | no       | Dockerfile building args                  | -                            |
-| `interpolation_variables` | `map`            | no       | Compose interpolation variables           | -                            |
+| Field                     | Type                                                  | Required | Description                               | Default                      |
+|---------------------------|-------------------------------------------------------|----------|-------------------------------------------|------------------------------|
+| `name`                    | `string`                                              | no       | Name of docker container                  | (docker default on creation) |
+| `network`                 | `string`                                              | no       | Network of docker container               | orchestra                    |
+| `environment`             | `map`                                                 | no       | Environment variables                     | -                            |
+| `volumes`                 | `string \| list(string)`                              | no       | File / folder mounts for docker container | -                            |
+| `compose`                 | `string`                                              | yes*     | Docker compose file                       | -                            |
+| `dockerfile`              | `string`                                              | yes*     | Docker dockerfile                         | -                            |
+| `image`                   | `string`                                              | yes*     | Docker image                              | -                            |
+| `publish_all`             | `bool`                                                | no       | Publish all ports                         | false                        |
+| `build_args`              | `map`                                                 | no       | Dockerfile building args                  | -                            |
+| `interpolation_variables` | `map`                                                 | no       | Compose interpolation variables           | -                            |
+| `restart`                 | `No \| OnFailure(integer) \| Always \| UnlessStopped` | no       | Restart policy for container              | `No`                         |
 
 \* If a compose is given it doesn't require `dockerfile` and `image`. 
 If a `dockerfile` is given, it doesn't require a `compose` file, but it does require an image.
 If a `image` is given, it doesn't require a `compose` and `dockerfile`.
 
 #### Example
+
 ```json
 {
-  "docker": {
-    "name": "generator",
-    "mount": ["./examples/smart_building/generator/energy_sensor:/energy_sensor"],
-    "dockerfile": "images/rust.dockerfile",
-    "publish_all": true,
-    "image": "rust_base"
+  "object": {
+    "docker": {
+      "name": "generator",
+      "mount": [
+        "./examples/smart_building/generator/energy_sensor:/energy_sensor"
+      ],
+      "dockerfile": "images/rust.dockerfile",
+      "publish_all": true,
+      "image": "rust_base"
+    }
   }
 }
 ```
@@ -201,20 +218,22 @@ Volatile is a resource which contains data which is written into a file on the d
 
 ```json
 {
-  "resources": [
-    {
-      "type": "data",
-      "location": "container",
-      "path": "examples/smart_building/generator/energy_sensor",
-      "destination": "/energy_sensor"
-    },
-    {
-      "type": "volatile",
-      "location": "container",
-      "destination": "/energy_sensor/echo.sh",
-      "content": "#!/usr/bin/bash\necho \"Energy Sensor\""
-    }
-  ]
+  "object": {
+    "resources": [
+      {
+        "type": "data",
+        "location": "container",
+        "path": "examples/smart_building/generator/energy_sensor",
+        "destination": "/energy_sensor"
+      },
+      {
+        "type": "volatile",
+        "location": "container",
+        "destination": "/energy_sensor/echo.sh",
+        "content": "#!/usr/bin/bash\necho \"Energy Sensor\""
+      }
+    ]
+  }
 }
 ```
 
@@ -252,17 +271,19 @@ For uploading of the script to the remote location one should use [resources](#r
 
 ```json
 {
-  "executables": [
-    {
-      "type": "script",
-      "location": "container",
-      "path": "/energy_sensor/start.sh"
-    },
-    {
-      "type": "tmux",
-      "location": "container"
-    }
-  ]
+  "object": {
+    "executables": [
+      {
+        "type": "script",
+        "location": "container",
+        "path": "/energy_sensor/start.sh"
+      },
+      {
+        "type": "tmux",
+        "location": "container"
+      }
+    ]
+  }
 }
 ```
 
@@ -272,9 +293,13 @@ Attachables are objects which can be attached to an already existing object serv
 
 #### Kafka Producer
 
-| Field | Type | Required | Description | Default |
-|-------|------|----------|-------------|---------|
-| ``    | ``   |          |             |         |
+| Field      | Type                                           | Required | Description                                       | Default          |
+|------------|------------------------------------------------|----------|---------------------------------------------------|------------------|
+| `api_port` | `integer`                                      | no       | Port at which API can be accessed                 | 5000             |
+| `address`  | `string`                                       | no       | Address of Kafka Stream Processing system         | `localhost:9092` |
+| `level`    | ``info`, `warn`, `error`, `debug` and `trace`` | no       | Logging level                                     | `info`           |
+| `topics`   | `list(string)`                                 | yes      | List of Kafka topics                              |                  |
+| `logger`   | `string`                                       | no       | Address of Logging Kafka Stream Processing system | None             |
 
 #### Kafka Consumer
 
@@ -287,7 +312,9 @@ Attachables are objects which can be attached to an already existing object serv
 ```json
 {
   "attach": {
-    
+    "kafka_producer": {
+      ""
+    }
   }
 }
 ```
@@ -305,6 +332,17 @@ The following subsections describe the configuration, where all can be placed in
   } 
 }
 ```
+
+### Basics 
+
+| Field    | Type                                           | Required | Description                             | Default |
+|----------|------------------------------------------------|----------|-----------------------------------------|---------|
+| `amount` | `integer`                                      | no       | Amount of the identical generate object | 1       |
+
+### Generate Type
+
+
+
 
 ## Process
 
