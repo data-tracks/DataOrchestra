@@ -149,7 +149,7 @@ fn main() {
         state.set_config(config);
     });
 
-    //let _ = api_thread.join();
+    let _ = api_thread.join();
 }
 
 /// Main creation pipeline of the programm. Processes and executes all main steps of the objects
@@ -330,7 +330,8 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
     for node in nodes.iter() {
         // Upload data to node
         if let Some(ref ssh) = node.ssh {
-            let result = ssh.upload_directory("../services/scripts", "/home/ubuntu/scripts");
+            dbg!(Local::new().exec("pwd".to_string()));
+            let result = ssh.upload_directory("scripts/", "scripts/");
             if let Err(error) = result {
                 error!("{error}");
             }

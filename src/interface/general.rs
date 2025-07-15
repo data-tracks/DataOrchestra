@@ -41,9 +41,9 @@ impl Default for General {
             graph: Graph::default(),
             docker: Some(ExtDocker::default()), 
             node: None, 
-            ansible: Some("services/scripts/ansible/ansible-setup.yml".to_string()), 
+            ansible: Some("scripts/ansible/ansible-setup.yml".to_string()),
             attach_config: Amount::None,
-            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, path: "".to_string(), destination: "".to_string(), dependency: None })),
+            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, source: "".to_string(), destination: "".to_string(), dependency: None })),
             executables: Amount::None
         }
     }  

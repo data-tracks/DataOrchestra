@@ -34,13 +34,13 @@
     "resources": {
       "type": "data",
       "name": "sentence_generator",
-      "path": "examples/word_count/sentence_generator",
+      "source": "examples/word_count/sentence_generator",
       "destination": "/sentence_generator"
     },
     "executables": {
       "type": "tmux",
       "session": "SentenceGenerator",
-      "path": "/sentence_generator/start.sh",
+      "destination": "/sentence_generator/start.sh",
       "commands": [
         "cd /sentence_generator",
         "cargo run -- --producer ${NODE162.host}:9092 --topic SentenceGenerator -l debug --interval 1"
@@ -70,13 +70,13 @@
       "resources": {
         "type": "data",
         "name": "sentence_splitter",
-        "path": "examples/word_count/sentence_splitter",
+        "source": "examples/word_count/sentence_splitter",
         "destination": "/sentence_splitter"
       },
       "executables": {
         "type": "tmux",
         "session": "SentenceSplitter",
-        "path": "/sentence_splitter/start.sh",
+        "destination": "/sentence_splitter/start.sh",
         "commands": [
           "cd /sentence_splitter",
           "cargo run -- --consumer broker:29092 --producer broker:29092 --consumer-topic Sentence --producer-topic Word -l debug"
@@ -107,13 +107,13 @@
       "resources": {
         "type": "data",
         "name": "word-generator",
-        "path": "examples/word_count/postgres_adapter",
+        "source": "examples/word_count/postgres_adapter",
         "destination": "/postgres_adapter"
       },
       "executables": {
         "type": "tmux",
         "session": "PostgresAdapter",
-        "path": "/postgres_adapter/start.sh",
+        "destination": "/postgres_adapter/start.sh",
         "commands": [
           "cd /postgres_adapter",
           "cargo run -- -l debug --topic Word --consumer ${NODE162.host}:9092"

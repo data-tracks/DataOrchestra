@@ -61,7 +61,7 @@ pub struct ExtData {
     pub location: Location,
     #[serde(default)]
     pub name: Option<String>,
-    pub path: String,
+    pub source: String,
     pub destination: String,
     #[serde(default)]
     pub dependency: Option<String>,
@@ -72,7 +72,7 @@ impl ToInternal<DataTypes> for ExtData {
         let data = Data 
         {
             name: self.name,
-            source: self.path,
+            source: self.source,
             destination: self.destination,
             dependency: self.dependency
         };

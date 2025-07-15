@@ -97,7 +97,7 @@ impl ObjectBuilder {
 }
 
 pub fn default_ansible() -> String {
-    "services/scripts/ansible/ansible-setup.yml".to_string()
+    "scripts/ansible/ansible-setup.yml".to_string()
 }
 
 pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
@@ -302,7 +302,6 @@ impl Spawner for Object {
                 if let Some(ref node) = self.node {
                     if container.get_ssh_port().is_some() {
                         debug!("Loading ssh session for container");
-
                         let result = repeat_on_err_mut(|| {
                             container.load_ssh(node.host)
                         }, 10, Some(Duration::from_secs(2)));

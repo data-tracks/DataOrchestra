@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     pub fn data_node() {
-        let data_type = ExtDataTypes::Data(ExtData { location: Location::Node, name: Some("NAME".to_string()), path: "/path".to_string(), destination: "/destination".to_string(), dependency: Some("DEPENDENCY".to_string()) } );
+        let data_type = ExtDataTypes::Data(ExtData { location: Location::Node, name: Some("NAME".to_string()), source: "/path".to_string(), destination: "/destination".to_string(), dependency: Some("DEPENDENCY".to_string()) } );
         let internal_data_type = data_type.to_internal();
 
         matches!(internal_data_type, DataTypes::NodeData(_));
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     pub fn data_container() {
-        let data_type = ExtDataTypes::Data(ExtData { location: Location::Container, name: Some("NAME".to_string()), path: "/path".to_string(), destination: "/destination".to_string(), dependency: Some("DEPENDENCY".to_string()) } );
+        let data_type = ExtDataTypes::Data(ExtData { location: Location::Container, name: Some("NAME".to_string()), source: "/path".to_string(), destination: "/destination".to_string(), dependency: Some("DEPENDENCY".to_string()) } );
         let internal_data_type = data_type.to_internal();
 
         matches!(internal_data_type, DataTypes::DockerData(_));

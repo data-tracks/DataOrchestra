@@ -75,7 +75,7 @@ mod tests {
         });
 
         let data = get_data_type(json);
-        let data_struct = ExtData { location: Location::Node, name: Some("data".to_string()), path: "/path".to_string(), destination: "/destination".to_string(), dependency: None};
+        let data_struct = ExtData { location: Location::Node, name: Some("data".to_string()), source: "/path".to_string(), destination: "/destination".to_string(), dependency: None};
         assert_eq!(data.get_data_ref(), &data_struct);
     }
 

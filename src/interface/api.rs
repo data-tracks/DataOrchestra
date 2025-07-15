@@ -99,6 +99,7 @@ impl ToInternal<(Process, Object, Object, u16)> for API {
         let mut process = Process::default();
 
         process.object.name = "kafka-api".to_string();
+        process.object.graph.ignore = true;
 
         let kafka = Kafka::new(vec!["orchestra-log".to_string()], self.kafka_host.host);
         process.config = Some(ProcessTypeConfig::Kafka(kafka));

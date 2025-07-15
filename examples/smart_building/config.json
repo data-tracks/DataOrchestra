@@ -35,13 +35,13 @@
       "to": ["kafka"],
       "resources": {
         "type": "data",
-        "path": "examples/smart_building/generator/energy_sensor",
+        "source": "examples/smart_building/generator/energy_sensor",
         "destination": "/energy_sensor"
       },
       "executables": {
         "type": "tmux",
         "session": "EnergySensor",
-        "path": "/energy_sensor/start.sh",
+        "destination": "/energy_sensor/start.sh",
         "commands": [
           "cd /energy_sensor",
           "cargo run -- -l debug --interval 250"
@@ -71,12 +71,12 @@
       "to": ["kafka"],
       "resources": {
         "type": "data",
-        "path": "examples/smart_building/processor/energy_filter",
+        "source": "examples/smart_building/processor/energy_filter",
         "destination": "/energy_filter"
       },
       "executables": {
         "type": "tmux",
-        "path": "/energy_filter/start.sh",
+        "destination": "/energy_filter/start.sh",
         "session": "EnergyFilter",
         "commands": [
           "cd /energy_filter",
@@ -103,12 +103,12 @@
       "to": ["kafka"],
       "resources": {
         "type": "data",
-        "path": "examples/smart_building/processor/energy_aggregator",
+        "source": "examples/smart_building/processor/energy_aggregator",
         "destination": "/energy_aggregator"
       },
       "executables": {
         "type": "tmux",
-        "path": "/energy_aggregator/start.sh",
+        "destination": "/energy_aggregator/start.sh",
         "session": "EnergyAggregator",
         "commands": [
           "cd /energy_aggregator",
@@ -144,12 +144,12 @@
       "to": ["mongodb"],
       "resources": {
         "type": "data",
-        "path": "examples/smart_building/store/energy_store_mongodb",
+        "source": "examples/smart_building/store/energy_store_mongodb",
         "destination": "/energy_store_mongodb"
       },
       "executables": {
         "type": "tmux",
-        "path": "/energy_store_mongodb/start.sh",
+        "destination": "/energy_store_mongodb/start.sh",
         "session": "MongodbAdapter",
         "commands": [
           "cd /energy_store_mongodb",
@@ -168,12 +168,12 @@
       "to": ["postgres"],
       "resources": {
         "type": "data",
-        "path": "examples/smart_building/store/energy_store_postgres",
+        "source": "examples/smart_building/store/energy_store_postgres",
         "destination": "/energy_store_postgres"
       },
       "executables": {
         "type": "tmux",
-        "path": "/energy_store_postgres/start.sh",
+        "destination": "/energy_store_postgres/start.sh",
         "session": "PostgresAdapter",
         "commands": [
           "cd /energy_store_postgres",
