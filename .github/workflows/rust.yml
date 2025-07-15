@@ -46,11 +46,6 @@ jobs:
     
       - name: Set Rust 1.88
         run: rustup default 1.88.0
-        
-      - name: Build API
-        run: |
-          cd services/api
-          cargo build --verbose
 
       - name: Build Kafka Producer attachable
         run: |
