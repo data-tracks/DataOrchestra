@@ -348,6 +348,15 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
             }
         }
     }
+
+    let local = Local::new();
+    let result = docker::api::get_networks(&local);
+    if let Ok(networks) = result && !networks.contains(&"orchestra".to_string()) {
+        let result = docker::api::create_network("orchestra", &local);
+        if let Err(error) = result {
+            error!("{error}");
+        }
+    }
 }
 
 pub fn post_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
