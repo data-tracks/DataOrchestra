@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    pub fn data_no_path() {
+    pub fn data_no_source() {
         let json = json!(
         {
             "type": "data",
@@ -38,7 +38,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    pub fn data_no_path_no_destination() {
+    pub fn data_no_source_no_destination() {
         let json = json!(
         {
             "type": "data",
@@ -57,7 +57,7 @@ mod tests {
             "type": "data",
             "location": "node",
             "name": "data",
-            "path": "/path"
+            "source": "/source"
         });
 
         let _ = get_data_type(json);
@@ -70,12 +70,12 @@ mod tests {
             "type": "data",
             "location": "node",
             "name": "data",
-            "path": "/path",
+            "source": "/source",
             "destination": "/destination"
         });
 
         let data = get_data_type(json);
-        let data_struct = ExtData { location: Location::Node, name: Some("data".to_string()), source: "/path".to_string(), destination: "/destination".to_string(), dependency: None};
+        let data_struct = ExtData { location: Location::Node, name: Some("data".to_string()), source: "/source".to_string(), destination: "/destination".to_string(), dependency: None};
         assert_eq!(data.get_data_ref(), &data_struct);
     }
 
@@ -113,7 +113,7 @@ mod tests {
             "type": "volatile",
             "location": "node",
             "name": "data",
-            "path": "/path",
+            "source": "/source",
             "destination": "/destination",
             "content": "CONTENT"
         });
@@ -130,7 +130,7 @@ mod tests {
             "type": "volatile",
             "location": "node",
             "name": "data",
-            "path": "/path",
+            "source": "/source",
             "destination": "/destination",
             "json": {
                 "KEY": "VALUE",
@@ -160,7 +160,7 @@ mod tests {
             "type": "volatile",
             "location": "node",
             "name": "data",
-            "path": "/path",
+            "source": "/source",
             "destination": "/destination",
             "env": {
                 "KEY_1": "VALUE_1",
