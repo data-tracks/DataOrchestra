@@ -5,3 +5,6 @@ mod resources_deserialize_tests;
 mod executables_deserialize_tests;
 mod graph_deserialize_tests;
 mod attach_deserialize_tests;
+mod store_generalize_tests;
+mod object_deserialize_tests;
+mod process_deserialize_tests;

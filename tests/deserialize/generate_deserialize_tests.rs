@@ -43,8 +43,50 @@ mod tests {
         });
 
         let generate = get_generate(json);
-        let int_generate = generate.to_internal();
+        assert_eq!(generate.amount, 5);
+    }
 
-        assert_eq!(int_generate.len(), 5);
+    #[test]
+    pub fn generate_resource() {
+        let json = json!(
+        {
+            "resources": {
+                "type": "data",
+                "location": "node",
+                "name": "data",
+                "source": "/source",
+                "destination": "/destination"
+            }
+        });
+
+        let generate = get_generate(json);
+        assert!(generate.general.resources.has_one());
+    }
+
+    #[test]
+    pub fn generate_resource_multiple() {
+        let json = json!(
+        {
+            "resources": [
+                {
+                    "type": "data",
+                    "location": "node",
+                    "name": "data",
+                    "source": "/source",
+                    "destination": "/destination"
+                },
+                {
+                    "type": "data",
+                    "location": "node",
+                    "name": "data",
+                    "source": "/source",
+                    "destination": "/destination"
+                }
+            ]
+        });
+
+        let generate = get_generate(json);
+        assert!(generate.general.resources.has_multiple());
+        assert_eq!(generate.general.resources.get_amount(), 2);
     }
 }
