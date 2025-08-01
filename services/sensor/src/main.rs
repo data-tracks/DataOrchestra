@@ -3,10 +3,8 @@ use std::{thread, time::Duration};
 use clap::Parser;
 use energy_sensor::{init_logger, Arguments};
 use log::{debug, info};
-use rand::{seq::IndexedRandom, Rng};
 use serde_json::json;
 use fake::{Fake, Faker};
-use chrono;
 
 #[tokio::main]
 async fn main() {
@@ -25,7 +23,7 @@ pub async fn data_producer(args: Arguments) {
 
     // Generate data
     loop {
-        let mut value = Faker.fake::<f64>();
+        let value = Faker.fake::<f64>();
 
         let package = json!({
             "id": id,
@@ -35,7 +33,7 @@ pub async fn data_producer(args: Arguments) {
 
         dbg!("Sending package {}", &package);
 
-        let result = client.post(args.address)
+        let result = client.post(&args.address)
             .json(&package)
             .send()
             .await;

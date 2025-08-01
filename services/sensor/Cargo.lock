@@ -325,7 +325,6 @@ dependencies = [
  "env_logger",
  "fake",
  "log",
- "rand",
  "reqwest",
  "serde",
  "serde_json",
