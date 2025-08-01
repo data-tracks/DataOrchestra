@@ -11,14 +11,8 @@ pub struct ExtProcess {
     pub process_type: Option<ProcessType>,
     #[serde(flatten)]
     pub config: Option<ProcessTypeConfig>,
-    #[serde(default = "default_amount")]
-    pub amount: usize,
     #[serde(flatten)]
     pub general: General
-}
-
-pub fn default_amount() -> usize {
-    1
 }
 
 impl Default for ExtProcess {
@@ -27,8 +21,7 @@ impl Default for ExtProcess {
         { 
             process_type: None, 
             config: None, 
-            amount: default_amount(), 
-            general: General::default() 
+            general: General::default()
         }
     }
 }

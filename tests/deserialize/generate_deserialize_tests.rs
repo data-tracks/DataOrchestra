@@ -2,7 +2,6 @@
 mod tests {
     use serde_json::json;
     use data_orchestra::interface::generate::ExtGenerate;
-    use data_orchestra::shared::ToInternalVec;
 
     pub fn get_generate(json: serde_json::Value) -> ExtGenerate {
         let generate: ExtGenerate = serde_json::from_value(json).expect("Unable to parse json to generate");
@@ -14,13 +13,14 @@ mod tests {
 
         let json = json!(
         {
-            "template": {
-                "type": "sensor"
+            "sensor": {
+                "interval": 250,
+                "address": "address",
             }
         });
 
         let generate = get_generate(json);
-        assert!(generate.template.is_some());
+        assert!(generate.config.is_some());
     }
 
     #[test]

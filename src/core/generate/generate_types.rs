@@ -6,7 +6,6 @@ use super::{types::sensor::Sensor, Generate};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[serde(tag = "type")]
 pub enum GeneratorTypeConfig {
     Sensor(Sensor)
 }

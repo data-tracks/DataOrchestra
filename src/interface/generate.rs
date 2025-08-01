@@ -9,8 +9,8 @@ use super::general::General;
 pub struct ExtGenerate {
     //#[serde(rename = "type")]
     //pub generate_type: Option<GeneratorType>,
-    //#[serde(flatten)]
-    pub template: Option<GeneratorTypeConfig>,
+    #[serde(flatten)]
+    pub config: Option<GeneratorTypeConfig>,
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]
@@ -26,7 +26,7 @@ impl Default for ExtGenerate {
         ExtGenerate 
         {
             //generate_type: None,
-            template: None,
+            config: None,
             amount: default_amount(),
             general: General::default()
         }
@@ -47,7 +47,7 @@ impl ToInternalVec<Generate> for ExtGenerate {
             generate.object.graph = self.general.graph.clone();
 
             //generate.generate_type = self.generate_type.clone();
-            generate.config = self.template.clone();
+            generate.config = self.config.clone();
 
             if let Some(node) = self.general.node.clone() {
                 generate.object.node = Some(node.to_internal());

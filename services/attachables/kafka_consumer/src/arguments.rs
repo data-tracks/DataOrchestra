@@ -3,7 +3,7 @@ use serde::{de::Error, Deserialize, Deserializer};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Arguments {
-    /// Address where data should be send to
+    /// Address where data should be sent to
     pub address: String,    
     /// Address (host:port) of kafka 
     pub consumer: String,

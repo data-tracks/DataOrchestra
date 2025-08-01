@@ -21,7 +21,7 @@ pub struct KafkaConsumer {
 
 #[derive(Debug, Clone, Deserialize, Serialize, Builder)]
 pub struct Arguments {
-    /// Address where data should be send to
+    /// Address where data should be sent to
     #[builder(setter(into))]
     pub address: String,    
     /// Address (host:port) of kafka 
@@ -39,8 +39,13 @@ pub struct Arguments {
     #[serde(serialize_with = "serialize_levelfilter")]
     #[serde(default = "default_level")]
     #[builder(default = "default_level()")]
-    pub level: LevelFilter
+    pub level: LevelFilter,
+
+    #[serde(default)]
+    pub logger: Option<String>
 }
+
+
 
 impl ArgumentsBuilder {
     pub fn topic(&mut self, topic: impl Into<String>) -> &mut Self {
@@ -55,10 +60,9 @@ impl ArgumentsBuilder {
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments { address: "".to_string(), consumer: default_consumer(), group_id: "".to_string(), topics: Vec::new(), level: default_level() }
+        Arguments {  address: "".to_string(), consumer: default_consumer(), group_id: "".to_string(), topics: Vec::new(), level: default_level(), logger: None }
     }
 }
-
 
 pub fn default_consumer() -> String {
     "localhost:9092".to_string()

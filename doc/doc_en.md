@@ -303,9 +303,14 @@ Attachables are objects which can be attached to an already existing object serv
 
 #### Kafka Consumer
 
-| Field | Type | Required | Description | Default |
-|-------|------|----------|-------------|---------|
-| ``    | ``   |          |             |         |
+| Field      | Type                                           | Required | Description                                       | Default          |
+|------------|------------------------------------------------|----------|---------------------------------------------------|------------------|
+| `address`  | `string`                                       | yes      | Address where data is send to                     | -                |
+| `consumer` | `string`                                       | no       | Address of Kafka                                  | `localhost:9092` |
+| `level`    | ``info`, `warn`, `error`, `debug` and `trace`` | no       | Logging level                                     | `info`           |
+| `group_id` | `string`                                       | yes      | Group id of consumer                              | -                |
+| `topics`   | `list(string)`                                 | yes      | List of Kafka topics                              | -                |
+| `logger`   | `string`                                       | no       | Address of Logging Kafka Stream Processing system | None             |
 
 #### Example
 
@@ -339,10 +344,55 @@ The following subsections describe the configuration, where all can be placed in
 |----------|------------------------------------------------|----------|-----------------------------------------|---------|
 | `amount` | `integer`                                      | no       | Amount of the identical generate object | 1       |
 
-### Generate Type
+### Types
 
+A custom process type can be set the following way
 
+```json
+{
+  "type": "NAME"
+}
+```
 
+or set and customized
+
+```json
+{
+  "NAME": {
+    "...": "..."
+  }
+}
+```
+
+#### Sensor
+
+Sensor can be customized through the following fields
+
+| Field      | Type           | Required | Description                            | Default |
+|------------|----------------|----------|----------------------------------------|---------|
+| `interval` | `integer`      | no       | Interval in which data is send (in ms) | 1000    |
+| `address`  | `string`       | yes      | Address of where data is send to       | -       |
+
+It sends packages as a JSON to the given address
+
+```json
+{
+  "id": "...",
+  "value": ...,
+  "timestamp": "..."
+}
+```
+
+##### Example
+
+```json
+{
+  "sensor": {
+    "interval": 100,
+    "address": "100.30.154.76"
+  }
+}
+```
 
 ## Process
 
@@ -360,6 +410,44 @@ The following subsections describe the configuration, where all can be placed in
 
 ### Types
 
+A custom process type can be set the following way
+
+```json
+{
+  "type": "NAME"
+}
+```
+
+or set and customized
+
+```json
+{
+  "NAME": {
+    "...": "..."
+  }
+}
+```
+
+#### Kafka
+
+Kafka can be customized through the following fields
+
+| Field    | Type           | Required | Description                                  | Default     |
+|----------|----------------|----------|----------------------------------------------|-------------|
+| `topics` | `list(string)` | yes      | Topic names                                  | Empty       |
+| `host` | `string `      | no       | Ip Address of the location of the Kafka host | `127.0.0.1` |
+
+##### Example
+
+```json
+{
+  "kafka": {
+    "topics": ["input", "output"],
+    "host": "100.30.154.76"
+  }
+}
+```
+
 ## Store
 
 Store is a specialization of an [object](#object). It represents an object which stores data.
@@ -375,3 +463,79 @@ The following subsections describe the configuration, where all can be placed in
 ```
 
 ### Types
+
+A custom store type can be set the following way
+
+```json
+{
+  "type": "NAME"
+}
+```
+
+or set and customized 
+
+```json
+{
+  "NAME": {
+    "...": "..."
+  }
+}
+```
+
+#### PostgreSQL
+
+PostgreSQL can be customized through the following fields
+
+| Field    | Type     | Required | Description                      | Default    |
+|----------|----------|----------|----------------------------------|------------|
+| `postgres_db` | `string` | no       | Database name                    | `postgres` |
+| `postgres_user` | `string` | no       | Username                         | `postgres` |
+| `postgres_password` | `string` | no       | User password                    | `postgres` |
+| `postgres_initdb_args` | `string` | no       | Special initialization arguments | None       |
+
+##### Example
+
+```json
+{
+  "postgres": {
+    "postgres_db": "database",
+    "postgres_user": "user",
+    "postgres_password": "password",
+    "postgres_initdb_args": "--data-checksums"
+  }
+}
+```
+
+#### Redis
+
+Redis currently has no customizable fields.
+
+##### Example
+
+```json
+{
+  "type": "redis"
+}
+```
+
+#### MongoDB
+
+MongoDB can be customized through the following fields
+
+
+| Field    | Type      | Required | Description   | Default |
+|----------|-----------|----------|---------------|---------|
+| `username` | `string`  | no       | Username      | `mongo` |
+| `password` | `string` | no       | User passworr | `mongo`        |
+
+##### Example
+
+```json
+{
+  "mongodb": {
+    "username": "user",
+    "password": "password"
+  }
+}
+```
+
