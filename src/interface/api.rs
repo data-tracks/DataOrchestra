@@ -23,8 +23,8 @@ pub fn default_port() -> u16 {
     5000
 }
 
-impl ToInternal<(Process, Object, Object, u16)> for API {
-    fn to_internal(self) -> (Process, Object, Object, u16) {
+impl ToInternal<(Process, Object)> for API {
+    fn to_internal(self) -> (Process, Object) {
         let docker_name = "orchestra-api".to_string();
 
         // Build the api object
@@ -106,6 +106,6 @@ impl ToInternal<(Process, Object, Object, u16)> for API {
 
         process.object.node = Some(self.kafka_host.to_internal());
 
-        (process, consumer, api, self.port)
+        (process, consumer)
     } 
 }

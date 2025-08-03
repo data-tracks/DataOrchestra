@@ -175,8 +175,6 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
         kill_containers(config.get_nodes());
     }
 
-    exit(-1);
-
     log_time!("Building portainer");
     if args.portainer {
         portainer.build(); 

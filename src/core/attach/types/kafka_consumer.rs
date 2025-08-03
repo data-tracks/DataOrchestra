@@ -42,6 +42,7 @@ pub struct Arguments {
     pub level: LevelFilter,
 
     #[serde(default)]
+    #[builder(default)]
     pub logger: Option<String>
 }
 
