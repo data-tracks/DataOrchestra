@@ -18,7 +18,7 @@ cargo run -- -f examples/smart_building/config.json -s <path/to/your/ssh_key>
 
 ## Features
 
-The orchestrator provides multiple features which simplify the observing and interaction with the distributed landscape.k
+The orchestrator provides multiple features which simplify the observing and interaction with the distributed landscape.
 
 ### Portainer
 
@@ -43,6 +43,11 @@ For the documentation on run parameters and a configuration guide, please check 
 This program is in no way tested for security vulnerabilities. 
 This program contains a lot of user made remote code execution through script uploading and execution and should therefor be handled with care.
 Additionally, the program requires the path to your private ssh key. While it only uses this for the establishing of the ssh connection, use at your own risk.
+
+## Requirements
+
+- Rust 
+- Docker desktop
 
 ## License 
 
