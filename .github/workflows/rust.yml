@@ -56,3 +56,8 @@ jobs:
         run: |
           cd services/attachables/kafka_consumer
           cargo build --verbose
+
+      - name: Build Sensor
+        run: |
+          cd services/sensor
+          cargo build --verbose
