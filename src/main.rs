@@ -286,6 +286,7 @@ pub fn kill_containers(nodes: Vec<&Node>) {
                     if let Err(error) = result {
                         error!("{error}");
                     }
+                    info!("Removed all docker containers from {}", node.host);
                 }
                 else {
                     error!("Node {} doesnt have ssh session", node.host);

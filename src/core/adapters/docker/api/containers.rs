@@ -35,8 +35,11 @@ pub fn kill_container<T: Into<String>>(runner: &dyn Runner, name: T) -> Result<(
 /// let result = api::kill_containers(&runner);
 /// ```
 pub fn kill_containers(runner: &dyn Runner) -> Result<(), String> {
-    let command = "docker container kill $(docker container ls -a -q)";
-    runner.exec(command.to_string())?;
+    let containers = get_container_names(runner)?;
+    for container in containers {
+        let command = format!("docker container kill {container}");
+        runner.exec(command)?;
+    }
 
     Ok(())
 }
@@ -53,8 +56,11 @@ pub fn kill_containers(runner: &dyn Runner) -> Result<(), String> {
 /// let result = api::delete_containers(&runner);
 /// ```
 pub fn delete_containers(runner: &dyn Runner) -> Result<(), String> {
-    let command = "docker rm $(docker container ls -a -q)";
-    runner.exec(command.to_string())?;
+    let containers = get_container_names(runner)?;
+    for container in containers {
+        let command = format!("docker rm {container}");
+        runner.exec(command)?;
+    }
 
     Ok(())
 }
@@ -89,8 +95,11 @@ pub fn delete_container<T: Into<String>>(name: T, runner: &dyn Runner) -> Result
 /// let result = api::stop_containers(&runner);
 /// ```
 pub fn stop_containers(runner: &dyn Runner) -> Result<(), String> {
-    let command = "docker stop $(docker container ls -a -q)";
-    runner.exec(command.to_string())?;
+    let containers = get_container_names(runner)?;
+    for container in containers {
+        let command = format!("docker stop {container}");
+        runner.exec(command)?;
+    }
 
     Ok(())
 }
