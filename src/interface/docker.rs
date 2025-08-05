@@ -11,7 +11,7 @@ pub struct ExtDocker {
     pub name: Option<String>,
     // Network of container
     pub network: Option<String>,
-    // Environemnt variables of container
+    // Environment variables of container
     pub environment: Option<HashMap<String, String>>,
     // Publish all ports
     #[serde(default)]
@@ -33,6 +33,10 @@ pub struct ExtDocker {
     // Mounts attached to container 
     #[serde(default)]
     pub mounts: Amount<Mount>,
+    #[serde(default)]
+    pub publish: Amount<u16>,
+    #[serde(default)]
+    pub publish_map: Amount<String>
 }
 
 impl Default for ExtDocker {
@@ -50,7 +54,9 @@ impl Default for ExtDocker {
             compose: None, 
             interpolation_variables: None,
             restart: RestartTypes::default(),
-            mounts: Amount::None
+            mounts: Amount::None,
+            publish: Amount::None,
+            publish_map: Amount::None
         }
     }
 }
@@ -99,12 +105,35 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
             }
         }
 
-        for mount in self.volumes.to_vec() {
-            builder.volume(mount);
+        for volume in self.volumes {
+            builder.volume(volume);
         }
 
-        builder.publish_all(self.publish_all); 
-        builder.mounts(self.mounts.to_vec());
+        for mount in self.mounts {
+            builder.mount(mount);
+        }
+
+        for publish in self.publish {
+            builder.publish(publish);
+        }
+
+        for publish_map in self.publish_map {
+            let split = publish_map.split_once(":");
+            if let Some(split) = split {
+                let (ext, int) = split;
+                if ext.is_empty() || int.is_empty() || int.contains(":") {
+                    panic!("Invalid port mapping {}", publish_map);
+                }
+
+                let ext: u16 = ext.parse().unwrap();
+                let int: u16 = int.parse().unwrap();
+
+                builder.publish_map(ext, int);
+            }
+        }
+
+
+        builder.publish_all(self.publish_all);
         builder.restart(self.restart);
 
         builder
