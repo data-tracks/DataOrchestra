@@ -12,6 +12,7 @@ pub struct Arguments {
     pub level: LevelFilter,
     // Kafka topics
     pub topics: Vec<String>,
+    // Address of logging system
     #[serde(default)]
     pub logger: Option<String>
 }

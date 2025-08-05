@@ -2,7 +2,7 @@
 
 ---
 
-# Script
+# CLI
 
 The general script can be started through the normal cargo run command
 
@@ -289,7 +289,26 @@ For uploading of the script to the remote location one should use [resources](#r
 
 ### Attachables
 
-Attachables are objects which can be attached to an already existing object serving a simple function. The following attachables exist
+Attachables are objects which can be attached to an already existing object serving a simple function.
+One or multiple attachables can be attached to the same object.
+
+```json
+{
+  "attach": { "...":  "..."}
+}
+```
+
+```json
+{
+  "attach": [ 
+    {"...":  "...."}, 
+    {"...": "...."} 
+  ]
+}
+```
+
+
+The following attachables exist
 
 #### Kafka Producer
 
@@ -318,7 +337,11 @@ Attachables are objects which can be attached to an already existing object serv
 {
   "attach": {
     "kafka_producer": {
-      ""
+      "api_port": 6000,
+      "address": "100.30.154.76:9092",
+      "level": "debug",
+      "topics": "Text",
+      "logger": "100.30.154.77:9092"
     }
   }
 }

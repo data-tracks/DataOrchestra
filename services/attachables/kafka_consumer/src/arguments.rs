@@ -3,17 +3,20 @@ use serde::{de::Error, Deserialize, Deserializer};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Arguments {
-    /// Address where data should be sent to
+    // Address where data should be sent to
     pub address: String,    
-    /// Address (host:port) of kafka 
+    // Address (host:port) of kafka
     pub consumer: String,
-    /// Group id of consumer
+    // Group id of consumer
     pub group_id: String,
-    /// Kafka topics consumer should consume from
+    // Kafka topics consumer should consume from
     pub topics: Vec<String>,
-    /// Logging level
+    // Logging level
     #[serde(deserialize_with = "deserialize_levelfilter")]
-    pub level: LevelFilter
+    pub level: LevelFilter,
+    // Address of logging system
+    #[serde(default)]
+    pub logger: Option<String>
 }
 
 pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>
