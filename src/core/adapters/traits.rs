@@ -34,10 +34,30 @@ impl From<RunnerError> for String{
     }
 }
 
+#[derive(Debug, Error)]
+pub enum UploaderError {
+    #[error("No such directory exists ({0})")]
+    NoSuchDirectory(String),
+    #[error("No such file exists ({0})")]
+    NoSuchFile(String),
+    #[error("{0}")]
+    UnableToUpload(String),
+    #[error("Invalid File ({0})")]
+    InvalidFile(String),
+    #[error("Invalid Directory ({0})")]
+    InvalidDirectory(String)
+}
+
+impl From<UploaderError> for String{
+    fn from(value: UploaderError) -> Self {
+        value.to_string()
+    }
+}
+
 /// Uploader trait. Trait for file uploading
 pub trait Uploader<T, S>: Debug where Self: 'static {
-    fn upload_file(&self, file: T, destination: S) -> Result<(), String>;
-    fn upload_directory(&self, dir: T, destination: S) -> Result<(), String>;
+    fn upload_file(&self, src: T, dst: S) -> Result<(), UploaderError>;
+    fn upload_directory(&self, src: T, dst: S) -> Result<(), UploaderError>;
 
     fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader<T, S> + Send>
     where

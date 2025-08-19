@@ -23,4 +23,6 @@ pub mod heartbeats;
 pub use heartbeats::*;
 
 pub mod tmux;
+mod rsync;
+
 pub use tmux::*;

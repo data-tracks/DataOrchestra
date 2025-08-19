@@ -8,7 +8,7 @@ use std::fs;
 use log::{debug, error};
 use crate::core::adapters::ssh::Ssh;
 use crate::core::adapters::traits::{Runner, Uploader};
-use crate::core::adapters::RunnerError;
+use crate::core::adapters::{RunnerError, UploaderError};
 
 use super::ssh;
 
@@ -119,7 +119,7 @@ impl<T, S> Uploader<T, S> for Ssh where
     S: AsRef<Path>
 {
     /// Upload file to remote server via Ssh
-    fn upload_file(&self, file: T, location: S) -> Result<(), String>{
+    fn upload_file(&self, file: T, location: S) -> Result<(), UploaderError>{
         let file = file.as_ref();
         let location = location.as_ref();
 
@@ -162,7 +162,7 @@ impl<T, S> Uploader<T, S> for Ssh where
     /// # Return
     ///
     /// [`Result`] type with the parent directory of the files on success or error message.
-    fn upload_directory(&self, dir: T, destination: S) -> Result<(), String> {
+    fn upload_directory(&self, dir: T, destination: S) -> Result<(), UploaderError> {
         let mut created_paths: Vec<String> = Vec::new();
         
         let dir = dir.as_ref();
@@ -189,10 +189,7 @@ impl<T, S> Uploader<T, S> for Ssh where
                     let _ = self.exec(format!("mkdir -p {remote_path}"));
                 }
                 else {
-                    let result = self.upload_file(entry.path(), &Path::new(&remote_path));
-                    if let Err(ref error) = result {
-                        return Err(format!("Unable to upload file from directory {error}"));
-                    }
+                    self.upload_file(entry.path(), &Path::new(&remote_path))?;
                 }
             }
         }
