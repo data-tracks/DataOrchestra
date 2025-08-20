@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::{Graph, Object};
@@ -56,10 +56,8 @@ impl ToInternal<Object> for ExtObject {
 
         object.graph = self.graph;
 
-        if let Some(node) = self.node {
-            object.node = Some(node.to_internal());
-        }
-
+        object.node = self.node.to_internal();
+        
         if let Some(ansible) = self.ansible {
             object.ansible = ansible;
         }
@@ -83,8 +81,12 @@ impl ToInternal<Object> for ExtObject {
                 if let Some(container) = object.docker_container_builder.as_mut() {
                     container.mount(mount);
                 }
+                else {
+                    error!("Mount data provided but no container available")
+                }
             }
         }
+        
         let vec = self.executables.clone().to_internal();
         for (script, data) in vec {
             if let Some(data) = data {

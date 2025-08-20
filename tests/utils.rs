@@ -1,22 +1,22 @@
 use std::sync::{Arc, Mutex};
-use data_orchestra::core::adapters::{Runner, RunnerError};
+use data_orchestra::core::adapters::{Executor, ExecutorError};
 
 #[derive(Debug, Clone)]
-pub struct DummyRunner {
+pub struct DummyExecutor {
     output: Arc<Mutex<String>>,
 }
 
-impl Default for DummyRunner {
+impl Default for DummyExecutor {
     fn default() -> Self {
         let arc = Arc::new(Mutex::new(String::new()));
-        DummyRunner {output: arc}
+        DummyExecutor {output: arc}
     }
 }
 
-impl DummyRunner {
+impl DummyExecutor {
     #[allow(dead_code)]
     pub fn new(mutex: Arc<Mutex<String>>) -> Self {
-        DummyRunner {
+        DummyExecutor {
             output: mutex,
         }
     }
@@ -27,14 +27,14 @@ impl DummyRunner {
     }
 }
 
-impl Runner for DummyRunner {
-    fn exec(&self, command: String) -> Result<String, RunnerError> {
+impl Executor for DummyExecutor {
+    fn exec(&self, command: String) -> Result<String, ExecutorError> {
         let mut output = self.output.lock().unwrap();
         *output = command.clone();
         Ok(command)
     }
 
-    fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
+    fn clone_box(&self) -> Box<dyn Executor + Send + Sync> {
         panic!()
     }
 }

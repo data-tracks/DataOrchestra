@@ -3,7 +3,7 @@ use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::time::Duration;
-use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Rsync, RsyncBuilder, Run, Runner, Uploader};
+use crate::core::adapters::{docker, ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Rsync, RsyncBuilder, Run, Executor, Uploader};
 use crate::core::types::data::{Data, DataTypes, GetData, VolatileData};
 use crate::shared::{repeat_on_err, repeat_on_err_mut};
 use crate::log_time;
@@ -64,8 +64,8 @@ pub struct Object {
     // Ansible script responsible for the setup of the environment
     #[builder(setter(into), default = "Object::default_ansible()")]
     pub ansible: String,
-    #[builder(default = "Object::default_runner()")]
-    pub runner: Box<dyn Runner + Send + Sync>,
+    #[builder(default = "Object::default_executor()")]
+    pub executor: Box<dyn Executor + Send + Sync>,
     #[builder(default)]
     pub uploader: Option<Box<dyn Uploader + Send + Sync>>
 }
@@ -110,7 +110,7 @@ impl Default for Object {
             resources: Vec::new(),
             executables: Vec::new(),
             ansible: Object::default_ansible(),
-            runner: Object::default_runner(),
+            executor: Object::default_executor(),
             uploader: None
         }
     }
@@ -131,12 +131,11 @@ impl Spawner for Object {
                 .build()
                 .expect("Unable to build compose");
             // If a node was specified, docker compose file needs to be uploaded to node
-            if let Some(ref node) = self.node {
-                if let Some(ref ssh) = node.ssh {
-                    let runner = ssh.to_box_runner();
-                    compose.runner = runner;
+            if self.node.is_some() {
+                if let Some(uploader) = self.uploader.as_ref() {
+                    compose.executor = self.executor.clone_box();
 
-                    let result = ssh.exec("mkdir docker/".to_string());
+                    let result = self.executor.exec("mkdir docker/".to_string());
                     if let Err(error) = result {
                         error!("Unable to create docker/ folder | {error}");
                     }
@@ -147,18 +146,18 @@ impl Spawner for Object {
                     {
                         compose.config.compose = Some(format!("docker/{file_name}"));
                     }
-                    let result = ssh.upload_file(local_path.as_ref(), compose.config.compose.as_ref().unwrap().as_ref());
+                    let result = uploader.upload_file(local_path.as_ref(), compose.config.compose.as_ref().unwrap().as_ref());
                     if let Err(error) = result {
                         panic!("Unable to upload compose file {error}");
                     }
 
-                    let result = ssh.upload_directory("images/".as_ref(), "docker/".as_ref());
+                    let result = uploader.upload_directory("images/".as_ref(), "docker/".as_ref());
                     if let Err(error) = result {
                         error!("{error}");
                     }
                 }
                 else {
-                    panic!("No runner available for docker compose. Node was provided but ssh connection was not properly loaded");
+                    panic!("No executor available for docker compose. Node was provided but ssh connection was not properly loaded");
                 }
             }
             self.docker_manager = ContainerType::Compose(compose);
@@ -172,12 +171,12 @@ impl Spawner for Object {
                 .expect("Unable to build container");
 
             // If a node was specified, dockerfile needs to be uploaded to node
-            if let Some(ref node) = self.node {
-                if let Some(ref ssh) = node.ssh {
-                    let runner = ssh.to_box_runner();
-                    container.runner = runner;
+            if self.node.is_some() {
+                if let Some(uploader) = self.uploader.as_ref() {
+                    container.executor = self.executor.clone_box();
+
                     if let Some(dockerfile) = container.config.dockerfile.as_mut() {
-                        let result = ssh.exec("mkdir docker/".to_string());
+                        let result = self.executor.exec("mkdir docker/".to_string());
                         if let Err(error) = result {
                             error!("Unable to create docker/ folder on node ({error})");
                         }
@@ -189,7 +188,7 @@ impl Spawner for Object {
                         {
                             *dockerfile = format!("docker/{file_name}");
                         }
-                        let result = ssh.upload_file(local_path.as_ref(), dockerfile.as_ref());
+                        let result = uploader.upload_file(local_path.as_ref(), dockerfile.as_ref());
                         if let Err(error) = result {
                             panic!("Unable to upload dockerfile ({error})");
                         }
@@ -206,21 +205,26 @@ impl Spawner for Object {
         // Upload all node data to relevant node. This is done before the setup as the
         // specialization setup may start before object setup, thus data could be missing
         debug!("Uploading node data");
-        if let Some(node) = self.node.as_ref() && let Some(ssh) = node.ssh.as_ref(){
-            for data in self.resources.get_node_data() {
-                let path = Path::new(&data.src);
-                if path.is_dir() {
-                    let result = ssh.upload_directory(path, data.dst.as_ref());
-                    if let Err(error) = result {
-                        error!("{error}");
+        if self.node.is_some() {
+            if let Some(uploader) = self.uploader.as_ref() {
+                for data in self.resources.get_node_data() {
+                    let path = Path::new(&data.src);
+                    if path.is_dir() {
+                        let result = uploader.upload_directory(path, data.dst.as_ref());
+                        if let Err(error) = result {
+                            error!("{error}");
+                        }
+                    }
+                    else if path.is_file() {
+                        let result = uploader.upload_file(path, data.dst.as_ref());
+                        if let Err(error) = result {
+                            error!("{error}");
+                        }
                     }
                 }
-                else if path.is_file() {
-                    let result = ssh.upload_file(path, data.dst.as_ref());
-                    if let Err(error) = result {
-                        error!("{error}");
-                    }
-                }
+            }
+            else {
+                error!("Node was provided but no uploader available");
             }
         }
 
@@ -234,14 +238,11 @@ impl Spawner for Object {
     fn setup(&mut self) {
         info!("Setting up {}", self.name);
 
-        log_time!("Starting containers");
         let result = self.docker_manager.run();
         if let Err(error) = result {
             error!("{error}");
         }
-        log_time!("Finished starting containers");
 
-        log_time!("Starting polling ssh port containers");
         for container in self.docker_manager.containers_ref_vec() {
             let ssh_port = container.get_ssh_port();
             if let Some(ssh_port) = ssh_port {
@@ -255,8 +256,8 @@ impl Spawner for Object {
                 }
 
                 debug!("Polling docker container ssh connection ({host}:{ssh_port})");
-                
-                let result = repeat_on_err(|| { 
+
+                let result = repeat_on_err(|| {
                     ping(host, ssh_port)
                 }, 5, Some(Duration::from_secs(1)));
                 if let Err(error) = result {
@@ -264,83 +265,18 @@ impl Spawner for Object {
                 }
             }
         }
-        log_time!("Finished polling ssh port containers");
 
-        // Setup ssh connection for all containers
-        log_time!("Start container ssh sessions");
-        match &mut self.docker_manager { 
-            ContainerType::Compose(compose) => {
-                for container in compose.containers.iter_mut() {
-                    if let Some(ref node) = self.node {
-                        if container.get_ssh_port().is_some() {
-                            debug!("Loading ssh session for container");
-
-                            let result = repeat_on_err_mut(|| {
-                                container.load_ssh(node.host)
-                            }, 5, Some(Duration::from_secs(1)));
-                            if let Err(error) = result {
-                                error!("({}) ({error})", node.host);
-                            }
-                        }
-                    }
-                    else {
-                        let result = repeat_on_err_mut(|| {
-                            container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST))
-                        }, 10, Some(Duration::from_secs(2)));
-                        if let Err(error) = result {
-                            error!("Unable to load ssh connection for local container ({error})");
-                        } 
-                    }
-                }
-            }
-            ContainerType::Container(container ) => {
-                if let Some(ref node) = self.node {
-                    if container.get_ssh_port().is_some() {
-                        debug!("Loading ssh session for container");
-                        let result = repeat_on_err_mut(|| {
-                            container.load_ssh(node.host)
-                        }, 10, Some(Duration::from_secs(2)));
-                        if let Err(error) = result {
-                            error!("({}) ({error})", node.host);
-                        }
-                    }
-                }
-                else {
-                    let result = repeat_on_err_mut(|| {
-                        container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST))
-                    }, 5, Some(Duration::from_secs(1)));
-                    if let Err(error) = result {
-                        error!("Unable to load ssh connection for local container ({error})");
-                    } 
-                }
-            }
-            ContainerType::Empty => {
-                panic!("No docker container or compose available");
-            }
-        }
-        log_time!("Finished container ssh sessions");
-
-        // No panic as ansible depends on a ssh port, where some compose files may not provide
+        // No panic as ansible depends on an ssh port, where some compose files may not provide
         // these
-        log_time!("Start ansible");
         let result = self.start_ansible();
         if let Err(error) = result {
             error!("Unable to start ansible ({error})");
         }
-        log_time!("Finished ansible");
-
-        // Upload data to docker containers
-        log_time!("Start uploading data");
-        let result = self.upload_data();
-        if let Err(error) = result {
-            panic!("Unable to upload data ({error})");
-        }
-        log_time!("Finished uploading data");
 
         info!("Finished setting up {}", self.name);
     }
 
-    /// Deployement of Object. After invocation:
+    /// Deployment of Object. After invocation:
     /// - Start script running
     fn deploy(&mut self) {
         info!("Deploying {}", self.name);
@@ -361,7 +297,7 @@ impl Object {
 
     pub fn default_name() -> String { "object".to_string() }
 
-    pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
+    pub fn default_executor() -> Box<dyn Executor + Send + Sync> {
         Box::new(Local::new())
     }
 
@@ -380,13 +316,11 @@ impl Object {
                     command = format!("ansible-playbook {} -e \"port={}\" -e \"host={}\"", &self.ansible, port, node.host);
                 }    
 
-                let runner = Local::new();
-                let result = runner.exec(command)
+                let executor = Local::new();
+                let result = executor.exec(command)
                     .map_err(|err| err.to_string());
-                if let Err(error) = result {
-                    if !error.contains("WARNING") {
-                        error!("{error}");
-                    }
+                if let Err(error) = result && error.contains("WARNING") {
+                    error!("{error}");
                 }
             }
             else {
@@ -400,29 +334,25 @@ impl Object {
     /// Start starting script on remote object
     pub fn start_script(&self) -> Result<(), String> {
         for (container, script) in Self::iter_combine_script(&self.docker_manager.containers_ref_vec(), self.executables.get_scripts()) {
-            if let Some(ref ssh) = container.ssh {
-                info!("Starting {} for {}", script.path, container.config.name.as_ref().unwrap());
+            info!("Starting {} for {}", script.path, container.config.name.as_ref().unwrap());
 
-                let result = ssh.exec(format!("test -f {} && echo \"ok\" || echo \"err\"", script.path));
-                if let Err(error) = result {
-                    error!("{error}");
-                }
-                else if let Ok(result) = result {
-                    if result.eq("err") {
-                        error!("Unable to find file {}. Check if the path is correctly formatted", script.path);
-                    }
-                }
-
-                if script.path.ends_with(".sh") {
-                    ssh.exec(format!("sh {}", script.path))?;
-                }
-                else {
-                    ssh.exec(script.path.to_string())?;
-                }
-            } 
-            else {
-                panic!("Ssh client unavailable");
+            let result = self.executor.exec(format!("test -f {} && echo \"ok\" || echo \"err\"", script.path));
+            if let Err(error) = result {
+                error!("{error}");
             }
+            else if let Ok(result) = result {
+                if result.eq("err") {
+                    error!("Unable to find file {}. Check if the path is correctly formatted", script.path);
+                }
+            }
+
+            if script.path.ends_with(".sh") {
+                self.executor.exec(format!("sh {}", script.path))?;
+            }
+            else {
+                self.executor.exec(script.path.to_string())?;
+            }
+
         }
             
         Ok(())
@@ -585,54 +515,5 @@ impl Object {
         }
 
         vec_container.into_iter().zip(vec_data)
-    }
-
-
-    /// Upload all data specified in the data field of the [`Object`] to docker container
-    pub fn upload_data(&self) -> Result<(), String> {
-        for (container, data) in Self::iter_combine_data(&self.docker_manager.containers_ref_vec(), self.resources.get_docker_data()) {
-            if let Some(ref ssh) = container.ssh {
-                let path = Path::new(&data.src);
-                if path.is_dir() {
-                    ssh.upload_directory(path, data.dst.as_ref())?;
-                }
-                else if path.is_file() {
-                    ssh.upload_file(path, data.dst.as_ref())?;
-                }
-                else {
-                    panic!("Unknown data. Neither a valid file nor directory ({})", path.display());
-                }
-
-                if let Some(ref dependency) = data.dependency {
-                    let dependency_path= Path::new(dependency);
-                    ssh.exec("mkdir /scripts".to_string())?;
-                    ssh.upload_file(dependency_path, Path::new(&format!("/scripts/{}", &dependency_path.file_name().unwrap().to_str().unwrap())))?;
-                    ssh.exec(format!("sh /scripts/{}", dependency_path.file_name().unwrap().to_str().unwrap()))?;
-                }
-            } 
-            else {
-                panic!("Ssh client unavailable for container {} even though upload data was specified", container.config.name.as_ref().unwrap());
-            }
-        }
-
-        for (container, data) in Self::iter_combine_sftp_data(&self.docker_manager.containers_ref_vec(), self.resources.get_volatile_docker_data()) {
-            if let Some(ref ssh) = container.ssh {
-                let result = ssh.create_sftp_file(&data.dst);
-                if let Ok(mut file) = result {
-                    let result = file.write_all(data.content.as_bytes());
-                    if let Err(error) = result {
-                        error!("{error}");
-                    }
-                }
-                else if let Err(error) = result {
-                    error!("{error}");
-                }
-            } 
-            else {
-                panic!("Ssh client unavailable for container {} even though upload data was specified", container.config.name.as_ref().unwrap());
-            }
-        }
-
-        Ok(())
     }
 }

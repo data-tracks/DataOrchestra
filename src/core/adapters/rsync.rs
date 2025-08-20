@@ -1,6 +1,6 @@
 use std::path::Path;
 use derive_builder::Builder;
-use crate::core::adapters::{Local, Runner, Uploader, UploaderError};
+use crate::core::adapters::{Local, Executor, Uploader, UploaderError};
 
 /// Rsync type. Allows for the interaction with the rsync CLI. Uploading of files to remote location via SSH.
 #[derive(Debug, Builder)]
@@ -25,7 +25,7 @@ pub struct Rsync {
 impl Rsync {
     fn upload(&self, src: &Path, dst: &Path) -> Result<String, String> 
     {
-        let runner = Local::new();
+        let executor = Local::new();
         
         let src = src.display();
         let dst = dst.display();
@@ -58,8 +58,8 @@ impl Rsync {
                               self.user,
                               self.remote,
         );
-        
-        runner.exec(command)
+
+        executor.exec(command)
             .map_err(|err| err.into())
     }
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use derive_builder::Builder;
 use log::{debug, error};
-use crate::core::adapters::{Local, Runner};
+use crate::core::adapters::{Local, Executor};
 
 use super::{Container, ContainerBuilder, Run};
 
@@ -10,7 +10,7 @@ use super::{Container, ContainerBuilder, Run};
 pub struct Compose {
     pub config: ComposeConfig,
     pub containers: Vec<Container>,
-    pub runner: Box<dyn Runner + Send + Sync>
+    pub executor: Box<dyn Executor + Send + Sync>
 }
 
 impl Compose {
@@ -39,7 +39,7 @@ impl Run for Compose {
             for (key, value) in self.config.interpolation_variables.iter() {
                 interpolation = format!("{interpolation} {key}={value}");
             }
-            let result = self.runner.exec(format!("{interpolation} docker compose -f {compose} up -d --build"));
+            let result = self.executor.exec(format!("{interpolation} docker compose -f {compose} up -d --build"));
             if let Err(error) = result {
                 error!("{error}");
             }
@@ -56,10 +56,10 @@ impl Run for Compose {
             let mut container = ContainerBuilder::default()
                 .build()
                 .expect("Unable to build container");
-            container.runner = self.runner.clone_box();
+            container.executor = self.executor.clone_box();
             container.set_id(id.clone());
 
-            let result = super::api::poll_container(id.clone(), 30, &*self.runner);
+            let result = super::api::poll_container(id.clone(), 30, &*self.executor);
             if let Err(error) = result {
                 panic!("Polling docker container {id} timeout after 30 seconds ({error})");
             }
@@ -82,7 +82,7 @@ impl Run for Compose {
 impl Compose {
     pub fn load_ids(&self) -> Vec<String> {
         let mut id_vec = Vec::new();
-        let result = self.runner.exec(format!("docker compose -f {} ps -q", self.config.compose.as_ref().unwrap()));
+        let result = self.executor.exec(format!("docker compose -f {} ps -q", self.config.compose.as_ref().unwrap()));
         if let Ok(ids) = result {
             let ids = ids
                 .split("\n")
@@ -129,12 +129,12 @@ impl ComposeBuilder {
         assert!(config.compose.is_some(), "Docker compose requires a compose file");
 
         let containers = Vec::new();
-        let runner = Box::new(Local::new());
+        let executor = Box::new(Local::new());
 
         Ok(Compose {
             config,
             containers,
-            runner,
+            executor,
         })
     }
 }
@@ -154,7 +154,7 @@ impl Default for Compose {
         Compose
         { 
             config: ComposeConfig::default(),
-            runner: Box::new(Local::new()),
+            executor: Box::new(Local::new()),
             containers: Vec::new()
         }
     }
@@ -163,25 +163,25 @@ impl Default for Compose {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
-    use crate::core::adapters::{Run, Runner, RunnerError};
+    use crate::core::adapters::{Run, Executor, ExecutorError};
     use super::ComposeBuilder;
 
     #[derive(Debug, Clone)]
-    pub struct DummyRunner {
+    pub struct DummyExecutor {
         output: Arc<Mutex<String>>,
     }
 
-    impl Default for DummyRunner {
+    impl Default for DummyExecutor {
         fn default() -> Self {
             let arc = Arc::new(Mutex::new(String::new()));
-            DummyRunner {output: arc}
+            DummyExecutor {output: arc}
         }
     }
 
-    impl DummyRunner {
+    impl DummyExecutor {
         #[allow(dead_code)]
         pub fn new(mutex: Arc<Mutex<String>>) -> Self {
-            DummyRunner {
+            DummyExecutor {
                 output: mutex,
             }
         }
@@ -192,14 +192,14 @@ mod tests {
         }
     }
 
-    impl Runner for DummyRunner {
-        fn exec(&self, command: String) -> Result<String, RunnerError> {
+    impl Executor for DummyExecutor {
+        fn exec(&self, command: String) -> Result<String, ExecutorError> {
             let mut output = self.output.lock().unwrap();
             *output = command.clone();
             Ok(command)
         }
 
-        fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
+        fn clone_box(&self) -> Box<dyn Executor + Send + Sync> {
             panic!()
         }
     }
@@ -211,13 +211,13 @@ mod tests {
     #[test]
     #[should_panic]
     fn docker_no_compose() {
-        let dummy = DummyRunner::default();
+        let dummy = DummyExecutor::default();
 
         let mut compose = ComposeBuilder::default()
             .build()
             .expect("Unable to build compose");
 
-        compose.runner = dummy.to_box_runner();
+        compose.executor = dummy.to_box_executor();
 
         let _ = compose.run();
     }

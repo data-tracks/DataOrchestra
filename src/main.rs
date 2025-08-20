@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::{env, fs, thread};
 use std::path::Path;
 use std::process::exit;
-use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Runner, Uploader};
+use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Executor, Uploader};
 use data_orchestra::core::config::Config;
 use data_orchestra::core::object::Object;
 use data_orchestra::core::types::Node;
@@ -225,8 +225,8 @@ pub fn viable_check() {
         }
     }
 
-    let runner = Local::new();
-    let result = runner.exec("docker info".to_string());
+    let executor = Local::new();
+    let result = executor.exec("docker info".to_string());
     if let Err(error) = result {
         panic!("Docker deamon not running. Make sure docker deamon is running before starting the program. ({error})");
     }
@@ -256,14 +256,14 @@ pub fn setup_docker_networks(manager: &ContainerType) {
             continue;
         } 
 
-        let existing_networks = docker::api::get_networks(&*container.runner);
+        let existing_networks = docker::api::get_networks(&*container.executor);
         if let Err(ref error) = existing_networks {
             error!("{error}");
         }
         let existing_networks = existing_networks.unwrap();
 
         if !existing_networks.contains(network) {
-            let result = docker::api::create_network(network, &*container.runner);
+            let result = docker::api::create_network(network, &*container.executor);
             if let Err(error) = result {
                 error!("{error}");
             }

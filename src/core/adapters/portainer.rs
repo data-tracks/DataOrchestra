@@ -4,7 +4,7 @@ use log::{error, info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::{Graph, Object, ObjectBuilder}, types::Node};
+use crate::core::{adapters::{docker, traits::Executor, ContainerBuilder, Local}, object::{Graph, Object, ObjectBuilder}, types::Node};
 
 /// Portainer struct. Holds general configuration of the local portainer container
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,8 +28,8 @@ pub struct Portainer {
     pub jwt: String,
 
     #[serde(skip)]
-    #[serde(default = "default_runner")]
-    pub runner: Box<dyn Runner + Send + Sync>
+    #[serde(default = "default_executor")]
+    pub executor: Box<dyn Executor + Send + Sync>
 }
 
 #[derive(Debug)]
@@ -64,7 +64,7 @@ pub fn default_password() -> String {
     "portaineradmin".to_string()
 }
 
-pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
+pub fn default_executor() -> Box<dyn Executor + Send + Sync> {
     Box::new(Local::new())
 }
 
@@ -78,14 +78,14 @@ impl Default for Portainer {
             username: default_username(), 
             password: default_password(), 
             jwt: String::new(),
-            runner: default_runner()
+            executor: default_executor()
         }
     }
 }
 
 impl Portainer {
     pub fn build(&mut self) {
-        let containers = docker::api::get_container_names(&*self.runner);
+        let containers = docker::api::get_container_names(&*self.executor);
         if let Err(error) = containers {
             panic!("{}", error);
         }
@@ -97,20 +97,20 @@ impl Portainer {
         else {
             info!("Setting up portainer");
 
-            let volumes = docker::api::get_all_volumes(&*self.runner);
+            let volumes = docker::api::get_all_volumes(&*self.executor);
             if let Err(error) = volumes {
                 panic!("{}", error);
             }
             let volumes = volumes.unwrap();
 
             if !volumes.contains(&String::from("portainer_data")) {
-                let result = self.runner.exec("docker volume create portainer_data".to_string());
+                let result = self.executor.exec("docker volume create portainer_data".to_string());
                 if let Err(error) = result {
                     error!("{error}");
                 }
             }
 
-            let result = self.runner.exec 
+            let result = self.executor.exec
                 (
                     "docker run -d \
                     -p 8000:8000 \
@@ -125,7 +125,7 @@ impl Portainer {
             }
 
             // poll docker container
-            let result = docker::api::poll_container("portainer", 30, &*self.runner);
+            let result = docker::api::poll_container("portainer", 30, &*self.executor);
             if let Err(error) = result {
                 panic!("{}", error);
             }

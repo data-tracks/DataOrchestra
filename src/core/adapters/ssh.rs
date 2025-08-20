@@ -9,8 +9,8 @@ use ssh2::{Channel, Session, Sftp};
 use walkdir::{DirEntry, WalkDir};
 use std::fs;
 use log::{debug, error};
-use crate::core::adapters::traits::{Runner, Uploader};
-use crate::core::adapters::{RunnerError, UploaderError};
+use crate::core::adapters::traits::{Executor, Uploader};
+use crate::core::adapters::{ExecutorError, UploaderError};
 
 /// The ssh object. Wrapper around the ssh2 [`Session`] object
 pub struct Ssh {
@@ -125,27 +125,27 @@ impl Ssh {
     }
 }
 
-impl Runner for Ssh {
+impl Executor for Ssh {
     /// Execute command over Ssh connection
-    fn exec(&self, command: String) -> Result<String, RunnerError> {
+    fn exec(&self, command: String) -> Result<String, ExecutorError> {
         debug!("Executing command [{}]", &command);
         let mut channel = self.session.channel_session()
-            .map_err(|err| RunnerError::SessionConnect(err.to_string()))?;
+            .map_err(|err| ExecutorError::SessionConnect(err.to_string()))?;
 
         channel.exec(&command)
-            .map_err(|err| RunnerError::CommandExecute(err.to_string(), command.clone()))?;
+            .map_err(|err| ExecutorError::CommandExecute(err.to_string(), command.clone()))?;
 
         let mut result = String::new();
         let _ = channel.read_to_string(&mut result)
-            .map_err(|err| RunnerError::CommandRead(err.to_string(), command.clone()))?;
+            .map_err(|err| ExecutorError::CommandRead(err.to_string(), command.clone()))?;
 
         channel.wait_close()
-            .map_err(|err| RunnerError::SessionDisconnect(err.to_string()))?;
+            .map_err(|err| ExecutorError::SessionDisconnect(err.to_string()))?;
 
         Ok(result)
     }
 
-    fn clone_box(&self) -> Box<dyn Runner + Send + Sync> {
+    fn clone_box(&self) -> Box<dyn Executor + Send + Sync> {
         Box::new(self.clone())
     }
 }
@@ -253,7 +253,7 @@ fn ignore(obj: &DirEntry) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::adapters::Runner;
+    use crate::core::adapters::Executor;
     use crate::core::adapters::ssh::Ssh;
 
     #[test]

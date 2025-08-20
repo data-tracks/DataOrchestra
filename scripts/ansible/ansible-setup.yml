@@ -23,7 +23,6 @@
         name: 
           - curl
           - tmux
-          - ca-certificates
           - vim
         state: present
 

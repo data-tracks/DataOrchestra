@@ -2,23 +2,23 @@ use std::fmt::Debug;
 use std::path::Path;
 use thiserror::Error;
 
-/// Runner trait. Trait for system command execution
-pub trait Runner: Debug where Self: 'static {
+/// Executor trait. Trait for system command execution
+pub trait Executor: Debug where Self: 'static {
     /// Execute command
-    fn exec(&self, command: String) -> Result<String, RunnerError>;
-    fn clone_box(&self) -> Box<dyn Runner + Send + Sync>;
+    fn exec(&self, command: String) -> Result<String, ExecutorError>;
+    fn clone_box(&self) -> Box<dyn Executor + Send + Sync>;
 
-    fn to_box_runner<'b>(&'b self) -> Box<dyn Runner + Send + Sync>
+    fn to_box_executor<'b>(&'b self) -> Box<dyn Executor + Send + Sync>
     where
-        Self: Runner + Send + Clone,
+        Self: Executor + Send + Clone,
         Self: 'b + Sync,
     {
-        (Box::new(self.clone()) as Box<dyn Runner + Send + Sync>) as _
+        (Box::new(self.clone()) as Box<dyn Executor + Send + Sync>) as _
     }
 }
 
 #[derive(Debug, Error)]
-pub enum RunnerError {
+pub enum ExecutorError {
     #[error("Unable to execute command (error {0}) (command {1})")] 
     CommandExecute(String, String),
     #[error("Unable to read command output (error {0}) (command {1})")]
@@ -29,8 +29,8 @@ pub enum RunnerError {
     SessionDisconnect(String)
 }
 
-impl From<RunnerError> for String{
-    fn from(value: RunnerError) -> Self {
+impl From<ExecutorError> for String{
+    fn from(value: ExecutorError) -> Self {
         value.to_string()
     }
 }
@@ -62,7 +62,7 @@ pub trait Uploader: Debug where Self: 'static {
 
     fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader + Send>
     where
-        Self: Runner + Send + Clone,
+        Self: Executor + Send + Clone,
         Self: 'b + Sync,
     {
         (Box::new(self.clone()) as Box<dyn Uploader + Send>) as _

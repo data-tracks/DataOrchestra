@@ -11,26 +11,21 @@ pub trait ToInternalVec<T> {
     fn to_internal(self) -> Vec<T>;
 }
 
+impl<T, S> ToInternal<Option<T>> for Option<S> where S: ToInternal<T> {
+    fn to_internal(self) -> Option<T> {
+        self.map(|item| item.to_internal())
+    }
+}
+
 /// ToInternal implementation for the Amount enum to get Vec<S -> T>
 impl<T, S> ToInternal<Vec<T>> for Amount<S> 
 where 
     S: ToInternal<T>
 {
     fn to_internal(self) -> Vec<T> {
-        let mut values_vec = Vec::<T>::new();
-        match self {
-            Amount::Multiple(values) => {
-                for value in values {
-                    values_vec.push(value.to_internal());
-                }
-            },
-            Amount::Single(value) => {
-                values_vec.push(value.to_internal());
-            },
-            Amount::None => {}
-        } 
-
-        values_vec
+        self.into_iter()
+            .map(|item| item.to_internal())
+            .collect()
     }
 }
 

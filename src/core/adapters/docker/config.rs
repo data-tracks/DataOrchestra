@@ -16,11 +16,11 @@ pub struct ContainerConfig {
     #[builder(setter(strip_option, into), default)]
     pub name: Option<String>,
     /// Network name
-    #[builder(default = "default_network()", setter(into))]
+    #[builder(default = "ContainerConfig::default_network()", setter(into))]
     pub network: String,
-    /// Enviroment variables
+    /// Environment variables
     #[builder(setter(custom), default)]
-    pub enviroment: HashMap<String, String>,
+    pub environment: HashMap<String, String>,
     /// Mounted volumes 
     #[builder(setter(each(name = "volume", into)), default)]
     pub volumes: Vec<String>,
@@ -71,7 +71,7 @@ impl ContainerBuilder {
     }
 
     pub fn environment(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        let hashmap = self.enviroment.get_or_insert_default();
+        let hashmap = self.environment.get_or_insert_default();
         hashmap.insert(key.into(), value.into());
         self
     }
@@ -99,17 +99,13 @@ impl ContainerBuilder {
     }
 }
 
-pub fn default_network() -> String {
-    "orchestra".to_string()
-}
-
 impl Default for ContainerConfig {
     fn default() -> Self {
         ContainerConfig
         {
             name: None,
-            network: default_network(),
-            enviroment: HashMap::new(),
+            network: ContainerConfig::default_network(),
+            environment: HashMap::new(),
             volumes: Vec::new(),
             mounts: Vec::new(),
             publishes: Vec::new(),
@@ -126,6 +122,10 @@ impl Default for ContainerConfig {
 }
 
 impl ContainerConfig {
+    pub fn default_network() -> String {
+        "orchestra".to_string()
+    }
+
     /// Parser to parse [`ContainerConfig`] to valid docker run command
     pub fn parse_options(&self) -> String {
         let mut command: String = String::from("-d -q");
@@ -158,8 +158,8 @@ impl ContainerConfig {
             }
         }
 
-        // Parse enviroment variables
-        for (key, value) in &self.enviroment {
+        // Parse environment variables
+        for (key, value) in &self.environment {
             command = format!("{command} -e {key}={value}")
         }
 

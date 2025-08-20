@@ -1,10 +1,10 @@
-use crate::core::adapters::Runner;
+use crate::core::adapters::Executor;
 
-pub fn get_all_volumes(runner: &dyn Runner) -> Result<Vec<String>, String> {
+pub fn get_all_volumes(executor: &dyn Executor) -> Result<Vec<String>, String> {
     let command = "docker volume ls -q --format {{.Name}}";
     let output: String;
 
-    output = runner.exec(command.to_string())?;
+    output = executor.exec(command.to_string())?;
 
     let volumes: Vec<String> = output
         .split("\n")
