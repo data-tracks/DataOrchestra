@@ -7,8 +7,6 @@ use crate::interface::object::ExtObject;
 /// External representation of the internal [`Generate`] object
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ExtGenerate {
-    //#[serde(rename = "type")]
-    //pub generate_type: Option<GeneratorType>,
     #[serde(flatten)]
     pub config: Option<GeneratorTypeConfig>,
     #[serde(default = "ExtGenerate::default_amount")]

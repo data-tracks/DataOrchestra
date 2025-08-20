@@ -2,6 +2,7 @@
 mod tests {
     use std::net::{IpAddr, Ipv4Addr};
     use data_orchestra::interface::node::ExtNode;
+    use data_orchestra::interface::upload::UploadTypes;
     use data_orchestra::shared::ToInternal;
 
     #[test]
@@ -12,7 +13,8 @@ mod tests {
             host: IpAddr::V4(Ipv4Addr::LOCALHOST),
             username: Some("ubuntu".to_string()),
             password: Some("password".to_string()),
-            ssh_port: 22
+            ssh_port: 22,
+            upload_schema: UploadTypes::Ssh
         };
 
         let internal_node = node.to_internal();
