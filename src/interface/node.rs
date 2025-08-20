@@ -15,6 +15,7 @@ pub struct ExtNode {
     pub password: Option<String>,
     #[serde(default = "default_ssh_port")]
     pub ssh_port: u16,
+    #[serde(default)]
     pub upload_schema: UploadTypes
 }
 

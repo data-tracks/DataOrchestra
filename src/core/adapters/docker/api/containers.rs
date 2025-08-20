@@ -9,7 +9,7 @@ use crate::core::adapters::{ContainerData, Runner};
 ///
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
 /// let runner = Local::new();
@@ -28,7 +28,7 @@ pub fn kill_container<T: Into<String>>(runner: &dyn Runner, name: T) -> Result<(
 ///
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
 /// let runner = Local::new();
@@ -49,7 +49,7 @@ pub fn kill_containers(runner: &dyn Runner) -> Result<(), String> {
 /// # Examples
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
 /// let runner = Local::new();
@@ -70,7 +70,7 @@ pub fn delete_containers(runner: &dyn Runner) -> Result<(), String> {
 /// # Examples
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
 /// let runner = Local::new();
@@ -88,7 +88,7 @@ pub fn delete_container<T: Into<String>>(name: T, runner: &dyn Runner) -> Result
 /// # Examples
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
 /// let runner = Local::new();
@@ -109,7 +109,7 @@ pub fn stop_containers(runner: &dyn Runner) -> Result<(), String> {
 /// # Examples
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
 /// let runner = Local::new();
@@ -127,7 +127,7 @@ pub fn stop_container<T: Into<String>>(name: T, runner: &dyn Runner) -> Result<(
 /// # Examples
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::poll_container;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
@@ -165,7 +165,7 @@ pub fn poll_container<T: Into<String>>(name: T, timout: u64, runner: &dyn Runner
 /// # Examples
 /// ```
 /// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::local::Local;
+/// use data_orchestra::core::adapters::local::Local;
 /// use data_orchestra::core::adapters::get_container_names;
 /// use data_orchestra::core::adapters::traits::Runner;
 ///
