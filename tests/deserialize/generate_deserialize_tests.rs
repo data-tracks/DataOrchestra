@@ -31,7 +31,7 @@ mod tests {
         });
 
         let generate = get_generate(json);
-        assert_eq!(generate.general.name, Some("GENERATE".to_string()));
+        assert_eq!(generate.object.name, Some("GENERATE".to_string()));
     }
 
     #[test]
@@ -60,7 +60,7 @@ mod tests {
         });
 
         let generate = get_generate(json);
-        assert!(generate.general.resources.has_one());
+        assert!(generate.object.resources.has_one());
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod tests {
         });
 
         let generate = get_generate(json);
-        assert!(generate.general.resources.has_multiple());
-        assert_eq!(generate.general.resources.get_amount(), 2);
+        assert!(generate.object.resources.has_multiple());
+        assert_eq!(generate.object.resources.get_amount(), 2);
     }
 }

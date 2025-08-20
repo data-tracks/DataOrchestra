@@ -60,26 +60,26 @@ impl ExtConfig {
     pub fn extract_attachables(&mut self) -> Vec<Object> {
         let mut attach_objects = Vec::new();
         for object in self.object.as_mut_ref_vec() {
-            for config in object.general.attach_config.take().to_vec() {
-                attach_objects.push(config.create(&object.general));
+            for config in object.attach_config.take().to_vec() {
+                attach_objects.push(config.create(&object));
             }
         }
 
         for store in self.store.as_mut_ref_vec() {
-            for config in store.general.attach_config.take().to_vec() {
-                attach_objects.push(config.create(&store.general));
+            for config in store.object.attach_config.take().to_vec() {
+                attach_objects.push(config.create(&store.object));
             }
         } 
 
-        for process in self.store.as_mut_ref_vec() {
-            for config in process.general.attach_config.take().to_vec() {
-                attach_objects.push(config.create(&process.general));
+        for process in self.process.as_mut_ref_vec() {
+            for config in process.object.attach_config.take().to_vec() {
+                attach_objects.push(config.create(&process.object));
             }
         }
         
         for generate in self.generate.as_mut_ref_vec() {
-            for config in generate.general.attach_config.take().to_vec() {
-                attach_objects.push(config.create(&generate.general));
+            for config in generate.object.attach_config.take().to_vec() {
+                attach_objects.push(config.create(&generate.object));
             }
         }
 

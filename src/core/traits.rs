@@ -1,4 +1,4 @@
-use crate::interface::general::General;
+use crate::interface::object::ExtObject;
 
 /// Represent an object which can configure its parent
 pub trait Configurator<T> {
@@ -7,7 +7,7 @@ pub trait Configurator<T> {
 
 /// Represents an object which can create an object
 pub trait Creator<T> {
-    fn create(self, general: &General) -> T;
+    fn create(self, object: &ExtObject) -> T;
 }
 
 /// Represents an object which can be checked. This is normally implemented as a healthcheck

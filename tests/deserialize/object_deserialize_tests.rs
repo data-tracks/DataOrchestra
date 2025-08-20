@@ -21,7 +21,7 @@ mod tests {
         });
 
         let object = get_object(json);
-        assert!(object.general.resources.has_one());
+        assert!(object.resources.has_one());
     }
 
     #[test]
@@ -47,7 +47,7 @@ mod tests {
         });
 
         let object = get_object(json);
-        assert!(object.general.resources.has_multiple());
-        assert_eq!(object.general.resources.get_amount(), 2);
+        assert!(object.resources.has_multiple());
+        assert_eq!(object.resources.get_amount(), 2);
     }
 }

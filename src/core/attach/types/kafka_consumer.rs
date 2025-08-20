@@ -7,8 +7,8 @@ use crate::core::types::{Executables, ScriptBuilder};
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
 use crate::shared::ToInternal;
-use crate::interface::general::General;
 use crate::core::object::Object;
+use crate::interface::object::ExtObject;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
 // and sending them further through an http request
@@ -83,16 +83,16 @@ impl Default for KafkaConsumer {
 }
 
 impl Creator<Object> for KafkaConsumer {
-    fn create(self, general: &General) -> Object {
+    fn create(self, parent_object: &ExtObject) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to
-        let general = general.clone();
+        let parent_object = parent_object.clone();
 
         let mut object = Object::default();
 
-        object.name = general.name.unwrap_or("kafka-consumer".to_string());
+        object.name = parent_object.name.unwrap_or("kafka-consumer".to_string());
 
-        if let Some(node) = general.node {
+        if let Some(node) = parent_object.node {
             object.node = Some(node.to_internal());
         }
 

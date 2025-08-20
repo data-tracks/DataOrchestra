@@ -40,7 +40,7 @@ impl Default for Graph {
 #[builder(pattern = "owned")]
 pub struct Object {
     // Name of object. Default is the object type itself
-    #[builder(setter(into), default)]
+    #[builder(setter(into), default = "Object::default_name()")]
     pub name: String,
     // Data related to graph
     #[builder(default)]
@@ -62,21 +62,13 @@ pub struct Object {
     #[builder(setter(each = "executable"), default)]
     pub executables: Vec<Executables>,
     // Ansible script responsible for the setup of the environment
-    #[builder(setter(into), default = "default_ansible()")]
+    #[builder(setter(into), default = "Object::default_ansible()")]
     pub ansible: String,
-    #[builder(default = "default_runner()")]
+    #[builder(default = "Object::default_runner()")]
     pub runner: Box<dyn Runner + Send + Sync>,
+    #[builder(default)]
     pub uploader: Option<Box<dyn Uploader + Send + Sync>>
 }
-
-pub fn default_ansible() -> String {
-    "scripts/ansible/ansible-setup.yml".to_string()
-}
-
-pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
-    Box::new(Local::new())
-}
-
 impl ObjectBuilder {
     pub fn ignore_graph(mut self, ignore_graph: bool) -> Self {
         let graph = self.graph.get_or_insert_default();
@@ -109,7 +101,7 @@ impl ObjectBuilder {
 impl Default for Object {
     fn default() -> Self {
         Object { 
-            name: "object".to_string(),
+            name: Object::default_name(),
             graph: Graph::default(),
             docker_group_builder: None,
             docker_container_builder: None, 
@@ -117,8 +109,8 @@ impl Default for Object {
             node: None, 
             resources: Vec::new(),
             executables: Vec::new(),
-            ansible: default_ansible(),
-            runner: default_runner(),
+            ansible: Object::default_ansible(),
+            runner: Object::default_runner(),
             uploader: None
         }
     }
@@ -363,6 +355,17 @@ impl Spawner for Object {
 }
 
 impl Object {
+    pub fn default_ansible() -> String {
+        "scripts/ansible/ansible-setup.yml".to_string()
+    }
+
+    pub fn default_name() -> String { "object".to_string() }
+
+    pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
+        Box::new(Local::new())
+    }
+
+
     pub fn start_ansible(&self) -> Result<(), String> {
         if !Path::new(&self.ansible).is_file() {
             return Err(format!("Unable to find file {}", &self.ansible)); 

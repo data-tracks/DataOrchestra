@@ -55,6 +55,14 @@ pub struct ContainerConfig {
 }
 
 impl ContainerBuilder {
+    pub fn get_name_ref(&self) -> Option<&String> {
+        self.name.as_ref().unwrap().as_ref()
+    }
+
+    pub fn get_name_mut(&mut self) -> Option<&mut String> {
+        self.name.as_mut().unwrap().as_mut()
+    }
+
     pub fn try_name(&mut self, name: impl Into<String>) -> &mut Self {
         if self.name.is_none() {
             self.name(name);
