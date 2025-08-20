@@ -23,7 +23,7 @@ mod tests {
         });
 
         let store = get_store(json);
-        assert!(store.general.resources.has_one());
+        assert!(store.object.resources.has_one());
     }
 
     #[test]
@@ -49,7 +49,7 @@ mod tests {
         });
 
         let store = get_store(json);
-        assert!(store.general.resources.has_multiple());
-        assert_eq!(store.general.resources.get_amount(), 2);
+        assert!(store.object.resources.has_multiple());
+        assert_eq!(store.object.resources.get_amount(), 2);
     }
 }

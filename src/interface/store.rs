@@ -2,13 +2,13 @@ use std::path::Path;
 
 use log::debug;
 use serde::{Deserialize, Serialize};
+use crate::core::object::Object;
 use crate::core::store::store_types::{StoreType, StoreTypeConfig};
 use crate::core::store::Store;
 use crate::core::types::data::{DataBuilder, DataTypes};
+use crate::interface::object::ExtObject;
 use crate::shared::traits::ToInternal;
 use crate::shared::Amount;
-
-use super::general::General;
 
 /// External representation of the internal [`Store`] object
 #[derive(Debug, Deserialize, Serialize)]
@@ -20,7 +20,7 @@ pub struct ExtStore {
     #[serde(default)]
     pub schema: Amount<String>,
     #[serde(flatten)]
-    pub general: General
+    pub object: ExtObject
 }
 
 impl Default for ExtStore {
@@ -30,7 +30,7 @@ impl Default for ExtStore {
             db_type: None,
             config: None,
             schema: Amount::None,
-            general: General::default()
+            object: ExtObject::default()
         }
     }
 }
@@ -39,14 +39,20 @@ impl ToInternal<Store> for ExtStore {
     fn to_internal(self) -> Store {
         let mut store = Store::default();
 
-        store.object.name = self.general.name.unwrap_or("store".to_string());
+        store.object = self.object.to_internal();
 
-        store.object.graph = self.general.graph;
+        if store.object.name.eq(&Object::default_name()) {
+            store.object.name = "store".to_string();
+        }
+
+        // Set Database Type and config
+        store.db_type = self.db_type;
+        store.config = self.config;
 
         // Set Schema(s)
         store.schema = self.schema.to_vec(); 
         // Schema needs to be uploaded to the node for it to be mounted
-        if self.general.node.is_some() {
+        if store.object.node.is_some() {
             for schema in store.schema.iter_mut() {
                 if let Some(file_name) = Path::new(schema)
                         .file_name()
@@ -61,41 +67,8 @@ impl ToInternal<Store> for ExtStore {
                     store.object.resources.push(DataTypes::NodeData(data)); 
 
                     *schema = format!("docker/mount/{file_name}");
-
                 } 
             }
-        }
-
-        // Set Database Type and config
-        store.db_type = self.db_type;
-        store.config = self.config;
-
-        if let Some(node) = self.general.node {
-            store.object.node = Some(node.to_internal());
-        }
-
-        if let Some(ansible) = self.general.ansible {
-            store.object.ansible = ansible;
-        }
-
-        // Set Container(s) builder
-        if let Some(docker) = self.general.docker {
-            if docker.compose.is_some() {
-                store.object.docker_group_builder = Some(docker.to_internal());
-            }
-            else 
-            {
-                store.object.docker_container_builder = Some(docker.to_internal());
-            } 
-        }
-
-        store.object.resources.extend(self.general.resources.to_internal());
-        let vec = self.general.executables.clone().to_internal();
-        for (script, data) in vec {
-            if let Some(data) = data {
-                store.object.resources.push(data);
-            }
-            store.object.executables.push(script);
         }
 
         debug!("Finished parsing store to internal");

@@ -23,7 +23,7 @@ mod tests {
         });
 
         let process = get_process(json);
-        assert!(process.general.resources.has_one());
+        assert!(process.object.resources.has_one());
     }
 
     #[test]
@@ -49,7 +49,7 @@ mod tests {
         });
 
         let process = get_process(json);
-        assert!(process.general.resources.has_multiple());
-        assert_eq!(process.general.resources.get_amount(), 2);
+        assert!(process.object.resources.has_multiple());
+        assert_eq!(process.object.resources.get_amount(), 2);
     }
 }

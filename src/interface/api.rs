@@ -9,8 +9,9 @@ use crate::core::process::{process_types::ProcessTypeConfig, types::Kafka, Proce
 use crate::core::object::{Object, ObjectBuilder};
 use crate::core::attach::types::kafka_consumer::KafkaConsumer;
 use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
+use crate::interface::object::ExtObject;
 use crate::shared::ToInternal;
-use super::{general::General, node::ExtNode};
+use super::node::ExtNode;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct API {
@@ -91,10 +92,10 @@ impl ToInternal<(Process, Object)> for API {
         let mut consumer = KafkaConsumer::default();
         consumer.args = args;
 
-        let mut general = General::default(); 
-        general.name = Some("kafka-api-consumer".to_string());
+        let mut object = ExtObject::default(); 
+        object.name = Some("kafka-api-consumer".to_string());
 
-        let consumer = consumer.create(&general);
+        let consumer = consumer.create(&object);
 
         let mut process = Process::default();
 

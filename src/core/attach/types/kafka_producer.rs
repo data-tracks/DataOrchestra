@@ -2,11 +2,11 @@ use tracing_subscriber::filter::LevelFilter;
 use serde::{Deserialize, Serialize};
 
 use crate::core::types::{Executables, ScriptBuilder};
-use crate::interface::general::General;
 use crate::core::object::Object;
 use crate::shared::ToInternal;
 use crate::core::traits::Creator;
 use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
+use crate::interface::object::ExtObject;
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 
 
@@ -71,16 +71,16 @@ impl Default for KafkaProducer {
 }
 
 impl Creator<Object> for KafkaProducer {
-    fn create(self, general: &General) -> Object {
+    fn create(self, parent_object: &ExtObject) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to
-        let general = general.clone();
+        let parent_object = parent_object.clone();
 
         let mut object = Object::default();
 
-        object.name = general.name.unwrap_or("kafka-producer".to_string());
+        object.name = parent_object.name.unwrap_or("kafka-producer".to_string());
 
-        if let Some(node) = general.node {
+        if let Some(node) = parent_object.node {
             object.node = Some(node.to_internal());
         }
 

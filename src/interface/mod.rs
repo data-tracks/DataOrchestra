@@ -4,7 +4,6 @@ pub mod store;
 pub mod object;
 pub mod config;
 pub mod docker;
-pub mod general;
 pub mod node;   
 pub mod api;
 pub mod data;
