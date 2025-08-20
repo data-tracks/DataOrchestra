@@ -1,6 +1,8 @@
 use std::net::{IpAddr, Ipv4Addr};
 use serde::{Serialize, Deserialize};
+use crate::core::adapters::Uploader;
 use crate::core::types::Node;
+use crate::interface::upload::UploadTypes;
 use crate::shared::ToInternal;
 
 /// External representation of the internal [`Node`] object
@@ -12,8 +14,11 @@ pub struct ExtNode {
     pub username: Option<String>,
     pub password: Option<String>,
     #[serde(default = "default_ssh_port")]
-    pub ssh_port: u16
+    pub ssh_port: u16,
+    upload_schema: UploadTypes
 }
+
+
 
 pub fn default_ssh_port() -> u16 {
     22
@@ -27,7 +32,8 @@ impl Default for ExtNode {
             host: IpAddr::V4(Ipv4Addr::LOCALHOST), 
             username: Some("root".to_string()), 
             password: Some("password".to_string()),
-            ssh_port: default_ssh_port()
+            ssh_port: default_ssh_port(),
+            upload_schema: UploadTypes::default()
         }
     }
 }

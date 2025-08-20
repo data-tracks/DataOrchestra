@@ -10,3 +10,4 @@ pub mod api;
 pub mod data;
 pub mod location;
 pub mod execute;
+mod upload;

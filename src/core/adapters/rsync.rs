@@ -12,24 +12,14 @@ pub struct Rsync {
     #[builder(default)]
     // SSH port
     port: Option<u16>,
-    #[builder(default = "default_checksum()")]
+    #[builder(default = "true")]
     checksum: bool,
-    #[builder(default = "default_compress()")]
+    #[builder(default = "true")]
     compress: bool,
-    #[builder(default = "default_recursive()")]
-    recursive: bool
-}
-
-pub fn default_checksum() -> bool {
-    true
-}
-
-pub fn default_compress() -> bool {
-    true
-}
-
-pub fn default_recursive() -> bool {
-    true
+    #[builder(default = "true")]
+    recursive: bool,
+    #[builder(default = "true")]
+    delete: bool
 }
 
 impl Rsync {
@@ -52,6 +42,10 @@ impl Rsync {
 
         if self.recursive {
             parameters.push("--recursive".to_string());
+        }
+
+        if self.delete {
+            parameters.push("--delete".to_string())
         }
 
         if let Some(port) = self.port {
@@ -83,7 +77,7 @@ impl Uploader for Rsync
 
         self.upload(src, dst)
             .map_err(UploaderError::UnableToUpload)?;
-        
+
         Ok(())
     }
 
