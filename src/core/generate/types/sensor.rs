@@ -37,8 +37,8 @@ impl Sensor {
 impl Configurator<Generate> for Sensor {
     fn configure(&mut self, parent: &mut Generate) {
         let docker_data = DataBuilder::default()
-            .source("services/sensor")
-            .destination("/sensor")
+            .src("services/sensor")
+            .dst("/sensor")
             .build()
             .expect("Unable to build docker sensor data");
 
@@ -48,7 +48,7 @@ impl Configurator<Generate> for Sensor {
             .build();
 
         let volatile_data = VolatileDataBuilder::default()
-            .destination("/sensor/start.sh")
+            .dst("/sensor/start.sh")
             .content(tmux)
             .build()
             .expect("Unable to build volatile sensor script");

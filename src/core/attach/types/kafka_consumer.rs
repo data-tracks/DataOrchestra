@@ -99,8 +99,8 @@ impl Creator<Object> for KafkaConsumer {
         object.graph.ignore = true;
 
         let docker_data = DataBuilder::default()
-            .source("services/attachables/kafka_consumer")
-            .destination("/kafka_consumer")
+            .src("services/attachables/kafka_consumer")
+            .dst("/kafka_consumer")
             .build()
             .expect("Unable to build docker_data");
 
@@ -123,7 +123,7 @@ impl Creator<Object> for KafkaConsumer {
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
         let volatile_data = VolatileDataBuilder::default()
-            .destination("/kafka_consumer/config.json")
+            .dst("/kafka_consumer/config.json")
             .content(json)
             .build()
             .expect("Unable to build volatile data");

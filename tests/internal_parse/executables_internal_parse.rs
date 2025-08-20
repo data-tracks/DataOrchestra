@@ -63,7 +63,7 @@ mod tests {
         let volatile = volatile.get_volatile_node_data_ref();
 
         assert_eq!(volatile.name, Some("NAME".to_string()));
-        assert_eq!(volatile.destination, PathBuf::from("/destination"));
+        assert_eq!(volatile.dst, PathBuf::from("/destination"));
         assert!(volatile.content.contains("pwd"));
     }
 
@@ -91,7 +91,7 @@ mod tests {
         let volatile = volatile.get_volatile_docker_data_ref();
 
         assert_eq!(volatile.name, Some("NAME".to_string()));
-        assert_eq!(volatile.destination, PathBuf::from("/destination"));
+        assert_eq!(volatile.dst, PathBuf::from("/destination"));
         assert!(volatile.content.contains("pwd"));
     }
 }

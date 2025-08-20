@@ -1,5 +1,5 @@
 use std::{fmt::Display, str::FromStr};
-
+use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 /// Restart type policies for docker container
@@ -122,9 +122,9 @@ impl FromStr for StateTypes {
 #[serde(rename_all = "snake_case")]
 pub struct Mount {
     /// Source data location
-    pub src: String,
+    pub src: PathBuf,
     /// Destination data location
-    pub dst: String,
+    pub dst: PathBuf,
     #[serde(default)]
     pub read_only: bool,
     /// Type of bind propagation
@@ -133,7 +133,7 @@ pub struct Mount {
 }
 
 impl Mount {
-    pub fn new(src: impl Into<String>, dst: impl Into<String>, read_only: bool, bind_propagation: Option<BindPropagation>) -> Self {
+    pub fn new(src: impl Into<PathBuf>, dst: impl Into<PathBuf>, read_only: bool, bind_propagation: Option<BindPropagation>) -> Self {
         Mount { src: src.into(), dst: dst.into(), read_only, bind_propagation }
     }
 }

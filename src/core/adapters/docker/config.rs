@@ -170,11 +170,11 @@ impl ContainerConfig {
 
         // Parse mounts
         for mount in &self.mounts {
-            command = format!("{command} type=bind,src={},", mount.src);
+            command = format!("{command} type=bind,src={},", mount.src.display());
             if mount.read_only {
                 command = format!("{command}ro,");
             }
-            command = format!("{command}dst={}", mount.dst);
+            command = format!("{command}dst={}", mount.dst.display());
             if let Some(bind_propagation) = mount.bind_propagation.as_ref() {
                 command = format!("{command},bind-propagation={bind_propagation}");
             }

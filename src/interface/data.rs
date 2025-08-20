@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use crate::core::adapters::Mount;
 use crate::core::types::data::{Data, DataTypes, VolatileData};
 use crate::shared::traits::ToInternal;
 
@@ -67,19 +69,40 @@ pub struct ExtData {
     pub dependency: Option<String>,
 }
 
-impl ToInternal<DataTypes> for ExtData {
-    fn to_internal(self) -> DataTypes {
-        let data = Data 
-        {
-            name: self.name,
-            source: self.source,
-            destination: self.destination,
-            dependency: self.dependency
-        };
-
+impl ToInternal<(DataTypes, Option<Mount>)> for ExtData {
+    fn to_internal(self) -> (DataTypes, Option<Mount>) {
         match self.location {
-            Location::Node => DataTypes::NodeData(data),
-            Location::Container => DataTypes::DockerData(data)
+            Location::Node => {
+                let data = Data
+                {
+                    name: self.name,
+                    src: self.source.clone().into(),
+                    dst: self.destination.clone().into(),
+                    dependency: self.dependency
+                };
+
+                (DataTypes::NodeData(data), None)
+            },
+            Location::Container => {
+                let remote_location = PathBuf::from(format!("docker/mount/data/{}", self.destination.clone()));
+
+                let data = Data
+                {
+                    name: self.name,
+                    src: self.source.clone().into(),
+                    dst: remote_location.clone(),
+                    dependency: self.dependency
+                };
+
+                let mount = Mount
+                {
+                    src: remote_location,
+                    dst: self.destination.into(),
+                    read_only: false,
+                    bind_propagation: None,
+                };
+                (DataTypes::DockerData(data), Some(mount))
+            }
         }
     }
 }
@@ -95,24 +118,47 @@ pub struct ExtVolatile {
     pub volatile_types: VolatileTypes
 }
 
-impl ToInternal<DataTypes> for ExtVolatile {
-    fn to_internal(self) -> DataTypes {
-        let data = VolatileData 
-        {
-            name: self.name,
-            destination: self.destination.into(),
-            content: self.volatile_types.to_string()
-        };
+impl ToInternal<(DataTypes, Option<Mount>)> for ExtVolatile {
+    fn to_internal(self) -> (DataTypes, Option<Mount>) {
+
 
         match self.location {
-            Location::Node => DataTypes::VolatileNodeData(data),
-            Location::Container => DataTypes::VolatileDockerData(data)
+            Location::Node => {
+                let data = VolatileData
+                {
+                    name: self.name,
+                    dst: self.destination.clone().into(),
+                    content: self.volatile_types.to_string()
+                };
+                
+                (DataTypes::VolatileNodeData(data), None)
+            },
+            Location::Container => {
+                let remote_location = PathBuf::from(format!("docker/mount/volatile/{}", self.destination.clone()));
+
+                let data = VolatileData
+                {
+                    name: self.name,
+                    dst: remote_location.clone().into(),
+                    content: self.volatile_types.to_string()
+                };
+                
+                let mount = Mount
+                {
+                    src: remote_location,
+                    dst: self.destination.into(),
+                    read_only: false,
+                    bind_propagation: None,
+                };
+
+                (DataTypes::VolatileDockerData(data), Some(mount))
+            }
         }
     }
 }
 
-impl ToInternal<DataTypes> for ExtDataTypes {
-    fn to_internal(self) -> DataTypes {
+impl ToInternal<(DataTypes, Option<Mount>)> for ExtDataTypes {
+    fn to_internal(self) -> (DataTypes, Option<Mount>) {
         match self {
             ExtDataTypes::Data(data) => data.to_internal(),
             ExtDataTypes::Volatile(volatile_data) => volatile_data.to_internal(),

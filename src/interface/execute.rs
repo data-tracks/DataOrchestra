@@ -65,7 +65,7 @@ impl ToInternal<(Script, DataTypes)> for ExtTmux {
     fn to_internal(mut self) -> (Script, DataTypes) {
         let script = Script { name: self.name.clone(), path: self.destination.clone() };
 
-        let data = VolatileData { name: self.name, content: self.tmux.build(), destination: self.destination.into()  };
+        let data = VolatileData { name: self.name, content: self.tmux.build(), dst: self.destination.into()  };
 
         let data_type = match self.location {
             Location::Node => VolatileNodeData(data),

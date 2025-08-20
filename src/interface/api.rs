@@ -52,21 +52,21 @@ impl ToInternal<(Process, Object)> for API {
             .build();
 
         let config = VolatileDataBuilder::default()
-            .destination("/DataOrchestra/services/api/config.json")
+            .dst("/DataOrchestra/services/api/config.json")
             .content(json!({ "port": self.port }).to_string())
             .build()
             .expect("Unable to build config file");
 
         let shell = VolatileDataBuilder::default()
             .name(docker_name.clone())
-            .destination("/DataOrchestra/services/api/start.sh")
+            .dst("/DataOrchestra/services/api/start.sh")
             .content(tmux)
             .build()
             .expect("Unable to build shell script");
 
         let docker_data = DataBuilder::default()
-            .source("../DataOrchestra")
-            .destination("/DataOrchestra")
+            .src("../DataOrchestra")
+            .dst("/DataOrchestra")
             .build()
             .expect("Unable to build docker data");
 

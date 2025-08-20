@@ -133,7 +133,7 @@ pub struct VolatileData {
     pub name: Option<String>,
     /// File name
     #[builder(setter(into))]
-    pub destination: PathBuf,
+    pub dst: PathBuf,
     /// Data written into file
     #[builder(setter(into))]
     pub content: String
@@ -146,10 +146,10 @@ pub struct Data {
     pub name: Option<String>,
     /// Path of data in current system
     #[builder(setter(into))]
-    pub source: String,
+    pub src: PathBuf,
     /// Path of data in docker container
     #[builder(setter(into))]
-    pub destination: String,
+    pub dst: PathBuf,
     #[builder(setter(strip_option, into))]
     #[builder(default)]
     pub dependency: Option<String>,

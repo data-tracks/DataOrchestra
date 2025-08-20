@@ -54,8 +54,6 @@ impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();
 
-        object.name = self.name.unwrap_or("object".to_string());
-
         object.graph = self.graph;
 
         if let Some(node) = self.node {
@@ -77,7 +75,16 @@ impl ToInternal<Object> for ExtObject {
             } 
         }
 
-        object.resources.extend(self.resources.to_internal());
+        let resources = self.resources.to_internal();
+        for (data, mount) in resources {
+            object.resources.push(data);
+
+            if let Some(mount) = mount {
+                if let Some(container) = object.docker_container_builder.as_mut() {
+                    container.mount(mount);
+                }
+            }
+        }
         let vec = self.executables.clone().to_internal();
         for (script, data) in vec {
             if let Some(data) = data {

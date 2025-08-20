@@ -208,15 +208,15 @@ impl Spawner for Object {
         debug!("Uploading node data");
         if let Some(node) = self.node.as_ref() && let Some(ssh) = node.ssh.as_ref(){
             for data in self.resources.get_node_data() {
-                let path = Path::new(&data.source);
+                let path = Path::new(&data.src);
                 if path.is_dir() {
-                    let result = ssh.upload_directory(path, data.destination.as_ref());
+                    let result = ssh.upload_directory(path, data.dst.as_ref());
                     if let Err(error) = result {
                         error!("{error}");
                     }
                 }
                 else if path.is_file() {
-                    let result = ssh.upload_file(path, data.destination.as_ref());
+                    let result = ssh.upload_file(path, data.dst.as_ref());
                     if let Err(error) = result {
                         error!("{error}");
                     }
@@ -592,12 +592,12 @@ impl Object {
     pub fn upload_data(&self) -> Result<(), String> {
         for (container, data) in Self::iter_combine_data(&self.docker_manager.containers_ref_vec(), self.resources.get_docker_data()) {
             if let Some(ref ssh) = container.ssh {
-                let path = Path::new(&data.source);
+                let path = Path::new(&data.src);
                 if path.is_dir() {
-                    ssh.upload_directory(path, data.destination.as_ref())?;
+                    ssh.upload_directory(path, data.dst.as_ref())?;
                 }
                 else if path.is_file() {
-                    ssh.upload_file(path, data.destination.as_ref())?;
+                    ssh.upload_file(path, data.dst.as_ref())?;
                 }
                 else {
                     panic!("Unknown data. Neither a valid file nor directory ({})", path.display());
@@ -617,7 +617,7 @@ impl Object {
 
         for (container, data) in Self::iter_combine_sftp_data(&self.docker_manager.containers_ref_vec(), self.resources.get_volatile_docker_data()) {
             if let Some(ref ssh) = container.ssh {
-                let result = ssh.create_sftp_file(&data.destination);
+                let result = ssh.create_sftp_file(&data.dst);
                 if let Ok(mut file) = result {
                     let result = file.write_all(data.content.as_bytes());
                     if let Err(error) = result {

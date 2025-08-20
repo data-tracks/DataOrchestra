@@ -87,8 +87,8 @@ impl Creator<Object> for KafkaProducer {
         object.graph.ignore = true;
 
         let docker_data = DataBuilder::default()
-            .source("services/attachables/kafka_producer")
-            .destination("/kafka_producer")
+            .src("services/attachables/kafka_producer")
+            .dst("/kafka_producer")
             .build()
             .expect("Unable to build docker_data");
 
@@ -112,7 +112,7 @@ impl Creator<Object> for KafkaProducer {
         let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
         let volatile_data = VolatileDataBuilder::default()
-            .destination("/kafka_producer/config.json")
+            .dst("/kafka_producer/config.json")
             .content(json)
             .build()
             .expect("Unable to build volatile data");
