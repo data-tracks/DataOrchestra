@@ -3,7 +3,7 @@ use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::time::Duration;
-use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Run, Runner, Uploader};
+use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Rsync, RsyncBuilder, Run, Runner, Uploader};
 use crate::core::types::data::{Data, DataTypes, GetData, VolatileData};
 use crate::shared::{repeat_on_err, repeat_on_err_mut};
 use crate::log_time;
@@ -66,6 +66,15 @@ pub struct Object {
     pub ansible: String,
     #[builder(default = "default_runner()")]
     pub runner: Box<dyn Runner + Send + Sync>,
+    pub uploader: Option<Box<dyn Uploader + Send + Sync>>
+}
+
+pub fn default_ansible() -> String {
+    "scripts/ansible/ansible-setup.yml".to_string()
+}
+
+pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
+    Box::new(Local::new())
 }
 
 impl ObjectBuilder {
@@ -96,13 +105,6 @@ impl ObjectBuilder {
     }
 }
 
-pub fn default_ansible() -> String {
-    "scripts/ansible/ansible-setup.yml".to_string()
-}
-
-pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
-    Box::new(Local::new())
-}
 
 impl Default for Object {
     fn default() -> Self {
@@ -117,6 +119,7 @@ impl Default for Object {
             executables: Vec::new(),
             ansible: default_ansible(),
             runner: default_runner(),
+            uploader: None
         }
     }
 }
@@ -152,12 +155,12 @@ impl Spawner for Object {
                     {
                         compose.config.compose = Some(format!("docker/{file_name}"));
                     }
-                    let result = ssh.upload_file(local_path, compose.config.compose.as_ref().unwrap());
+                    let result = ssh.upload_file(local_path.as_ref(), compose.config.compose.as_ref().unwrap().as_ref());
                     if let Err(error) = result {
                         panic!("Unable to upload compose file {error}");
                     }
 
-                    let result = ssh.upload_directory("images/", "docker/");
+                    let result = ssh.upload_directory("images/".as_ref(), "docker/".as_ref());
                     if let Err(error) = result {
                         error!("{error}");
                     }
@@ -194,7 +197,7 @@ impl Spawner for Object {
                         {
                             *dockerfile = format!("docker/{file_name}");
                         }
-                        let result = ssh.upload_file(local_path, dockerfile);
+                        let result = ssh.upload_file(local_path.as_ref(), dockerfile.as_ref());
                         if let Err(error) = result {
                             panic!("Unable to upload dockerfile ({error})");
                         }
@@ -215,13 +218,13 @@ impl Spawner for Object {
             for data in self.resources.get_node_data() {
                 let path = Path::new(&data.source);
                 if path.is_dir() {
-                    let result = ssh.upload_directory(path, &data.destination);
+                    let result = ssh.upload_directory(path, data.destination.as_ref());
                     if let Err(error) = result {
                         error!("{error}");
                     }
                 }
                 else if path.is_file() {
-                    let result = ssh.upload_file(path, &data.destination);
+                    let result = ssh.upload_file(path, data.destination.as_ref());
                     if let Err(error) = result {
                         error!("{error}");
                     }
@@ -588,10 +591,10 @@ impl Object {
             if let Some(ref ssh) = container.ssh {
                 let path = Path::new(&data.source);
                 if path.is_dir() {
-                    ssh.upload_directory(path, &data.destination)?;
+                    ssh.upload_directory(path, data.destination.as_ref())?;
                 }
                 else if path.is_file() {
-                    ssh.upload_file(path, &data.destination)?;
+                    ssh.upload_file(path, data.destination.as_ref())?;
                 }
                 else {
                     panic!("Unknown data. Neither a valid file nor directory ({})", path.display());

@@ -1,12 +1,16 @@
 use std::path::Path;
 use derive_builder::Builder;
-use crate::core::adapters::{Local, Runner, Ssh, Uploader, UploaderError};
+use crate::core::adapters::{Local, Runner, Uploader, UploaderError};
 
+/// Rsync type. Allows for the interaction with the rsync CLI. Uploading of files to remote location via SSH.
 #[derive(Debug, Builder)]
 pub struct Rsync {
+    // Remote SSH user name
     user: String,
+    // Remote address
     remote: String,
     #[builder(default)]
+    // SSH port
     port: Option<u16>,
     #[builder(default = "default_checksum()")]
     checksum: bool,
@@ -14,6 +18,18 @@ pub struct Rsync {
     compress: bool,
     #[builder(default = "default_recursive()")]
     recursive: bool
+}
+
+pub fn default_checksum() -> bool {
+    true
+}
+
+pub fn default_compress() -> bool {
+    true
+}
+
+pub fn default_recursive() -> bool {
+    true
 }
 
 impl Rsync {
@@ -54,58 +70,34 @@ impl Rsync {
     }
 }
 
-pub fn default_checksum() -> bool {
-    true
-}
-
-pub fn default_compress() -> bool {
-    true
-}
-
-pub fn default_recursive() -> bool {
-    true
-}
-
-impl<T, S> Uploader<T, S> for Rsync where
-    T: AsRef<Path>,
-    S: AsRef<Path>
+impl Uploader for Rsync
 {
-    fn upload_file(&self, src: T, dst: S) -> Result<(), UploaderError> {
-        let src = src.as_ref();
-        let dst = dst.as_ref();
-
+    fn upload_file(&self, src: &Path, dst: &Path) -> Result<(), UploaderError> {
         if !src.is_file() {
             return Err(UploaderError::InvalidFile(src.display().to_string()))
         }
 
-        if !src.exists() {
+        if let Ok(exists) = src.try_exists() && !exists {
             return Err(UploaderError::NoSuchFile(src.display().to_string()));
         }
 
-        let result = self.upload(src, dst);
-        if let Err(error) = result {
-            return Err(UploaderError::UnableToUpload(error))
-        }
+        self.upload(src, dst)
+            .map_err(UploaderError::UnableToUpload)?;
         
         Ok(())
     }
 
-    fn upload_directory(&self, src: T, dst: S) -> Result<(), UploaderError> {
-        let src = src.as_ref();
-        let dst = dst.as_ref();
-
+    fn upload_directory(&self, src: &Path, dst: &Path) -> Result<(), UploaderError> {
         if !src.is_dir() {
             return Err(UploaderError::InvalidDirectory(src.display().to_string()))
         }
 
-        if !src.exists() {
+        if let Ok(exists) = src.try_exists() && !exists {
             return Err(UploaderError::NoSuchDirectory(src.display().to_string()));
         }
 
-        let result = self.upload(src, dst);
-        if let Err(error) = result {
-            return Err(UploaderError::UnableToUpload(error))
-        }
+        self.upload(src, dst)
+            .map_err(UploaderError::UnableToUpload)?;
 
         Ok(())
     }

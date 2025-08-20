@@ -162,12 +162,6 @@ impl Portainer {
             .expect("Unable to build portainer agent object")
     }
 
-    pub fn deploy_agents<'a>(&self, hosts: Vec<&'a IpAddr>) {
-        for host in hosts {
-            //self.add_agent(host);
-        }
-    }
-
     /// Add agent environment to portainer
     pub async fn add_agent(&self, node: &Node) {
         info!("Adding portainer agent");

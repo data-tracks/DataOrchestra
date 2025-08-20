@@ -2,7 +2,7 @@ use log::debug;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::Error;
 use serde_json::Value;
-use crate::core::adapters::portainer::portainer::Portainer;
+use crate::core::adapters::portainer::Portainer;
 use crate::core::config::Config;
 use crate::core::object::Object;
 use crate::core::traits::Creator;

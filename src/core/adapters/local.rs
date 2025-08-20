@@ -42,10 +42,10 @@ impl Runner for Local {
             Ok(String::from_utf8(result.stdout).unwrap())
         } 
         else if let Err(error) = output {
-            return Err(RunnerError::CommandExecute(error.to_string(), command));
+            Err(RunnerError::CommandExecute(error.to_string(), command))
         }
         else  {
-            return Err(RunnerError::CommandExecute("".to_string(), command));
+            Err(RunnerError::CommandExecute("".to_string(), command))
         }
     }
 

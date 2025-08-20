@@ -331,7 +331,7 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
     for node in nodes.iter() {
         // Upload data to node
         if let Some(ref ssh) = node.ssh {
-            let result = ssh.upload_directory("scripts/", "scripts/");
+            let result = ssh.upload_directory("scripts/".as_ref(), "scripts/".as_ref());
             if let Err(error) = result {
                 error!("{error}");
             }

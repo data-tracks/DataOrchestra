@@ -1,7 +1,8 @@
 use std::fmt::Debug;
+use std::path::Path;
 use thiserror::Error;
 
-/// Runner trait. Trait for system execution objects
+/// Runner trait. Trait for system command execution
 pub trait Runner: Debug where Self: 'static {
     /// Execute command
     fn exec(&self, command: String) -> Result<String, RunnerError>;
@@ -54,16 +55,16 @@ impl From<UploaderError> for String{
     }
 }
 
-/// Uploader trait. Trait for file uploading
-pub trait Uploader<T, S>: Debug where Self: 'static {
-    fn upload_file(&self, src: T, dst: S) -> Result<(), UploaderError>;
-    fn upload_directory(&self, src: T, dst: S) -> Result<(), UploaderError>;
+/// Uploader trait. Trait for data uploading
+pub trait Uploader: Debug where Self: 'static {
+    fn upload_file(&self, src: &Path, dst: &Path) -> Result<(), UploaderError>;
+    fn upload_directory(&self, src: &Path, dst: &Path) -> Result<(), UploaderError>;
 
-    fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader<T, S> + Send>
+    fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader + Send>
     where
         Self: Runner + Send + Clone,
         Self: 'b + Sync,
     {
-        (Box::new(self.clone()) as Box<dyn Uploader<T, S> + Send>) as _
+        (Box::new(self.clone()) as Box<dyn Uploader + Send>) as _
     }
 }
