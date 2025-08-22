@@ -22,8 +22,6 @@ pub struct ExtObject {
     pub docker: Option<ExtDocker>,
     /// Remote node connection
     pub node: Option<ExtNode>,
-    /// Ansible configuration script
-    pub ansible: Option<String>,
     /// Attachable configuration
     #[serde(default)]
     #[serde(rename = "attach")]
@@ -42,7 +40,6 @@ impl Default for ExtObject {
             graph: Graph::default(),
             docker: Some(ExtDocker::default()),
             node: None,
-            ansible: Some("scripts/ansible/ansible-setup.yml".to_string()),
             attach_config: Amount::None,
             resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, source: "".to_string(), destination: "".to_string(), dependency: None })),
             executables: Amount::None
@@ -56,10 +53,9 @@ impl ToInternal<Object> for ExtObject {
 
         object.graph = self.graph;
 
-        object.node = self.node.to_internal();
-        
-        if let Some(ansible) = self.ansible {
-            object.ansible = ansible;
+        if let Some((node, uploader)) = self.node.to_internal() {
+            object.node = Some(node);
+            object.uploader = Some(uploader);
         }
 
         // Set Container(s) builder

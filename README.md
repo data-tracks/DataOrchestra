@@ -9,7 +9,7 @@ A rust based dynamic heterogeneous distributed data landscape generator. Using a
 
 ## Quickstart
 
-Start the local docker deamon and create / enter a python venv with ansible installed as a package, then run the following command which runs the smart building testing example with the relevant variables. 
+Start the local docker daemon, then run the following command which runs the smart building testing example with the relevant variables. 
 Note that you may need to change the nodes addresses to fit your needs.
 
 ```shell

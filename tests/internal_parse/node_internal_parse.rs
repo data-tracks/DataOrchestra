@@ -17,7 +17,7 @@ mod tests {
             upload_schema: UploadTypes::Ssh
         };
 
-        let internal_node = node.to_internal();
+        let (internal_node, uploader) = node.to_internal();
 
         assert_eq!(internal_node.ssh_port, 22);
         assert_eq!(internal_node.password, Some("password".to_string()));

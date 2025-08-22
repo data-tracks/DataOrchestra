@@ -25,7 +25,7 @@ pub enum ExecutorError {
     CommandRead(String, String),
     #[error("Unable to connect to session (error {0})")]
     SessionConnect(String),
-    #[error("Unablt to disconnect from session (error {0})")]
+    #[error("Unable to disconnect from session (error {0})")]
     SessionDisconnect(String)
 }
 
@@ -60,11 +60,11 @@ pub trait Uploader: Debug where Self: 'static {
     fn upload_file(&self, src: &Path, dst: &Path) -> Result<(), UploaderError>;
     fn upload_directory(&self, src: &Path, dst: &Path) -> Result<(), UploaderError>;
 
-    fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader + Send>
+    fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader + Send + Sync>
     where
-        Self: Executor + Send + Clone,
+        Self: Uploader + Send + Clone,
         Self: 'b + Sync,
     {
-        (Box::new(self.clone()) as Box<dyn Uploader + Send>) as _
+        (Box::new(self.clone()) as Box<dyn Uploader + Send + Sync>) as _
     }
 }

@@ -61,9 +61,6 @@ pub struct Object {
     pub resources: Vec<DataTypes>,
     #[builder(setter(each = "executable"), default)]
     pub executables: Vec<Executables>,
-    // Ansible script responsible for the setup of the environment
-    #[builder(setter(into), default = "Object::default_ansible()")]
-    pub ansible: String,
     #[builder(default = "Object::default_executor()")]
     pub executor: Box<dyn Executor + Send + Sync>,
     #[builder(default)]
@@ -109,7 +106,6 @@ impl Default for Object {
             node: None, 
             resources: Vec::new(),
             executables: Vec::new(),
-            ansible: Object::default_ansible(),
             executor: Object::default_executor(),
             uploader: None
         }
@@ -243,36 +239,6 @@ impl Spawner for Object {
             error!("{error}");
         }
 
-        for container in self.docker_manager.containers_ref_vec() {
-            let ssh_port = container.get_ssh_port();
-            if let Some(ssh_port) = ssh_port {
-                let host: &IpAddr;
-
-                if let Some(node) = self.node.as_ref() {
-                    host = &node.host;
-                }
-                else {
-                    host = &IpAddr::V4(Ipv4Addr::LOCALHOST);
-                }
-
-                debug!("Polling docker container ssh connection ({host}:{ssh_port})");
-
-                let result = repeat_on_err(|| {
-                    ping(host, ssh_port)
-                }, 5, Some(Duration::from_secs(1)));
-                if let Err(error) = result {
-                    panic!("{error}");
-                }
-            }
-        }
-
-        // No panic as ansible depends on an ssh port, where some compose files may not provide
-        // these
-        let result = self.start_ansible();
-        if let Err(error) = result {
-            error!("Unable to start ansible ({error})");
-        }
-
         info!("Finished setting up {}", self.name);
     }
 
@@ -291,44 +257,10 @@ impl Spawner for Object {
 }
 
 impl Object {
-    pub fn default_ansible() -> String {
-        "scripts/ansible/ansible-setup.yml".to_string()
-    }
-
     pub fn default_name() -> String { "object".to_string() }
 
     pub fn default_executor() -> Box<dyn Executor + Send + Sync> {
         Box::new(Local::new())
-    }
-
-
-    pub fn start_ansible(&self) -> Result<(), String> {
-        if !Path::new(&self.ansible).is_file() {
-            return Err(format!("Unable to find file {}", &self.ansible)); 
-        }
-
-        for container in self.docker_manager.containers_ref_vec() {
-            let ssh_port = container.get_ssh_port();
-            if let Some(port) = ssh_port {
-                let mut command = format!("ansible-playbook {} -e \"port={}\"", &self.ansible, port);
-
-                if let Some(ref node) = self.node {
-                    command = format!("ansible-playbook {} -e \"port={}\" -e \"host={}\"", &self.ansible, port, node.host);
-                }    
-
-                let executor = Local::new();
-                let result = executor.exec(command)
-                    .map_err(|err| err.to_string());
-                if let Err(error) = result && error.contains("WARNING") {
-                    error!("{error}");
-                }
-            }
-            else {
-                warn!("No ssh port available for {}. Unable to Configure with ansible", container.config.name.as_ref().unwrap());
-            }
-        }
-
-        Ok(())
     }
 
     /// Start starting script on remote object

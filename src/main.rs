@@ -213,22 +213,12 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
 ///
 /// # Checks
 ///
-/// - In an ansible environment
-/// - Docker deamon running
+/// - Docker daemon running
 pub fn viable_check() {
-    match env::var("VIRTUAL_ENV") {
-        Ok(_val) => {
-            warn!("Python environment detected. Please ensure that the ansible package is contained in this environment");
-        }
-        Err(_) => {
-            panic!("Not in an ansible environment. Please activate or create a python environment with ansible installed");
-        }
-    }
-
     let executor = Local::new();
     let result = executor.exec("docker info".to_string());
     if let Err(error) = result {
-        panic!("Docker deamon not running. Make sure docker deamon is running before starting the program. ({error})");
+        panic!("Docker daemon not running. Make sure docker daemon is running before starting the program. ({error})");
     }
 }
 

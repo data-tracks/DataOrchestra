@@ -6,7 +6,6 @@ use crate::core::adapters::ssh::{self, Ssh};
 use crate::core::adapters::traits::Executor;
 use crate::core::adapters::{Local, OsSystems};
 use crate::core::adapters::docker::executor::DockerExecutor;
-use crate::log_time;
 use super::{ContainerConfig, PortMapping};
 use super::Run;
 
@@ -29,7 +28,7 @@ pub struct Container {
     pub is_running: bool,
     /// Local or remote command executor
     pub executor: Box<dyn Executor + Send + Sync>,
-    pub docker_executor: DockerExecutor
+    pub docker_executor: Box<dyn Executor + Send + Sync>
 }
 
 impl Default for Container {
@@ -43,7 +42,7 @@ impl Default for Container {
             is_running: false, 
             config: ContainerConfig::default(), 
             executor: Box::new(Local::new()),
-            docker_executor: DockerExecutor::default()
+            docker_executor: Box::new(DockerExecutor::default())
         } 
     }
 }
@@ -58,7 +57,7 @@ impl Container {
             publish_ports: Vec::new(), 
             is_running: false, 
             executor: Box::new(Local::new()),
-            docker_executor: DockerExecutor::default(),
+            docker_executor: Box::new(DockerExecutor::default()),
             config, 
         }
     }
@@ -69,11 +68,6 @@ impl Container {
 }
 
 impl Container {
-    /// Get host ssh port mapping from docker container
-    pub fn get_ssh_port(&self) -> Option<u16> {
-        self.get_external_port(22)     
-    }
-
     /// Get the internal port mapped to the `host` port
     pub fn get_internal_port(&self, host: u16) -> Option<u16> {
         for portmap in &self.publish_ports {
@@ -129,12 +123,10 @@ impl Run for Container {
 
     /// Run docker container using a dockerfile or image
     fn run(&mut self) -> Result<(), String> {
-        log_time!("Before Create");
         self.create();
-        log_time!("After Create");
 
         if let Some(id) = self.id.as_ref() {
-            debug!("POLLING CONTAINER");
+            debug!("Polling container {}", id);
             let result = super::api::poll_container(id, 30, &*self.executor);
             if let Err(error) = result {
                 panic!("Polling docker container {id} timeout after 30 seconds ({error})");
@@ -146,9 +138,7 @@ impl Run for Container {
 
         self.is_running = true;
 
-        log_time!("Before load");
         self.load(); 
-        log_time!("After load");
 
         Ok(())     
     }
@@ -167,42 +157,26 @@ impl Container {
     }
 
     pub fn load(&mut self) {
-        log_time!("Load name");
         let result = self.load_name();
         if let Err(error) = result {
             error!("Unable to get name of container ({error})");
         }
 
-        log_time!("Load ip");
         // get and set ip
         let result = self.load_ip();
         if let Err(error) = result {
             panic!("Unable to get ip of container | {}", error);
         }
 
-        log_time!("Load os");
         let _ = self.load_os();
         if let Err(error) = result {
             error!("Unable to get os from container {} | {}", self.config.name.as_ref().unwrap(), error);
         }
 
-        log_time!("Load ports");
         // get and set port mappings
         let result = self.load_ports();
         if let Err(error) = result {
             error!("Unable to get ports from container {} | {}", self.config.name.as_ref().unwrap(), error);
-        }
-
-        log_time!("Install ssh");
-        // Install ssh server
-        if self.get_ssh_port().is_some() {
-            let result = self.install_ssh();
-            if let Err(error) = result {
-                error!("Unable to install ssh server on container {} | {}", self.config.name.as_ref().unwrap(), error);
-            }
-        }
-        else {
-            warn!("No ssh port exposed for {}. Additional functionality is lost. Consider adding the ssh port 22 to the published ports", self.config.name.as_ref().unwrap()); 
         }
     }
 

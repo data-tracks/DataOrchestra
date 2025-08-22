@@ -93,7 +93,9 @@ impl Creator<Object> for KafkaConsumer {
         object.name = parent_object.name.unwrap_or("kafka-consumer".to_string());
 
         if let Some(node) = parent_object.node {
-            object.node = Some(node.to_internal());
+            let (node, uploader) = node.to_internal();
+            object.node = Some(node);
+            object.uploader = Some(uploader);
         }
 
         object.graph.ignore = true;

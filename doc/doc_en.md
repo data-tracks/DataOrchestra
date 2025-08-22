@@ -104,7 +104,6 @@ Basic fields are
 | `name`    | `string`       | no       | Name of object                              | `object`                                     |
 | `to`      | `list(string)` | no       | Which objects it send data to for the graph | Empty list                                   |
 | `ignore`  | `bool`         | no       | If object should be ignored for the graph   | `false`                                      |
-| `ansible` | `string`       | no       | Path of ansible setup script                | `services/scripts/ansible/ansible-setup.yml` |
 
 #### Example
 

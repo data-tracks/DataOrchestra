@@ -1,5 +1,7 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+use crate::core::adapters::{Rsync, Uploader};
+use crate::shared::ToInternal;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UploadTypes {
@@ -27,6 +29,21 @@ pub struct ExtRsync {
     #[serde(default = "default_delete")]
     #[builder(default = "default_delete()")]
     delete: bool
+}
+
+impl ToInternal<Rsync> for ExtRsync {
+    fn to_internal(self) -> Rsync {
+        Rsync
+        {
+            user: "".to_string(),
+            remote: "".to_string(),
+            port: Some(5000),
+            checksum: self.checksum,
+            compress: self.compress,
+            recursive: self.recursive,
+            delete: self.delete
+        }
+    }
 }
 
 pub fn default_checksum() -> bool {

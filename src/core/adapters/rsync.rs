@@ -3,23 +3,23 @@ use derive_builder::Builder;
 use crate::core::adapters::{Local, Executor, Uploader, UploaderError};
 
 /// Rsync type. Allows for the interaction with the rsync CLI. Uploading of files to remote location via SSH.
-#[derive(Debug, Builder)]
+#[derive(Debug, Clone, Builder)]
 pub struct Rsync {
     // Remote SSH user name
-    user: String,
+    pub(crate) user: String,
     // Remote address
-    remote: String,
+    pub(crate) remote: String,
     #[builder(default)]
     // SSH port
-    port: Option<u16>,
+    pub port: Option<u16>,
     #[builder(default = "true")]
-    checksum: bool,
+    pub checksum: bool,
     #[builder(default = "true")]
-    compress: bool,
+    pub compress: bool,
     #[builder(default = "true")]
-    recursive: bool,
+    pub recursive: bool,
     #[builder(default = "true")]
-    delete: bool
+    pub delete: bool
 }
 
 impl Rsync {

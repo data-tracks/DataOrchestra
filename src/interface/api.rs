@@ -105,7 +105,10 @@ impl ToInternal<(Process, Object)> for API {
         let kafka = Kafka::new(vec!["orchestra-log".to_string()], self.kafka_host.host);
         process.config = Some(ProcessTypeConfig::Kafka(kafka));
 
-        process.object.node = Some(self.kafka_host.to_internal());
+        
+        let (node, uploader) = self.kafka_host.to_internal();
+        process.object.node = Some(node);
+        process.object.uploader = Some(uploader);
 
         (process, consumer)
     } 

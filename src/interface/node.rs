@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr};
 use serde::{Serialize, Deserialize};
-use crate::core::adapters::Uploader;
+use crate::core::adapters::{Ssh, Uploader};
 use crate::core::types::Node;
 use crate::interface::upload::UploadTypes;
 use crate::shared::ToInternal;
@@ -39,8 +39,8 @@ impl Default for ExtNode {
     }
 }
 
-impl ToInternal<Node> for ExtNode {
-    fn to_internal(self) -> Node {
+impl ToInternal<(Node, Box<dyn Uploader + Send + Sync>)> for ExtNode {
+    fn to_internal(self) -> (Node, Box<dyn Uploader + Send + Sync>) {
         let mut node = Node::default();
 
         if let Some(name) = self.name {
@@ -56,7 +56,18 @@ impl ToInternal<Node> for ExtNode {
 
         node.password = self.password;
 
-        node
+        let uploader: Box<dyn Uploader + Send + Sync>;
+        match self.upload_schema {
+            UploadTypes::Ssh => {
+                uploader = Ssh::new().to_box_uploader();
+            },
+            UploadTypes::Rsync(rsync) => {
+                let rsync = rsync.to_internal();
+                uploader = rsync.to_box_uploader();
+            }
+        }
+
+        (node, uploader)
     }
 
 }

@@ -18,10 +18,8 @@ impl Compose {
     pub fn get_containers<T: Into<String>>(&self, name: T) -> Option<&Container> {
         let name = name.into();
         for container in self.containers.iter() {
-            if let Some(container_name) = container.config.name.as_ref() {
-                if container_name.eq(&name) {
-                    return Some(container);
-                } 
+            if let Some(container_name) = container.config.name.as_ref() && container_name.eq(&name) {
+                return Some(container);
             }
         }
         
