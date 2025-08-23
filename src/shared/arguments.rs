@@ -17,7 +17,7 @@ pub struct Arguments {
     #[arg(env = "LEVEL")]
     pub level: LevelFilter,
 
-    /// Remove all running and stopped docker containers aswell as all networks
+    /// Remove all running and stopped docker containers as well as all networks
     #[arg(long = "remove_all", default_value_t = false)]
     #[arg(env = "REMOVE_ALL")]
     pub remove_all: bool,

@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::Ipv4Addr;
 use std::path::Path;
-use std::time::Duration;
-use crate::core::adapters::{docker, ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Rsync, RsyncBuilder, Run, Executor, Uploader};
+use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Rsync, RsyncBuilder, Run, Executor, Uploader};
 use crate::core::types::data::{Data, DataTypes, GetData, VolatileData};
 use crate::shared::{repeat_on_err, repeat_on_err_mut};
-use crate::log_time;
 use crate::core::types::{Executables, GetExecutables, Node, Script};
 use derive_builder::Builder;
 use log::{debug, error, info, warn};

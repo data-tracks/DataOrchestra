@@ -1,5 +1,4 @@
 use log::debug;
-use crate::log_time;
 use super::{Compose, Container, Run};
 
 #[derive(Debug)]
@@ -20,7 +19,6 @@ impl Run for ContainerType {
     type Error = String;
 
     fn run(&mut self) -> Result<Self::Output, Self::Error> {
-        log_time!("Called run");
         match self {
             ContainerType::Container(container) => {
                 container.run()?;

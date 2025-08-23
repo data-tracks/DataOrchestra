@@ -16,8 +16,6 @@ use data_orchestra::variables::variables::Variables;
 use log::{debug, error, info, warn};
 use data_orchestra::core::adapters::docker::{self};
 use clap::Parser;
-use data_orchestra::log_time;
-use data_orchestra::shared::TIMESTAMPS;
 use tokio::sync::RwLock;
 use data_orchestra::api::api::start_api;
 use data_orchestra::api::state::APIState;
@@ -28,8 +26,6 @@ use data_orchestra::core::traits::Spawner;
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
-    log_time!("Main start"); 
-
     print_logo();
 
     dotenvy::dotenv().ok();
@@ -110,8 +106,6 @@ fn main() {
     // By here all components are set. No new ones are added. 
     ////////////////////////////////////////////////////////
 
-
-    log_time!("Configuration start"); 
     let api_state = Arc::new(RwLock::new(APIState::default()));
     let clone_api_state = api_state.clone();
     let api_thread = thread::Builder::new()
@@ -124,22 +118,11 @@ fn main() {
 
     configuration_pipeline(&mut config, &mut portainer, &args);
 
-    log_time!("Configuration end"); 
-
     info!("Closing DataOrchestra");
-
-    let mut timestamps = String::new();
-    for time in TIMESTAMPS.lock().unwrap().iter() {
-        let mut time_clone = time.clone();
-        time_clone.push('\n');
-        let time_clone = time_clone.as_str();
-        timestamps.push_str(time_clone);
-    }
 
     let amount_objects = format!("Amount of objects: {}", config.get_mut_spawners().count());
 
     println!("Stats:");
-    println!("{timestamps}");
     println!("{amount_objects}");
 
     // Send config to API
@@ -161,21 +144,17 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     // pre build
     
     info!("Building");
-    log_time!("Building start"); 
 
     config.build();
 
     info!("Finished building");
-    log_time!("Building finished");
 
     // post build
 
-    log_time!("Removing container");
     if args.remove_all {
         kill_containers(config.get_nodes());
     }
 
-    log_time!("Building portainer");
     if args.portainer {
         portainer.build(); 
     }
@@ -183,12 +162,10 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     pre_setup(portainer, config, args);
 
     info!("Setting up");
-    log_time!("Setup start");
 
     config.setup();
 
     info!("Finished setting up");
-    log_time!("Setup finished");
 
     // post setup
 
@@ -197,12 +174,10 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     // pre deploy
 
     info!("Deploying");
-    log_time!("Deploy start");
 
     config.deploy();
 
     info!("Finished deploying");
-    log_time!("Deploy finished");
 
     // post deploy
     

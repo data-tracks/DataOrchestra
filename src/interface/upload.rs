@@ -17,18 +17,36 @@ impl Default for UploadTypes {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Builder)]
 pub struct ExtRsync {
-    #[serde(default = "default_checksum")]
-    #[builder(default = "default_checksum()")]
+    #[serde(default = "ExtRsync::default_checksum")]
+    #[builder(default = "ExtRsync::default_checksum()")]
     checksum: bool,
-    #[serde(default = "default_compress")]
-    #[builder(default = "default_compress()")]
+    #[serde(default = "ExtRsync::default_compress")]
+    #[builder(default = "ExtRsync::default_compress()")]
     compress: bool,
-    #[serde(default = "default_recursive")]
-    #[builder(default = "default_recursive()")]
+    #[serde(default = "ExtRsync::default_recursive")]
+    #[builder(default = "ExtRsync::default_recursive()")]
     recursive: bool,
-    #[serde(default = "default_delete")]
-    #[builder(default = "default_delete()")]
+    #[serde(default = "ExtRsync::default_delete")]
+    #[builder(default = "ExtRsync::default_delete()")]
     delete: bool
+}
+
+impl ExtRsync {
+    pub fn default_checksum() -> bool {
+        true
+    }
+
+    pub fn default_compress() -> bool {
+        true
+    }
+
+    pub fn default_recursive() -> bool {
+        true
+    }
+
+    pub fn default_delete() -> bool {
+        true
+    }
 }
 
 impl ToInternal<Rsync> for ExtRsync {
@@ -46,30 +64,14 @@ impl ToInternal<Rsync> for ExtRsync {
     }
 }
 
-pub fn default_checksum() -> bool {
-    true
-}
-
-pub fn default_compress() -> bool {
-    true
-}
-
-pub fn default_recursive() -> bool {
-    true
-}
-
-pub fn default_delete() -> bool {
-    true
-}
-
 impl Default for ExtRsync {
     fn default() -> Self {
         ExtRsync 
         {
-            checksum: default_checksum(), 
-            compress: default_compress(),
-            recursive: default_recursive(),
-            delete: default_delete()
+            checksum: ExtRsync::default_checksum(), 
+            compress: ExtRsync::default_compress(),
+            recursive: ExtRsync::default_recursive(),
+            delete: ExtRsync::default_delete()
         }
     }
 }

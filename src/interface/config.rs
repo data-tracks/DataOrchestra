@@ -47,7 +47,7 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
 
         config.process.push(process);
         config.object.push(consumer);
-        //config.object.push(api);
+
         let portainer = self.portainer;
 
         (config, portainer)
