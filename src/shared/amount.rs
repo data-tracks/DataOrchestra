@@ -222,7 +222,7 @@ where
             (Amount::Multiple(one), Amount::Multiple(other)) => {
                 one.eq(other)
             },
-            _ => true
+            _ => false
         }
     }
 }
