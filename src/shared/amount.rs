@@ -157,6 +157,7 @@ impl<T> Amount<T> {
     }
 }
 
+
 impl<T> IntoIterator for Amount<T> {
     type Item = T;
     type IntoIter = IntoIter<Self::Item>;
@@ -206,3 +207,22 @@ impl<'de, T> Deserialize<'de> for Amount<T> where T : Deserialize<'de> {
     }
 }
 
+impl<T> PartialEq<Self> for Amount<T>
+where
+    T: Eq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Amount::Single(one), Amount::Single(other)) => {
+                one.eq(other)
+            },
+            (Amount::None, Amount::None) => {
+                true
+            },
+            (Amount::Multiple(one), Amount::Multiple(other)) => {
+                one.eq(other)
+            },
+            _ => true
+        }
+    }
+}
