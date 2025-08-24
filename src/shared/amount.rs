@@ -1,9 +1,12 @@
 use std::{mem, vec::IntoIter};
-use serde::{Deserialize, Serialize};
+use log::debug;
+use serde::{Deserialize, Deserializer, Serialize};
+use serde::de::Error;
+use serde_json::Value;
 
 /// The `Amount` type. Allows a value to be nothing, one value or a collection on values
 /// Used to allow for variability of fields in the JSON schema
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Amount<T> {
     None,
@@ -166,6 +169,40 @@ impl<T> IntoIterator for Amount<T> {
 impl<T> Default for Amount<T> {
     fn default() -> Self {
         Amount::None
+    }
+}
+
+impl<'de, T> Deserialize<'de> for Amount<T> where T : Deserialize<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        let value = Value::deserialize(deserializer)?;
+        let first = value.to_string();
+
+        if first.chars().next().is_some_and(|x| x == '[') {
+            let result = Vec::deserialize(value.clone());
+            if let Ok(compact) = result {
+                return Ok(Amount::Multiple(compact));
+            }
+            else if let Err(error) = result {
+                panic!("Error while deserializing Vec<T> [{}]", error);
+            }
+        }
+        else {
+            let result = T::deserialize(value.clone());
+            if let Ok(full) = result {
+                return Ok(Amount::Single(full));
+            }
+            else if let Err(error) = result {
+                debug!("{}", value.clone());
+                panic!("Error while deserializing T: [{}]", error);
+            }
+        }
+
+        Err(Error::custom(
+            "Could not deserialize into either a single store or a list of them",
+        ))
     }
 }
 

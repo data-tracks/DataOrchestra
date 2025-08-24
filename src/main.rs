@@ -20,6 +20,7 @@ use tokio::sync::RwLock;
 use data_orchestra::api::api::start_api;
 use data_orchestra::api::state::APIState;
 use data_orchestra::core::traits::Spawner;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // This is the main entry point of the orchestrator. Here the configuration file is read, arguments
 // are set and other related things. 
@@ -116,7 +117,9 @@ fn main() {
             rt.block_on(start_api(clone_api_state));
         }).unwrap();
 
-    configuration_pipeline(&mut config, &mut portainer, &args);
+    if !args.api_only {
+        configuration_pipeline(&mut config, &mut portainer, &args);
+    }
 
     info!("Closing DataOrchestra");
 
