@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::time::Duration;
 use std::{env, fs, thread};
 use std::path::Path;
 use std::process::exit;
@@ -11,7 +10,6 @@ use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::logger::init_logger;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::Arguments;
-use data_orchestra::shared::repeat_on_err_mut;
 use data_orchestra::variables::variables::Variables;
 use log::{debug, error, info, warn};
 use data_orchestra::core::adapters::docker::{self};
@@ -92,6 +90,7 @@ fn main() {
         }
     }
 
+    /*
     // Create ssh session for all objects
     for node in config.get_object_nodes_mut() {
         node.ssh_key = args.ssh_key.clone();
@@ -102,6 +101,7 @@ fn main() {
             error!("Unable to set ssh session for node {} ({error})", node.host);
         }
     }
+     */
 
     ////////////////////////////////////////////////////////
     // By here all components are set. No new ones are added. 

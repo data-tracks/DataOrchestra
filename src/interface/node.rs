@@ -1,6 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr};
+use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
-use crate::core::adapters::{Ssh, Uploader};
+use crate::core::adapters::{Executor, Ssh, Uploader};
 use crate::core::types::Node;
 use crate::interface::upload::UploadTypes;
 use crate::shared::ToInternal;
@@ -16,7 +17,9 @@ pub struct ExtNode {
     #[serde(default = "ExtNode::default_ssh_port")]
     pub ssh_port: u16,
     #[serde(default)]
-    pub upload_schema: UploadTypes
+    pub upload_schema: UploadTypes,
+    #[serde(default)]
+    pub ssh_key: Option<PathBuf>
 }
 
 impl ExtNode {
@@ -34,14 +37,15 @@ impl Default for ExtNode {
             username: Some("root".to_string()), 
             password: Some("password".to_string()),
             ssh_port: ExtNode::default_ssh_port(),
-            upload_schema: UploadTypes::default()
+            upload_schema: UploadTypes::default(),
+            ssh_key: None
         }
     }
 }
 
 impl ToInternal<(Node, Box<dyn Uploader + Send + Sync>)> for ExtNode {
     fn to_internal(self) -> (Node, Box<dyn Uploader + Send + Sync>) {
-        let mut node = Node::default();
+        let mut  node = Node::default();
 
         if let Some(name) = self.name {
             node.name = name;
@@ -66,6 +70,8 @@ impl ToInternal<(Node, Box<dyn Uploader + Send + Sync>)> for ExtNode {
                 uploader = rsync.to_box_uploader();
             }
         }
+        
+        node.ssh_key = self.ssh_key;
 
         (node, uploader)
     }

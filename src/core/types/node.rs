@@ -1,4 +1,5 @@
 use std::net::{IpAddr, Ipv4Addr};
+use std::path::PathBuf;
 use log::error;
 
 use crate::core::adapters::ssh::Ssh;
@@ -15,7 +16,7 @@ pub struct Node {
     /// Ssh password
     pub password: Option<String>,
     /// Path to ssh key
-    pub ssh_key: Option<String>,
+    pub ssh_key: Option<PathBuf>,
     /// Ssh object 
     pub ssh: Option<Ssh>,
     /// Ssh port

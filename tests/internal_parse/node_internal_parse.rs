@@ -14,7 +14,8 @@ mod tests {
             username: Some("ubuntu".to_string()),
             password: Some("password".to_string()),
             ssh_port: 22,
-            upload_schema: UploadTypes::Ssh
+            upload_schema: UploadTypes::Ssh,
+            ssh_key: None
         };
 
         let (internal_node, uploader) = node.to_internal();
