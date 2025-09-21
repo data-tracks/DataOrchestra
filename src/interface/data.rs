@@ -81,7 +81,7 @@ impl ToInternal<(DataTypes, Option<Mount>)> for ExtData {
                     dependency: self.dependency
                 };
 
-                (DataTypes::NodeData(data), None)
+                (DataTypes::Data(data), None)
             },
             Location::Container => {
                 let remote_location = PathBuf::from(format!("docker/mount/data/{}", self.destination.clone()));
@@ -101,7 +101,7 @@ impl ToInternal<(DataTypes, Option<Mount>)> for ExtData {
                     read_only: false,
                     bind_propagation: None,
                 };
-                (DataTypes::DockerData(data), Some(mount))
+                (DataTypes::Data(data), Some(mount))
             }
         }
     }
@@ -131,7 +131,7 @@ impl ToInternal<(DataTypes, Option<Mount>)> for ExtVolatile {
                     content: self.volatile_types.to_string()
                 };
                 
-                (DataTypes::VolatileNodeData(data), None)
+                (DataTypes::VolatileData(data), None)
             },
             Location::Container => {
                 let remote_location = PathBuf::from(format!("docker/mount/volatile/{}", self.destination.clone()));
@@ -151,7 +151,7 @@ impl ToInternal<(DataTypes, Option<Mount>)> for ExtVolatile {
                     bind_propagation: None,
                 };
 
-                (DataTypes::VolatileDockerData(data), Some(mount))
+                (DataTypes::VolatileData(data), Some(mount))
             }
         }
     }

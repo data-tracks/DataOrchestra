@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{core::{adapters::TmuxBuilder, types::{DataTypes, Executables, Script, VolatileData}}, shared::ToInternal};
-use crate::core::types::DataTypes::{VolatileDockerData, VolatileNodeData};
-use crate::interface::data::{ExtData, ExtDataTypes, ExtVolatile};
 use super::location::Location;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,12 +63,9 @@ impl ToInternal<(Script, DataTypes)> for ExtTmux {
     fn to_internal(mut self) -> (Script, DataTypes) {
         let script = Script { name: self.name.clone(), path: self.destination.clone() };
 
-        let data = VolatileData { name: self.name, content: self.tmux.build(), dst: self.destination.into()  };
+        let volatile = VolatileData { name: self.name, content: self.tmux.build(), dst: self.destination.into()  };
 
-        let data_type = match self.location {
-            Location::Node => VolatileNodeData(data),
-            Location::Container => VolatileDockerData(data)
-        };
+        let data_type = DataTypes::VolatileData(volatile);
 
         (script, data_type)
     }

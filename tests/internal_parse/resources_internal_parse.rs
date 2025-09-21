@@ -16,8 +16,8 @@ mod tests {
         let data_type = ExtDataTypes::Volatile(ExtVolatile { location: Location::Node, name: Some("NAME".to_string()), destination: "/destination".to_string(), volatile_types: env });
         let (internal_data_type, mount) = data_type.to_internal();
 
-        matches!(internal_data_type, DataTypes::VolatileNodeData(_));
-        let volatile = internal_data_type.get_volatile_node_data_ref();
+        matches!(internal_data_type, DataTypes::VolatileData(_));
+        let volatile = internal_data_type.get_volatile_data_ref();
         let actual_lines: HashSet<_> = volatile.content.lines().collect();
         let expected_lines: HashSet<_> = ["KEY_1=VALUE_1", "KEY_2=VALUE_2"].iter().copied().collect();
         assert_eq!(actual_lines, expected_lines);
@@ -35,9 +35,9 @@ mod tests {
         let (internal_data_type, mount) = data_type.to_internal();
         let mount = mount.unwrap();
 
-        matches!(internal_data_type, DataTypes::VolatileDockerData(_));
+        matches!(internal_data_type, DataTypes::VolatileData(_));
 
-        let volatile = internal_data_type.get_volatile_docker_data_ref();
+        let volatile = internal_data_type.get_volatile_data_ref();
         let actual_lines: HashSet<_> = volatile.content.lines().collect();
         let expected_lines: HashSet<_> = ["KEY_1=VALUE_1", "KEY_2=VALUE_2"].iter().copied().collect();
         assert_eq!(actual_lines, expected_lines);
@@ -55,8 +55,8 @@ mod tests {
         let (internal_data_type, mount) = data_type.to_internal();
         let mount = mount.unwrap();
 
-        matches!(internal_data_type, DataTypes::VolatileDockerData(_));
-        let volatile = internal_data_type.get_volatile_docker_data_ref();
+        matches!(internal_data_type, DataTypes::VolatileData(_));
+        let volatile = internal_data_type.get_volatile_data_ref();
         assert_eq!(volatile.content, serde_json::to_string_pretty(&map).expect(""));
         assert_eq!(volatile.name, Some("NAME".to_string()));
         assert_eq!(mount.dst, PathBuf::from("/destination"));
@@ -70,8 +70,8 @@ mod tests {
             let data_type = ExtDataTypes::Volatile(ExtVolatile { location: Location::Node, name: Some("NAME".to_string()), destination: "/destination".to_string(), volatile_types: json });
         let (internal_data_type, mount) = data_type.to_internal();
 
-        matches!(internal_data_type, DataTypes::VolatileNodeData(_));
-        let volatile = internal_data_type.get_volatile_node_data_ref();
+        matches!(internal_data_type, DataTypes::VolatileData(_));
+        let volatile = internal_data_type.get_volatile_data_ref();
         assert_eq!(volatile.content, serde_json::to_string_pretty(&map).expect(""));
         assert_eq!(volatile.name, Some("NAME".to_string()));
         assert_eq!(volatile.dst, PathBuf::from("/destination"));
@@ -86,8 +86,8 @@ mod tests {
         let (internal_data_type, mount) = data_type.to_internal();
         let mount = mount.unwrap();
 
-        matches!(internal_data_type, DataTypes::VolatileDockerData(_));
-        let volatile = internal_data_type.get_volatile_docker_data_ref();
+        matches!(internal_data_type, DataTypes::VolatileData(_));
+        let volatile = internal_data_type.get_volatile_data_ref();
         assert_eq!(volatile.content, "CONTENT".to_string());
         assert_eq!(volatile.name, Some("NAME".to_string()));
         assert_eq!(mount.dst, PathBuf::from("/destination"));
@@ -100,8 +100,8 @@ mod tests {
         let data_type = ExtDataTypes::Volatile(ExtVolatile { location: Location::Node, name: Some("NAME".to_string()), destination: "/destination".to_string(), volatile_types: content });
         let (internal_data_type, mount) = data_type.to_internal();
 
-        matches!(internal_data_type, DataTypes::VolatileNodeData(_));
-        let volatile = internal_data_type.get_volatile_node_data_ref();
+        matches!(internal_data_type, DataTypes::VolatileData(_));
+        let volatile = internal_data_type.get_volatile_data_ref();
         assert_eq!(volatile.content, "CONTENT".to_string());
         assert_eq!(volatile.name, Some("NAME".to_string()));
         assert_eq!(volatile.dst, PathBuf::from("/destination"));
@@ -112,8 +112,8 @@ mod tests {
         let data_type = ExtDataTypes::Data(ExtData { location: Location::Node, name: Some("NAME".to_string()), source: "/path".to_string(), destination: "/destination".to_string(), dependency: Some("DEPENDENCY".to_string()) } );
         let (internal_data_type, mount) = data_type.to_internal();
 
-        matches!(internal_data_type, DataTypes::NodeData(_));
-        let data = internal_data_type.get_node_data_ref();
+        matches!(internal_data_type, DataTypes::Data(_));
+        let data = internal_data_type.get_data_ref();
         assert_eq!(data.name, Some("NAME".to_string()));
         assert_eq!(data.src, PathBuf::from("/path"));
         assert_eq!(data.dst, PathBuf::from("/destination"));
@@ -126,8 +126,8 @@ mod tests {
         let (internal_data_type, mount) = data_type.to_internal();
         let mount = mount.unwrap();
         
-        matches!(internal_data_type, DataTypes::DockerData(_));
-        let data = internal_data_type.get_docker_data_ref();
+        matches!(internal_data_type, DataTypes::Data(_));
+        let data = internal_data_type.get_data_ref();
         assert_eq!(data.name, Some("NAME".to_string()));
         assert_eq!(data.src, PathBuf::from("/path"));
         assert_eq!(data.dst, mount.src);

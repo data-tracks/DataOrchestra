@@ -4,12 +4,86 @@ use derive_builder::Builder;
 
 #[derive(Debug, Clone)]
 pub enum DataTypes {
-    VolatileNodeData(VolatileData),
-    VolatileDockerData(VolatileData),
-    DockerData(Data),
-    NodeData(Data)
+    Data(Data),
+    VolatileData(VolatileData)
 }
 
+impl DataTypes {
+    pub fn is_data(&self) -> bool {
+        matches!(self, DataTypes::Data(_))
+    }
+
+    pub fn is_volatile_data(&self) -> bool {
+        matches!(self, DataTypes::VolatileData(_))
+    }
+    
+    pub fn get_data_ref(&self) -> &Data {
+        match self {
+            DataTypes::Data(data) => data,
+            _ => panic!("Get data from non data datatype")
+        }
+    }
+
+    pub fn get_data_mut(&mut self) -> &mut Data {
+        match self {
+            DataTypes::Data(data) => data,
+            _ => panic!("Get data from non data datatype")
+        }
+    }
+
+    pub fn get_volatile_data_ref(&self) -> &VolatileData {
+        match self {
+            DataTypes::VolatileData(volatile) => volatile,
+            _ => panic!("Get data from non data datatype")
+        }
+    }
+
+    pub fn get_volatile_data_mut(&mut self) -> &mut VolatileData {
+        match self {
+            DataTypes::VolatileData(volatile) => volatile,
+            _ => panic!("Get data from non data datatype")
+        }
+    }
+}
+
+impl GetVecData for Vec<DataTypes> {
+    fn get_volatile_data_ref(&self) -> Vec<&VolatileData> {
+        self.iter()
+            .filter(|item| item.is_volatile_data())
+            .map(|item| item.get_volatile_data_ref())
+            .collect()
+    }
+
+    fn get_volatile_data_mut(&mut self) -> Vec<&mut VolatileData> {
+        self.iter_mut()
+            .filter(|item| item.is_volatile_data())
+            .map(|item| item.get_volatile_data_mut())
+            .collect()
+    }
+
+    fn get_data_ref(&self) -> Vec<&Data> {
+        self.iter()
+            .filter(|item| item.is_data())
+            .map(|item| item.get_data_ref())
+            .collect()
+    }
+
+    fn get_data_mut(&mut self) -> Vec<&mut Data> {
+        self.iter_mut()
+            .filter(|item| item.is_data())
+            .map(|item| item.get_data_mut())
+            .collect()
+    }
+}
+
+pub trait GetVecData {
+    fn get_volatile_data_ref(&self) -> Vec<&VolatileData>;
+    fn get_volatile_data_mut(&mut self) -> Vec<&mut VolatileData>;
+    fn get_data_ref(&self) -> Vec<&Data>;
+    fn get_data_mut(&mut self) -> Vec<&mut Data>;
+}
+
+/*
 impl DataTypes {
     pub fn get_volatile_node_data_ref(&self) -> &VolatileData {
         match self {
@@ -124,6 +198,7 @@ impl GetData for Vec<DataTypes> {
         vec
     }
 }
+ */
 
 
 #[derive(Debug, Clone, Builder)]

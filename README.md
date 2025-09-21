@@ -46,8 +46,8 @@ Additionally, the program requires the path to your private ssh key. While it on
 
 ## Requirements
 
-- Rust 
 - Docker desktop
+- rsync CLI (optional)
 
 ## License 
 

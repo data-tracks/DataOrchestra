@@ -64,7 +64,7 @@ impl ToInternal<Store> for ExtStore {
                         .dst(format!("docker/mount/{file_name}"))
                         .build()
                         .expect("Unable to build data for store schema");
-                    store.object.resources.push(DataTypes::NodeData(data)); 
+                    store.object.resources.push(DataTypes::Data(data)); 
 
                     *schema = format!("docker/mount/{file_name}");
                 } 

@@ -60,16 +60,15 @@ impl ToInternal<(Node, Box<dyn Uploader + Send + Sync>)> for ExtNode {
 
         node.password = self.password;
 
-        let uploader: Box<dyn Uploader + Send + Sync>;
-        match self.upload_schema {
+        let uploader = match self.upload_schema {
             UploadTypes::Ssh => {
-                uploader = Ssh::new().to_box_uploader();
+                Ssh::new().to_box_uploader()
             },
             UploadTypes::Rsync(rsync) => {
                 let rsync = rsync.to_internal();
-                uploader = rsync.to_box_uploader();
+                rsync.to_box_uploader()
             }
-        }
+        };
         
         node.ssh_key = self.ssh_key;
 

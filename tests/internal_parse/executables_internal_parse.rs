@@ -57,10 +57,10 @@ mod tests {
         assert_eq!(script.path, "/destination");
         assert_eq!(script.name, Some("NAME".to_string()));
 
-        matches!(data_type, Some(DataTypes::VolatileNodeData(_)));
+        matches!(data_type, Some(DataTypes::VolatileData(_)));
 
         let volatile = data_type.unwrap();
-        let volatile = volatile.get_volatile_node_data_ref();
+        let volatile = volatile.get_volatile_data_ref();
 
         assert_eq!(volatile.name, Some("NAME".to_string()));
         assert_eq!(volatile.dst, PathBuf::from("/destination"));
@@ -85,10 +85,10 @@ mod tests {
         assert_eq!(script.path, "/destination");
         assert_eq!(script.name, Some("NAME".to_string()));
 
-        matches!(data_type, Some(DataTypes::VolatileDockerData(_)));
+        matches!(data_type, Some(DataTypes::VolatileData(_)));
 
         let volatile = data_type.unwrap();
-        let volatile = volatile.get_volatile_docker_data_ref();
+        let volatile = volatile.get_volatile_data_ref();
 
         assert_eq!(volatile.name, Some("NAME".to_string()));
         assert_eq!(volatile.dst, PathBuf::from("/destination"));

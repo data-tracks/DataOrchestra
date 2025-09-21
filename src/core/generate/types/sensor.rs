@@ -36,7 +36,7 @@ impl Sensor {
 
 impl Configurator<Generate> for Sensor {
     fn configure(&mut self, parent: &mut Generate) {
-        let docker_data = DataBuilder::default()
+        let data = DataBuilder::default()
             .src("services/sensor")
             .dst("/sensor")
             .build()
@@ -47,7 +47,7 @@ impl Configurator<Generate> for Sensor {
             .command(self.parse())
             .build();
 
-        let volatile_data = VolatileDataBuilder::default()
+        let volatile = VolatileDataBuilder::default()
             .dst("/sensor/start.sh")
             .content(tmux)
             .build()
@@ -65,8 +65,8 @@ impl Configurator<Generate> for Sensor {
             .dockerfile("images/rust.dockerfile")
             .image("rust_base");
     
-        parent.object.resources.push(DataTypes::VolatileDockerData(volatile_data));
-        parent.object.resources.push(DataTypes::DockerData(docker_data));
+        parent.object.resources.push(DataTypes::VolatileData(volatile));
+        parent.object.resources.push(DataTypes::Data(data));
         parent.object.executables.push(Executables::Script(script));
     }
 }

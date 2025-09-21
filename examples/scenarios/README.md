@@ -4,8 +4,8 @@ This directory contains example configuration and tasks which can be used with t
 
 ## Word Count
 
-![Word Count](../assets/images/word_count.png)
+![Word Count](../../assets/images/word_count.png)
 
 ## Smart Building
 
-![Word Count](../assets/images/smart_building.png)
+![Word Count](../../assets/images/smart_building.png)

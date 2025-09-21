@@ -35,7 +35,7 @@
       "to": ["kafka"],
       "resources": {
         "type": "data",
-        "source": "examples/smart_building/generator/energy_sensor",
+        "source": "examples/scenarios/smart_building/generator/energy_sensor",
         "destination": "/energy_sensor"
       },
       "executables": {
@@ -71,7 +71,7 @@
       "to": ["kafka"],
       "resources": {
         "type": "data",
-        "source": "examples/smart_building/processor/energy_filter",
+        "source": "examples/scenarios/smart_building/processor/energy_filter",
         "destination": "/energy_filter"
       },
       "executables": {
@@ -103,7 +103,7 @@
       "to": ["kafka"],
       "resources": {
         "type": "data",
-        "source": "examples/smart_building/processor/energy_aggregator",
+        "source": "examples/scenarios/smart_building/processor/energy_aggregator",
         "destination": "/energy_aggregator"
       },
       "executables": {
@@ -133,7 +133,7 @@
     {
       "node": "${NODE164}",
       "name": "postgres",
-      "schema": "examples/smart_building/store/energy_store_postgres/energy.sql",
+      "schema": "examples/scenarios/smart_building/store/energy_store_postgres/energy.sql",
       "postgres": {
         "postgres_db": "energy"
       }
@@ -144,7 +144,7 @@
       "to": ["mongodb"],
       "resources": {
         "type": "data",
-        "source": "examples/smart_building/store/energy_store_mongodb",
+        "source": "examples/scenarios/smart_building/store/energy_store_mongodb",
         "destination": "/energy_store_mongodb"
       },
       "executables": {
@@ -168,7 +168,7 @@
       "to": ["postgres"],
       "resources": {
         "type": "data",
-        "source": "examples/smart_building/store/energy_store_postgres",
+        "source": "examples/scenarios/smart_building/store/energy_store_postgres",
         "destination": "/energy_store_postgres"
       },
       "executables": {

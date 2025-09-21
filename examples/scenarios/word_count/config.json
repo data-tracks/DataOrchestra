@@ -32,9 +32,9 @@
     "name": "sentence_generator",
     "to": ["kafka"],
     "resources": {
-      "type": "data",
+      "type": "data",  
       "name": "sentence_generator",
-      "source": "examples/word_count/sentence_generator",
+      "source": "examples/scenarios/word_count/sentence_generator",
       "destination": "/sentence_generator"
     },
     "executables": {
@@ -70,7 +70,7 @@
       "resources": {
         "type": "data",
         "name": "sentence_splitter",
-        "source": "examples/word_count/sentence_splitter",
+        "source": "examples/scenarios/word_count/sentence_splitter",
         "destination": "/sentence_splitter"
       },
       "executables": {
@@ -107,7 +107,7 @@
       "resources": {
         "type": "data",
         "name": "word-generator",
-        "source": "examples/word_count/postgres_adapter",
+        "source": "examples/scenarios/word_count/postgres_adapter",
         "destination": "/postgres_adapter"
       },
       "executables": {
@@ -128,7 +128,7 @@
     {
       "node": "${NODE163}",
       "name": "postgres",
-      "schema": "examples/word_count/postgres_adapter/words.sql",
+      "schema": "examples/scenarios/word_count/postgres_adapter/words.sql",
       "postgres": {
         "postgres_db": "words"
       }

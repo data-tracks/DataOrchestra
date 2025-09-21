@@ -111,7 +111,7 @@ impl Creator<Object> for KafkaConsumer {
             .build()
             .expect("Unable to build script");
 
-        object.resources.push(DataTypes::DockerData(docker_data));
+        object.resources.push(DataTypes::Data(docker_data));
 
         object.docker_container_builder.get_or_insert_default();
 
@@ -130,7 +130,7 @@ impl Creator<Object> for KafkaConsumer {
             .build()
             .expect("Unable to build volatile data");
 
-        object.resources.push(DataTypes::VolatileDockerData(volatile_data));
+        object.resources.push(DataTypes::VolatileData(volatile_data));
         object.executables.push(Executables::Script(script));
         
         object

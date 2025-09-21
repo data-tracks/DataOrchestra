@@ -3,7 +3,7 @@ use std::io::Write;
 use std::net::Ipv4Addr;
 use std::path::Path;
 use crate::core::adapters::{ping, ComposeBuilder, Container, ContainerBuilder, ContainerType, Local, Rsync, RsyncBuilder, Run, Executor, Uploader};
-use crate::core::types::data::{Data, DataTypes, GetData, VolatileData};
+use crate::core::types::data::{Data, DataTypes, GetVecData, VolatileData};
 use crate::shared::{repeat_on_err, repeat_on_err_mut};
 use crate::core::types::{Executables, GetExecutables, Node, Script};
 use derive_builder::Builder;
@@ -71,20 +71,12 @@ impl ObjectBuilder {
         self
     }
 
-    pub fn node_data(self, data: Data) -> Self {
-        self.resource(DataTypes::NodeData(data))
+    pub fn data(self, data: Data) -> Self {
+        self.resource(DataTypes::Data(data))
     }
 
-    pub fn docker_data(self, data: Data) -> Self {
-        self.resource(DataTypes::DockerData(data))
-    }
-
-    pub fn volatile_node_data(self, data: VolatileData) -> Self {
-        self.resource(DataTypes::VolatileNodeData(data))
-    }
-
-    pub fn volatile_docker_data(self, data: VolatileData) -> Self {
-        self.resource(DataTypes::VolatileDockerData(data))
+    pub fn volatile_data(self, volatile: VolatileData) -> Self {
+        self.resource(DataTypes::VolatileData(volatile))
     }
 
     pub fn script(self, script: Script) -> Self {
@@ -201,7 +193,7 @@ impl Spawner for Object {
         debug!("Uploading node data");
         if self.node.is_some() {
             if let Some(uploader) = self.uploader.as_ref() {
-                for data in self.resources.get_node_data() {
+                for data in self.resources.get_data_ref() {
                     let path = Path::new(&data.src);
                     if path.is_dir() {
                         let result = uploader.upload_directory(path, data.dst.as_ref());

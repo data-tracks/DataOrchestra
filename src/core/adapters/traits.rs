@@ -6,8 +6,9 @@ use thiserror::Error;
 pub trait Executor: Debug where Self: 'static {
     /// Execute command
     fn exec(&self, command: String) -> Result<String, ExecutorError>;
+    /// Clone the trait implementor as a boxed dynamic trait
     fn clone_box(&self) -> Box<dyn Executor + Send + Sync>;
-
+    /// Cast the trait implementor to a boxed dynamic trait
     fn to_box_executor<'b>(&'b self) -> Box<dyn Executor + Send + Sync>
     where
         Self: Executor + Send + Clone,
@@ -57,9 +58,11 @@ impl From<UploaderError> for String{
 
 /// Uploader trait. Trait for data uploading
 pub trait Uploader: Debug where Self: 'static {
+    /// Upload a file
     fn upload_file(&self, src: &Path, dst: &Path) -> Result<(), UploaderError>;
+    /// Upload a directory
     fn upload_directory(&self, src: &Path, dst: &Path) -> Result<(), UploaderError>;
-
+    /// Cast the trait implementor to a boxed dynamic trait
     fn to_box_uploader<'b>(&'b self) -> Box<dyn Uploader + Send + Sync>
     where
         Self: Uploader + Send + Clone,

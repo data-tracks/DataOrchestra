@@ -1,0 +1,14 @@
+{
+  "object": {
+    "resources": {
+      "type": "data",
+      "source": "examples/test/data",
+      "destination": "/data"
+    },
+    "docker": {
+      "name": "object",
+      "image": "rust_base",
+      "dockerfile": "images/rust.dockerfile"
+    }
+  }
+}
