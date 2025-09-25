@@ -1,8 +1,8 @@
-use std::{mem, vec::IntoIter};
 use log::debug;
-use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use std::{mem, vec::IntoIter};
 
 /// The `Amount` type. Allows a value to be nothing, one value or a collection on values
 /// Used to allow for variability of fields in the JSON schema
@@ -11,7 +11,7 @@ use serde_json::Value;
 pub enum Amount<T> {
     None,
     Single(T),
-    Multiple(Vec<T>)
+    Multiple(Vec<T>),
 }
 
 impl<T> Amount<T> {
@@ -30,7 +30,7 @@ impl<T> Amount<T> {
     /// Check if amount has a value or multiple
     #[inline]
     pub fn has_something(&self) -> bool {
-       self.has_one() || self.has_multiple() 
+        self.has_one() || self.has_multiple()
     }
 
     /// Check if amount has no value
@@ -45,7 +45,7 @@ impl<T> Amount<T> {
         match self {
             Self::None => 0,
             Self::Single(_) => 1,
-            Self::Multiple(values) => values.len()
+            Self::Multiple(values) => values.len(),
         }
     }
 
@@ -107,18 +107,18 @@ impl<T> Amount<T> {
         match self {
             Amount::None => Vec::new(),
             Amount::Single(value) => vec![value],
-            Amount::Multiple(values) => values
+            Amount::Multiple(values) => values,
         }
-    } 
-    
+    }
+
     /// Transform Amount enum value into vector of references
     #[inline]
     pub fn as_ref_vec(&self) -> Vec<&T> {
         match self {
             Amount::None => Vec::new(),
             Amount::Single(value) => vec![value],
-            Amount::Multiple(values) => values.iter().collect::<Vec<&T>>()
-        } 
+            Amount::Multiple(values) => values.iter().collect::<Vec<&T>>(),
+        }
     }
 
     /// Transform Amount enum value into vector of mutable references
@@ -127,8 +127,8 @@ impl<T> Amount<T> {
         match self {
             Amount::None => Vec::new(),
             Amount::Single(value) => vec![value],
-            Amount::Multiple(values) => values.iter_mut().collect::<Vec<&mut T>>()
-        } 
+            Amount::Multiple(values) => values.iter_mut().collect::<Vec<&mut T>>(),
+        }
     }
 
     /// Take value out of the Amount enum
@@ -151,19 +151,18 @@ impl<T> Amount<T> {
             }
             Amount::Multiple(mut values) => {
                 values.push(item);
-                *self = Amount::Multiple(values);    
+                *self = Amount::Multiple(values);
             }
         }
     }
 }
-
 
 impl<T> IntoIterator for Amount<T> {
     type Item = T;
     type IntoIter = IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-         self.to_vec().into_iter()
+        self.to_vec().into_iter()
     }
 }
 
@@ -173,10 +172,13 @@ impl<T> Default for Amount<T> {
     }
 }
 
-impl<'de, T> Deserialize<'de> for Amount<T> where T : Deserialize<'de> {
+impl<'de, T> Deserialize<'de> for Amount<T>
+where
+    T: Deserialize<'de>,
+{
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         let value = Value::deserialize(deserializer)?;
         let first = value.to_string();
@@ -185,17 +187,14 @@ impl<'de, T> Deserialize<'de> for Amount<T> where T : Deserialize<'de> {
             let result = Vec::deserialize(value.clone());
             if let Ok(compact) = result {
                 return Ok(Amount::Multiple(compact));
-            }
-            else if let Err(error) = result {
+            } else if let Err(error) = result {
                 panic!("Error while deserializing Vec<T> [{}]", error);
             }
-        }
-        else {
+        } else {
             let result = T::deserialize(value.clone());
             if let Ok(full) = result {
                 return Ok(Amount::Single(full));
-            }
-            else if let Err(error) = result {
+            } else if let Err(error) = result {
                 debug!("{}", value.clone());
                 panic!("Error while deserializing T: [{}]", error);
             }
@@ -213,16 +212,10 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Amount::Single(one), Amount::Single(other)) => {
-                one.eq(other)
-            },
-            (Amount::None, Amount::None) => {
-                true
-            },
-            (Amount::Multiple(one), Amount::Multiple(other)) => {
-                one.eq(other)
-            },
-            _ => false
+            (Amount::Single(one), Amount::Single(other)) => one.eq(other),
+            (Amount::None, Amount::None) => true,
+            (Amount::Multiple(one), Amount::Multiple(other)) => one.eq(other),
+            _ => false,
         }
     }
 }

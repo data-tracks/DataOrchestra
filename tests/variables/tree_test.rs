@@ -2,7 +2,7 @@
 mod tests {
     use data_orchestra::variables::tree::VariableTree;
     use rstest::rstest;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     #[rstest]
     #[case(json!(1))]
@@ -11,7 +11,7 @@ mod tests {
     #[case(json!({ "key": "value" }))]
     fn create_tree(#[case] root: Value) {
         let tree = VariableTree::new(root.clone());
-        
+
         assert_eq!(tree.nodes.get(0).unwrap().value, root);
     }
 
@@ -21,7 +21,7 @@ mod tests {
     #[case(json!({ "key": "value" }), "key", json!("value"))]
     #[case(json!({ "key": { "x": "y" } }), "key", json!({ "x": "y" }))]
     fn add_child(#[case] root: Value, #[case] child_key: String, #[case] child_value: Value) {
-        let mut tree = VariableTree::new(root); 
+        let mut tree = VariableTree::new(root);
         let id = tree.add_child(0, child_key, child_value.clone());
 
         assert_eq!(tree.nodes.get(id).unwrap().value, child_value);
@@ -85,9 +85,9 @@ mod tests {
         let sub_2 = tree.add_child(0, "4".to_string(), json!({ "5": "6" }));
         let sub_3 = tree.add_child(0, "7".to_string(), json!({ "8": "9" }));
 
-        let sub_1_sub = tree.add_child(sub_1, "2".to_string(), json!("3"));
-        let sub_2_sub = tree.add_child(sub_2, "5".to_string(), json!("6"));
-        let sub_3_sub = tree.add_child(sub_3, "8".to_string(), json!("9"));
+        let _sub_1_sub = tree.add_child(sub_1, "2".to_string(), json!("3"));
+        let _sub_2_sub = tree.add_child(sub_2, "5".to_string(), json!("6"));
+        let _sub_3_sub = tree.add_child(sub_3, "8".to_string(), json!("9"));
 
         dbg!(&tree);
 
@@ -124,10 +124,9 @@ mod tests {
         let sub_2 = tree.add_child(0, "4".to_string(), json!({ "5": "6" }));
         let sub_3 = tree.add_child(0, "7".to_string(), json!({ "8": "9" }));
 
-        let sub_1_sub = tree.add_child(sub_1, "2".to_string(), json!("3"));
-        let sub_2_sub = tree.add_child(sub_2, "5".to_string(), json!("6"));
-        let sub_3_sub = tree.add_child(sub_3, "8".to_string(), json!("9"));
-
+        let _sub_1_sub = tree.add_child(sub_1, "2".to_string(), json!("3"));
+        let _sub_2_sub = tree.add_child(sub_2, "5".to_string(), json!("6"));
+        let _sub_3_sub = tree.add_child(sub_3, "8".to_string(), json!("9"));
 
         let result = tree.get_variable_value(&"2".to_string());
         assert_eq!(result, None);

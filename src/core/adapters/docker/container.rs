@@ -1,13 +1,12 @@
-use core::panic;
-use std::net::{IpAddr, Ipv4Addr};
-use std::str::FromStr;
-use log::{debug, error, warn};
-use crate::core::adapters::ssh::{self, Ssh};
+use super::Run;
+use super::{ContainerConfig, PortMapping};
+use crate::core::adapters::docker::executor::DockerExecutor;
 use crate::core::adapters::traits::Executor;
 use crate::core::adapters::{Local, OsSystems};
-use crate::core::adapters::docker::executor::DockerExecutor;
-use super::{ContainerConfig, PortMapping};
-use super::Run;
+use core::panic;
+use log::{debug, error};
+use std::net::{IpAddr, Ipv4Addr};
+use std::str::FromStr;
 
 /// The docker `Container` type. Represents the general information tied to the creation of a
 /// docker container.
@@ -28,37 +27,35 @@ pub struct Container {
     pub is_running: bool,
     /// Local or remote command executor
     pub executor: Box<dyn Executor + Send + Sync>,
-    pub docker_executor: Box<dyn Executor + Send + Sync>
+    pub docker_executor: Box<dyn Executor + Send + Sync>,
 }
 
 impl Default for Container {
     fn default() -> Self {
-        Container 
-        { 
-            id: None, 
-            ip: None, 
-            os: None, 
-            publish_ports: Vec::new(), 
-            is_running: false, 
-            config: ContainerConfig::default(), 
+        Container {
+            id: None,
+            ip: None,
+            os: None,
+            publish_ports: Vec::new(),
+            is_running: false,
+            config: ContainerConfig::default(),
             executor: Box::new(Local::new()),
-            docker_executor: Box::new(DockerExecutor::default())
-        } 
+            docker_executor: Box::new(DockerExecutor::default()),
+        }
     }
 }
 
 impl Container {
     pub fn new(config: ContainerConfig) -> Self {
-        Container 
-        { 
-            id: None, 
-            ip: None, 
+        Container {
+            id: None,
+            ip: None,
             os: None,
-            publish_ports: Vec::new(), 
-            is_running: false, 
+            publish_ports: Vec::new(),
+            is_running: false,
             executor: Box::new(Local::new()),
             docker_executor: Box::new(DockerExecutor::default()),
-            config, 
+            config,
         }
     }
 
@@ -74,18 +71,18 @@ impl Container {
             if portmap.get_external() == host {
                 return Some(portmap.get_internal());
             }
-        };
+        }
 
         None
     }
-   
+
     /// Get the host port mapped to the `internal` port
     pub fn get_external_port(&self, internal: u16) -> Option<u16> {
         for portmap in &self.publish_ports {
             if portmap.get_internal() == internal {
                 return Some(portmap.get_external());
             }
-        };
+        }
 
         None
     }
@@ -131,16 +128,15 @@ impl Run for Container {
             if let Err(error) = result {
                 panic!("Polling docker container {id} timeout after 30 seconds ({error})");
             }
-        }
-        else {
+        } else {
             panic!("No id available for docker container");
         }
 
         self.is_running = true;
 
-        self.load(); 
+        self.load();
 
-        Ok(())     
+        Ok(())
     }
 }
 
@@ -148,7 +144,9 @@ impl Container {
     pub fn create(&mut self) {
         // Build and start container
         if self.config.dockerfile.is_some() {
-            let _ = self.build_from_dockerfile().map_err(|err| panic!("{}", err));
+            let _ = self
+                .build_from_dockerfile()
+                .map_err(|err| panic!("{}", err));
         }
 
         if self.config.image.is_some() {
@@ -170,13 +168,21 @@ impl Container {
 
         let _ = self.load_os();
         if let Err(error) = result {
-            error!("Unable to get os from container {} | {}", self.config.name.as_ref().unwrap(), error);
+            error!(
+                "Unable to get os from container {} | {}",
+                self.config.name.as_ref().unwrap(),
+                error
+            );
         }
 
         // get and set port mappings
         let result = self.load_ports();
         if let Err(error) = result {
-            error!("Unable to get ports from container {} | {}", self.config.name.as_ref().unwrap(), error);
+            error!(
+                "Unable to get ports from container {} | {}",
+                self.config.name.as_ref().unwrap(),
+                error
+            );
         }
     }
 
@@ -191,10 +197,11 @@ impl Container {
             if !building_args.is_empty() {
                 building_args = format!("--build-arg {building_args}");
             }
-            
-            self.executor.exec(format!("docker build -f {dockerfile} {building_args} -t {image} ."))?;
-        }
-        else {
+
+            self.executor.exec(format!(
+                "docker build -f {dockerfile} {building_args} -t {image} ."
+            ))?;
+        } else {
             return Err("Please additionally provide an image name for your dockerfile under \"docker\": {{ \"image\": \"<image>\", \"dockerfile\": \"<dockerfile>\" }} ".to_string());
         }
 
@@ -202,9 +209,15 @@ impl Container {
     }
 
     /// Create container from image
-    fn build_from_image(&mut self) -> Result<(), String>{
+    fn build_from_image(&mut self) -> Result<(), String> {
         // Create image
-        let id = self.executor.exec(format!("docker run {} -it {}", self.config.parse_options(), self.config.image.as_ref().unwrap()))
+        let id = self
+            .executor
+            .exec(format!(
+                "docker run {} -it {}",
+                self.config.parse_options(),
+                self.config.image.as_ref().unwrap()
+            ))
             .map_err(|err| err.to_string())?;
         self.set_id(id.trim().to_string().replace("\n", ""));
         Ok(())
@@ -212,11 +225,14 @@ impl Container {
 
     /// Load container name
     pub fn load_name(&mut self) -> Result<(), String> {
-        let name = self.executor.exec(format!("docker inspect -f {{{{.Name}}}} {}", self.id.as_ref().unwrap()))
+        let name = self
+            .executor
+            .exec(format!(
+                "docker inspect -f {{{{.Name}}}} {}",
+                self.id.as_ref().unwrap()
+            ))
             .map_err(|err| err.to_string())?;
-        let name = name
-            .replace("/", "")
-            .replace("\n", "");
+        let name = name.replace("/", "").replace("\n", "");
         self.set_name(name);
 
         Ok(())
@@ -230,17 +246,18 @@ impl Container {
         let ip_parse = Ipv4Addr::from_str(ip.as_str());
         if let Ok(ip) = ip_parse {
             self.ip = Some(IpAddr::V4(ip));
-        }
-        else if let Err(err) = ip_parse {
+        } else if let Err(err) = ip_parse {
             return Err(format!("{err} ({ip})"));
         }
-        
-        Ok(()) 
+
+        Ok(())
     }
 
-    /// Load all container port mappings 
+    /// Load all container port mappings
     pub fn load_ports(&mut self) -> Result<(), String> {
-        let ports = self.executor.exec(format!("docker port {}", self.id.as_ref().unwrap()))
+        let ports = self
+            .executor
+            .exec(format!("docker port {}", self.id.as_ref().unwrap()))
             .map_err(|err| err.to_string())?;
         for port in ports.split("\n").filter(|x| !x.is_empty()) {
             let (int, ext) = port.split_once("/").unwrap();
@@ -252,9 +269,14 @@ impl Container {
         Ok(())
     }
 
-    /// Get container os system 
+    /// Get container os system
     pub fn load_os(&mut self) -> Result<(), String> {
-        let result = self.executor.exec(format!("docker exec {} cat /etc/os-release", self.id.as_ref().unwrap()))
+        let result = self
+            .executor
+            .exec(format!(
+                "docker exec {} cat /etc/os-release",
+                self.id.as_ref().unwrap()
+            ))
             .map_err(|err| err.to_string())?;
         let keys = result.split("\n");
         for entry in keys {
@@ -264,20 +286,25 @@ impl Container {
                     let os = OsSystems::from_str(value);
                     if let Ok(os) = os {
                         self.os = Some(os)
+                    } else {
+                        error!(
+                            "Unable to get os for container {}",
+                            self.config.name.as_ref().unwrap()
+                        );
                     }
-                    else {
-                        error!("Unable to get os for container {}", self.config.name.as_ref().unwrap());
-                    }
-                } 
-            } 
+                }
+            }
         }
 
-        Ok(()) 
+        Ok(())
     }
 
     /// Install ssh client on container
     pub fn install_ssh(&self) -> Result<(), String> {
-        debug!("Installing shh server on {}", self.config.name.as_ref().unwrap());
+        debug!(
+            "Installing shh server on {}",
+            self.config.name.as_ref().unwrap()
+        );
 
         // Set correct install script for different distros
         if let Some(os) = &self.os {
@@ -287,42 +314,65 @@ impl Container {
 
                     // Reformat sh script for linux distro
                     if cfg!(target_os = "windows") {
-                        self.executor.exec(format!("dos2unix scripts/docker/{script}"))?;
+                        self.executor
+                            .exec(format!("dos2unix scripts/docker/{script}"))?;
                     }
 
-                    self.executor.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
-                    self.executor.exec(format!("docker exec {} sh /{}", self.id.as_ref().unwrap(), script))?;
-                    
-                    // Start ssh server
-                    self.executor.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()))?;
+                    self.executor.exec(format!(
+                        "docker cp scripts/docker/{} {}:/",
+                        script,
+                        self.id.as_ref().unwrap()
+                    ))?;
+                    self.executor.exec(format!(
+                        "docker exec {} sh /{}",
+                        self.id.as_ref().unwrap(),
+                        script
+                    ))?;
 
-                },
+                    // Start ssh server
+                    self.executor.exec(format!(
+                        "docker exec -d {} /usr/sbin/sshd -D",
+                        self.id.as_ref().unwrap()
+                    ))?;
+                }
                 OsSystems::Alpine => {
                     let script = String::from("apk_ssh_setup.sh");
 
                     // Reformat sh script for alpine distro
                     if cfg!(target_os = "windows") {
-                        self.executor.exec(format!("dos2unix scripts/docker/{script}"))?;
+                        self.executor
+                            .exec(format!("dos2unix scripts/docker/{script}"))?;
                     }
-                    
-                    self.executor.exec(format!("docker cp scripts/docker/{} {}:/", script, self.id.as_ref().unwrap()))?;
-                    self.executor.exec(format!("docker exec -u root {} sh /{}", self.id.as_ref().unwrap(), script))?;
-                    
+
+                    self.executor.exec(format!(
+                        "docker cp scripts/docker/{} {}:/",
+                        script,
+                        self.id.as_ref().unwrap()
+                    ))?;
+                    self.executor.exec(format!(
+                        "docker exec -u root {} sh /{}",
+                        self.id.as_ref().unwrap(),
+                        script
+                    ))?;
+
                     // Start ssh server
-                    self.executor.exec(format!("docker exec -d {} /usr/sbin/sshd -D", self.id.as_ref().unwrap()))?;
+                    self.executor.exec(format!(
+                        "docker exec -d {} /usr/sbin/sshd -D",
+                        self.id.as_ref().unwrap()
+                    ))?;
                 }
-                _ => ()
+                _ => (),
             };
         }
-        
+
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::core::adapters::{ContainerBuilder, Executor, ExecutorError, Run};
     use std::sync::{Arc, Mutex};
-    use crate::core::adapters::{ContainerBuilder, Run, Executor, ExecutorError};
 
     #[derive(Debug, Clone)]
     pub struct DummyExecutor {
@@ -332,16 +382,14 @@ mod tests {
     impl Default for DummyExecutor {
         fn default() -> Self {
             let arc = Arc::new(Mutex::new(String::new()));
-            DummyExecutor {output: arc}
+            DummyExecutor { output: arc }
         }
     }
 
     impl DummyExecutor {
         #[allow(dead_code)]
         pub fn new(mutex: Arc<Mutex<String>>) -> Self {
-            DummyExecutor {
-                output: mutex,
-            }
+            DummyExecutor { output: mutex }
         }
 
         #[allow(dead_code)]
@@ -363,9 +411,9 @@ mod tests {
     }
 
     ////////////////////////////////////////////////
-    /// Tests    
+    /// Tests
     ////////////////////////////////////////////////
-    
+
     #[test]
     #[should_panic]
     fn docker_no_image() {
@@ -395,5 +443,5 @@ mod tests {
         container.executor = dummy.to_box_executor();
 
         let _ = container.run();
-    } 
+    }
 }

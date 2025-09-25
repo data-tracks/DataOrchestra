@@ -1,55 +1,80 @@
 use clap::Parser;
+use serde::{Deserialize, Serialize};
 use tracing_subscriber::filter::LevelFilter;
 
 use super::ObjectTypes;
 
 /// CLI arguments for the Orchestrator
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 #[command(version, about)]
 pub struct Arguments {
     /// Config file location
     #[arg(short, long)]
     #[arg(env = "FILE")]
+    #[serde(default)]
     pub file: Option<String>,
 
     /// Logging level
     #[arg(short, long, default_value_t = LevelFilter::INFO)]
     #[arg(env = "LEVEL")]
+    #[serde(default)]
+    #[serde(deserialize_with = "")]
     pub level: LevelFilter,
 
     /// Remove all running and stopped docker containers as well as all networks
     #[arg(long = "remove_all", default_value_t = false)]
     #[arg(env = "REMOVE_ALL")]
+    #[serde(default)]
     pub remove_all: bool,
 
-    /// Generate a valid config file 
+    /// Generate a valid config file
     #[arg(long = "generate_valid_json")]
     #[arg(env = "GENERATE_VALID_JSON")]
+    #[serde(default)]
     pub generate_valid_json: Option<ObjectTypes>,
 
     /// Setup portainer manager
     #[arg(long = "portainer", default_value_t = true)]
     #[arg(env = "PORTAINER")]
+    #[serde(default = "Arguments::default_portainer")]
     pub portainer: bool,
 
     /// Valid private ssh key for validating remote node connection
     #[arg(short, long)]
     #[arg(env = "SSH_KEY")]
+    #[serde(default)]
     pub ssh_key: Option<String>,
 
     /// Start api only (TODO)
     #[arg(short, long, default_value_t = false)]
     #[arg(env = "API_ONLY")]
+    #[serde(default)]
     pub api_only: bool,
 
     /// Start only subset if items provided by name from config
     #[arg(short, long)]
     #[arg(env = "ISOLATE")]
-    pub isolate: Option<Vec<String>>
+    #[serde(default)]
+    pub isolate: Option<Vec<String>>,
 }
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments { file: None, level: LevelFilter::INFO, remove_all: false, generate_valid_json: None, portainer: true, ssh_key: None, api_only: false, isolate: None }
+        Arguments {
+            file: None,
+            level: LevelFilter::INFO,
+            remove_all: false,
+            generate_valid_json: None,
+            portainer: true,
+            ssh_key: None,
+            api_only: false,
+            isolate: None,
+        }
+    }
+}
+
+impl Arguments {
+    pub fn default_portainer() -> bool {
+        true
     }
 }

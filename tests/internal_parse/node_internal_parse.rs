@@ -1,24 +1,23 @@
 #[cfg(test)]
 mod tests {
-    use std::net::{IpAddr, Ipv4Addr};
     use data_orchestra::interface::node::ExtNode;
     use data_orchestra::interface::upload::UploadTypes;
     use data_orchestra::shared::ToInternal;
+    use std::net::{IpAddr, Ipv4Addr};
 
     #[test]
     pub fn node() {
-        let node = ExtNode
-        {
+        let node = ExtNode {
             name: Some("NODE".to_string()),
             host: IpAddr::V4(Ipv4Addr::LOCALHOST),
             username: Some("ubuntu".to_string()),
             password: Some("password".to_string()),
             ssh_port: 22,
             upload_schema: UploadTypes::Ssh,
-            ssh_key: None
+            ssh_key: None,
         };
 
-        let (internal_node, uploader) = node.to_internal();
+        let (internal_node, _uploader) = node.to_internal();
 
         assert_eq!(internal_node.ssh_port, 22);
         assert_eq!(internal_node.password, Some("password".to_string()));

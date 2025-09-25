@@ -1,12 +1,12 @@
+use crate::core::adapters::Rsync;
+use crate::shared::ToInternal;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::{Rsync, Uploader};
-use crate::shared::ToInternal;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UploadTypes {
     Ssh,
-    Rsync(ExtRsync)
+    Rsync(ExtRsync),
 }
 
 impl Default for UploadTypes {
@@ -28,7 +28,7 @@ pub struct ExtRsync {
     recursive: bool,
     #[serde(default = "ExtRsync::default_delete")]
     #[builder(default = "ExtRsync::default_delete()")]
-    delete: bool
+    delete: bool,
 }
 
 impl ExtRsync {
@@ -51,27 +51,25 @@ impl ExtRsync {
 
 impl ToInternal<Rsync> for ExtRsync {
     fn to_internal(self) -> Rsync {
-        Rsync
-        {
+        Rsync {
             user: "".to_string(),
             remote: "".to_string(),
             port: Some(5000),
             checksum: self.checksum,
             compress: self.compress,
             recursive: self.recursive,
-            delete: self.delete
+            delete: self.delete,
         }
     }
 }
 
 impl Default for ExtRsync {
     fn default() -> Self {
-        ExtRsync 
-        {
-            checksum: ExtRsync::default_checksum(), 
+        ExtRsync {
+            checksum: ExtRsync::default_checksum(),
             compress: ExtRsync::default_compress(),
             recursive: ExtRsync::default_recursive(),
-            delete: ExtRsync::default_delete()
+            delete: ExtRsync::default_delete(),
         }
     }
 }

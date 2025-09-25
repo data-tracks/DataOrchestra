@@ -1,21 +1,19 @@
-use log::debug;
-use serde::{Deserialize, Deserializer, Serialize};
-use serde::de::Error;
-use serde_json::Value;
+use super::api::API;
+use super::generate::ExtGenerate;
+use super::object::ExtObject;
+use super::process::ExtProcess;
+use super::store::ExtStore;
 use crate::core::adapters::portainer::Portainer;
 use crate::core::config::Config;
 use crate::core::object::Object;
 use crate::core::traits::Creator;
-use crate::shared::{Amount, ToInternal, ToInternalVec};
-use super::api::API;
-use super::store::ExtStore;
-use super::process::ExtProcess;
-use super::object::ExtObject;
-use super::generate::ExtGenerate;
+use crate::shared::{Amount, Arguments, ToInternal, ToInternalVec};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ExtConfig {
+    pub arguments: Arguments,
     pub api: API,
     #[serde(default)]
     pub portainer: Portainer,
@@ -33,8 +31,7 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
     fn to_internal(self) -> (Config, Portainer) {
         let (process, consumer) = self.api.to_internal();
 
-        let mut config = Config 
-        {
+        let mut config = Config {
             generate: self.generate.to_internal(),
             process: self.process.to_internal(),
             store: self.store.to_internal(),
@@ -63,14 +60,14 @@ impl ExtConfig {
             for config in store.object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&store.object));
             }
-        } 
+        }
 
         for process in self.process.as_mut_ref_vec() {
             for config in process.object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&process.object));
             }
         }
-        
+
         for generate in self.generate.as_mut_ref_vec() {
             for config in generate.object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&generate.object));

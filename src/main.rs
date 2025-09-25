@@ -1,27 +1,29 @@
-use std::sync::Arc;
-use std::{env, fs, thread};
-use std::path::Path;
-use std::process::exit;
-use data_orchestra::core::adapters::{ping_node, ContainerType, Local, Portainer, Executor, Uploader};
+use clap::Parser;
+use data_orchestra::api::api::start_api;
+use data_orchestra::api::state::APIState;
+use data_orchestra::core::adapters::docker::{self};
+use data_orchestra::core::adapters::{
+    ContainerType, Executor, Local, Portainer, Uploader, ping_node,
+};
 use data_orchestra::core::config::Config;
 use data_orchestra::core::object::Object;
+use data_orchestra::core::traits::Spawner;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
 use data_orchestra::logger::init_logger;
-use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::shared::arguments::Arguments;
+use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::variables::variables::Variables;
-use log::{debug, error, info, warn};
-use data_orchestra::core::adapters::docker::{self};
-use clap::Parser;
+use log::{error, info, warn};
+use std::path::Path;
+use std::process::exit;
+use std::sync::Arc;
+use std::{fs, thread};
 use tokio::sync::RwLock;
-use data_orchestra::api::api::start_api;
-use data_orchestra::api::state::APIState;
-use data_orchestra::core::traits::Spawner;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // This is the main entry point of the orchestrator. Here the configuration file is read, arguments
-// are set and other related things. 
+// are set and other related things.
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn main() {
@@ -36,37 +38,40 @@ fn main() {
     viable_check();
 
     if let Some(json_type) = args.generate_valid_json.as_ref() {
-        json_type.print_json(); 
+        json_type.print_json();
         exit(0);
     }
-   
+
     if args.file.is_none() {
-        panic!("No config file specified. Please specify a config file with -f | --file  <path> argument or via the .env file key FILE=<path>");
+        panic!(
+            "No config file specified. Please specify a config file with -f | --file  <path> argument or via the .env file key FILE=<path>"
+        );
     }
 
     if args.ssh_key.is_none() {
-        warn!("No ssh key was provided. A ssh key is necessary when tasks are created on nodes. Please specify a ssh key with -s | --ssh-key <path> argument or via the .env file key SSH_KEY=<path>");
+        warn!(
+            "No ssh key was provided. A ssh key is necessary when tasks are created on nodes. Please specify a ssh key with -s | --ssh-key <path> argument or via the .env file key SSH_KEY=<path>"
+        );
     }
 
     info!("Parsing config file");
     let config_path = Path::new(args.file.as_ref().unwrap());
-    let config= fs::read_to_string(config_path)
-        .expect("Unable to read config file");
+    let config = fs::read_to_string(config_path).expect("Unable to read config file");
 
     // Read only variables from config into struct and transform config string to replace variables
     // with actual values before parsing the modified string to the config struct
-    let variables: Variables = serde_json::from_str(config.as_str())
-        .expect("Unable to parse config to struct");
+    let variables: Variables =
+        serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
     let ext_config_string = variables.parse(config);
 
-    let mut ext_config: ExtConfig = serde_json::from_str(ext_config_string.as_str())
-        .expect("Unable to parse config to struct");
+    let mut ext_config: ExtConfig =
+        serde_json::from_str(ext_config_string.as_str()).expect("Unable to parse config to struct");
     info!("Finished parsing config file");
 
     // Transform attachable objects to configured objects
     let attach_objects = ext_config.extract_attachables();
     let (mut config, mut portainer) = ext_config.to_internal();
-    
+
     config.object.extend(attach_objects);
 
     // Inject portainer agents as objects
@@ -80,13 +85,23 @@ fn main() {
     config.object.extend(agents);
 
     // If isolated objects are given, remove all object not matching given objects
-    if let Some(isolated_objects) = &args.isolate && !isolated_objects.is_empty() {
+    if let Some(isolated_objects) = &args.isolate
+        && !isolated_objects.is_empty()
+    {
         if !isolated_objects.is_empty() {
             let isolated_set: std::collections::HashSet<_> = isolated_objects.iter().collect();
-            config.object.retain(|object| isolated_set.contains(&object.name));
-            config.generate.retain(|generate| isolated_set.contains(&generate.object.name));
-            config.process.retain(|process| isolated_set.contains(&process.object.name));
-            config.store.retain(|store| isolated_set.contains(&store.object.name));
+            config
+                .object
+                .retain(|object| isolated_set.contains(&object.name));
+            config
+                .generate
+                .retain(|generate| isolated_set.contains(&generate.object.name));
+            config
+                .process
+                .retain(|process| isolated_set.contains(&process.object.name));
+            config
+                .store
+                .retain(|store| isolated_set.contains(&store.object.name));
         }
     }
 
@@ -104,7 +119,7 @@ fn main() {
      */
 
     ////////////////////////////////////////////////////////
-    // By here all components are set. No new ones are added. 
+    // By here all components are set. No new ones are added.
     ////////////////////////////////////////////////////////
 
     let api_state = Arc::new(RwLock::new(APIState::default()));
@@ -113,9 +128,10 @@ fn main() {
         .name("api".to_string())
         .spawn(|| {
             info!("Starting API");
-            let rt =  tokio::runtime::Runtime::new().unwrap();
+            let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(start_api(clone_api_state));
-        }).unwrap();
+        })
+        .unwrap();
 
     if !args.api_only {
         configuration_pipeline(&mut config, &mut portainer, &args);
@@ -145,7 +161,7 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     health_check(config);
 
     // pre build
-    
+
     info!("Building");
 
     config.build();
@@ -159,7 +175,7 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     }
 
     if args.portainer {
-        portainer.build(); 
+        portainer.build();
     }
 
     pre_setup(portainer, config, args);
@@ -183,7 +199,7 @@ pub fn configuration_pipeline(config: &mut Config, portainer: &mut Portainer, ar
     info!("Finished deploying");
 
     // post deploy
-    
+
     info!("Finished configuration pipeline");
 }
 
@@ -196,7 +212,9 @@ pub fn viable_check() {
     let executor = Local::new();
     let result = executor.exec("docker info".to_string());
     if let Err(error) = result {
-        panic!("Docker daemon not running. Make sure docker daemon is running before starting the program. ({error})");
+        panic!(
+            "Docker daemon not running. Make sure docker daemon is running before starting the program. ({error})"
+        );
     }
 }
 
@@ -222,7 +240,7 @@ pub fn setup_docker_networks(manager: &ContainerType) {
         let network = &container.config.network;
         if network.is_empty() || network.eq("orchestra") {
             continue;
-        } 
+        }
 
         let existing_networks = docker::api::get_networks(&*container.executor);
         if let Err(ref error) = existing_networks {
@@ -255,8 +273,7 @@ pub fn kill_containers(nodes: Vec<&Node>) {
                         error!("{error}");
                     }
                     info!("Removed all docker containers from {}", node.host);
-                }
-                else {
+                } else {
                     error!("Node {} doesnt have ssh session", node.host);
                 }
             });
@@ -272,28 +289,26 @@ pub fn kill_containers(nodes: Vec<&Node>) {
             if let Err(error) = result {
                 error!("{error}");
             }
-        }); 
+        });
     });
-
-    
 }
 
-pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
+pub fn pre_setup(_portainer: &Portainer, config: &Config, _args: &Arguments) {
     info!("Performing pre setup");
 
     info!("Setting up docker networks");
     for store in config.store.iter() {
-        setup_docker_networks(&store.object.docker_manager); 
+        setup_docker_networks(&store.object.docker_manager);
     }
 
     for process in config.process.iter() {
-        setup_docker_networks(&process.object.docker_manager); 
+        setup_docker_networks(&process.object.docker_manager);
     }
 
     for generate in config.generate.iter() {
-        setup_docker_networks(&generate.object.docker_manager); 
+        setup_docker_networks(&generate.object.docker_manager);
     }
-   
+
     info!("Uploading scripts on nodes");
     let nodes = config.get_nodes();
     for node in nodes.iter() {
@@ -309,7 +324,9 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
     for node in nodes.iter() {
         if let Some(ssh) = node.ssh.as_ref() {
             let result = docker::api::get_networks(ssh);
-            if let Ok(networks) = result && !networks.contains(&"orchestra".to_string()) {
+            if let Ok(networks) = result
+                && !networks.contains(&"orchestra".to_string())
+            {
                 let result = docker::api::create_network("orchestra", ssh);
                 if let Err(error) = result {
                     error!("{error}");
@@ -320,7 +337,9 @@ pub fn pre_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
 
     let local = Local::new();
     let result = docker::api::get_networks(&local);
-    if let Ok(networks) = result && !networks.contains(&"orchestra".to_string()) {
+    if let Ok(networks) = result
+        && !networks.contains(&"orchestra".to_string())
+    {
         let result = docker::api::create_network("orchestra", &local);
         if let Err(error) = result {
             error!("{error}");
@@ -338,23 +357,23 @@ pub fn post_setup(portainer: &Portainer, config: &Config, args: &Arguments) {
                     if containers.contains(&"portainer_agent".to_string()) {
                         let rt = tokio::runtime::Runtime::new().unwrap();
                         rt.block_on(portainer.add_agent(node));
-                    }
-                    else {
+                    } else {
                         error!("No portainer agent on {}", node.host);
                     }
                 }
-                
             }
         }
     }
 }
 
 pub fn print_logo() {
-    println!(r#"
-    ____        __        ____            __              __                
+    println!(
+        r#"
+    ____        __        ____            __              __
    / __ \____ _/ /_____ _/ __ \__________/ /_  ___  _____/ /__________ _          |\      _,,,---,,_
   / / / / __ `/ __/ __ `/ / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/    ZZZzz /,`.-'`'    -.  ;-;;,_
  / /_/ / /_/ / /_/ /_/ / /_/ / /  / /__/ / / /  __(__  ) /_/ /  / /_/ /          |,4-  ) )-,_. ,\ (  `'-'
 /_____/\__,_/\__/\__,_/\____/_/   \___/_/ /_/\___/____/\__/_/   \__,_/          '---''(_/--'  `-'\_)
-    "#);  
+    "#
+    );
 }

@@ -8,12 +8,12 @@ pub struct Polypheny {}
 
 impl Default for Polypheny {
     fn default() -> Polypheny {
-        Polypheny {  }
+        Polypheny {}
     }
 }
 
 impl Configurator<Store> for Polypheny {
-    fn configure(&mut self, parent: &mut Store) {
+    fn configure(&mut self, _parent: &mut Store) {
         todo!("Not yet implemented")
     }
 }

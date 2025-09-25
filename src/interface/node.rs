@@ -1,14 +1,14 @@
-use std::net::{IpAddr, Ipv4Addr};
-use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
-use crate::core::adapters::{Executor, Ssh, Uploader};
+use crate::core::adapters::{Ssh, Uploader};
 use crate::core::types::Node;
 use crate::interface::upload::UploadTypes;
 use crate::shared::ToInternal;
+use serde::{Deserialize, Serialize};
+use std::net::{IpAddr, Ipv4Addr};
+use std::path::PathBuf;
 
 /// External representation of the internal [`Node`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct ExtNode {
     pub name: Option<String>,
     pub host: IpAddr,
@@ -19,7 +19,7 @@ pub struct ExtNode {
     #[serde(default)]
     pub upload_schema: UploadTypes,
     #[serde(default)]
-    pub ssh_key: Option<PathBuf>
+    pub ssh_key: Option<PathBuf>,
 }
 
 impl ExtNode {
@@ -30,22 +30,21 @@ impl ExtNode {
 
 impl Default for ExtNode {
     fn default() -> Self {
-        ExtNode 
-        { 
-            name: Some("node".to_string()), 
-            host: IpAddr::V4(Ipv4Addr::LOCALHOST), 
-            username: Some("root".to_string()), 
+        ExtNode {
+            name: Some("node".to_string()),
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST),
+            username: Some("root".to_string()),
             password: Some("password".to_string()),
             ssh_port: ExtNode::default_ssh_port(),
             upload_schema: UploadTypes::default(),
-            ssh_key: None
+            ssh_key: None,
         }
     }
 }
 
 impl ToInternal<(Node, Box<dyn Uploader + Send + Sync>)> for ExtNode {
     fn to_internal(self) -> (Node, Box<dyn Uploader + Send + Sync>) {
-        let mut  node = Node::default();
+        let mut node = Node::default();
 
         if let Some(name) = self.name {
             node.name = name;
@@ -61,18 +60,15 @@ impl ToInternal<(Node, Box<dyn Uploader + Send + Sync>)> for ExtNode {
         node.password = self.password;
 
         let uploader = match self.upload_schema {
-            UploadTypes::Ssh => {
-                Ssh::new().to_box_uploader()
-            },
+            UploadTypes::Ssh => Ssh::new().to_box_uploader(),
             UploadTypes::Rsync(rsync) => {
                 let rsync = rsync.to_internal();
                 rsync.to_box_uploader()
             }
         };
-        
+
         node.ssh_key = self.ssh_key;
 
         (node, uploader)
     }
-
 }

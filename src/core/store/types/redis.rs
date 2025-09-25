@@ -19,7 +19,6 @@ impl Configurator<Store> for Redis {
 
         container 
             .try_name("redis")
-            .image("redis")
-            .ignore_ssh(true);
+            .image("redis");
     }
 }

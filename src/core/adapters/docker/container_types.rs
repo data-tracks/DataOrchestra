@@ -1,11 +1,10 @@
-use log::debug;
 use super::{Compose, Container, Run};
 
 #[derive(Debug)]
 pub enum ContainerType {
     Empty,
     Compose(Compose),
-    Container(Container)
+    Container(Container),
 }
 
 impl Default for ContainerType {
@@ -22,25 +21,27 @@ impl Run for ContainerType {
         match self {
             ContainerType::Container(container) => {
                 container.run()?;
-            },
+            }
             ContainerType::Compose(compose) => {
                 compose.run()?;
             }
             ContainerType::Empty => {
                 return Err("No container available".to_string());
             }
-        } 
+        }
 
         Ok(())
     }
-} 
+}
 
 impl<'a> ContainerType {
     pub fn containers_ref_vec(&'a self) -> Vec<&'a Container> {
         match self {
-            ContainerType::Compose(compose) => compose.containers.iter().collect::<Vec<&'a Container>>(),
+            ContainerType::Compose(compose) => {
+                compose.containers.iter().collect::<Vec<&'a Container>>()
+            }
             ContainerType::Container(container) => vec![container],
-            _ => Vec::new()
-        } 
+            _ => Vec::new(),
+        }
     }
 }
