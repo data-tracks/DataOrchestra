@@ -35,6 +35,8 @@ impl Default for Graph {
 #[derive(Debug, Builder)]
 #[builder(pattern = "owned")]
 pub struct Object {
+    // If the object is up and functional
+    pub running: bool,
     // Name of object. Default is the object type itself
     #[builder(setter(into), default = "Object::default_name()")]
     pub name: String,
@@ -85,6 +87,7 @@ impl ObjectBuilder {
 impl Default for Object {
     fn default() -> Self {
         Object {
+            running: false,
             name: Object::default_name(),
             graph: Graph::default(),
             docker_group_builder: None,

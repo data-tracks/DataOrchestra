@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
 use crate::core::adapters::Mount;
 use crate::core::types::data::{Data, DataTypes, VolatileData};
 use crate::shared::traits::ToInternal;
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
 
 use super::location::Location;
 
@@ -15,7 +15,7 @@ use super::location::Location;
 #[serde(rename_all = "snake_case")]
 pub enum ExtDataTypes {
     Volatile(ExtVolatile),
-    Data(ExtData)
+    Data(ExtData),
 }
 
 impl ExtDataTypes {
@@ -30,28 +30,28 @@ impl ExtDataTypes {
     pub fn get_volatile_ref(&self) -> &ExtVolatile {
         match self {
             ExtDataTypes::Volatile(volatile) => volatile,
-            _ => panic!("Get volatile on non-volatile")
+            _ => panic!("Get volatile on non-volatile"),
         }
     }
 
     pub fn get_data_ref(&self) -> &ExtData {
         match self {
             ExtDataTypes::Data(data) => data,
-            _ => panic!("Get data on non-data")
+            _ => panic!("Get data on non-data"),
         }
     }
 
     pub fn get_volatile_mut(&mut self) -> &mut ExtVolatile {
         match self {
             ExtDataTypes::Volatile(volatile) => volatile,
-            _ => panic!("Get volatile on non-volatile")
+            _ => panic!("Get volatile on non-volatile"),
         }
     }
 
     pub fn get_data_mut(&mut self) -> &mut ExtData {
         match self {
             ExtDataTypes::Data(data) => data,
-            _ => panic!("Get data on non-data")
+            _ => panic!("Get data on non-data"),
         }
     }
 }
@@ -73,29 +73,27 @@ impl ToInternal<(DataTypes, Option<Mount>)> for ExtData {
     fn to_internal(self) -> (DataTypes, Option<Mount>) {
         match self.location {
             Location::Node => {
-                let data = Data
-                {
+                let data = Data {
                     name: self.name,
                     src: self.source.clone().into(),
                     dst: self.destination.clone().into(),
-                    dependency: self.dependency
+                    dependency: self.dependency,
                 };
 
                 (DataTypes::Data(data), None)
-            },
+            }
             Location::Container => {
-                let remote_location = PathBuf::from(format!("docker/mount/data/{}", self.destination.clone()));
+                let remote_location =
+                    PathBuf::from(format!("docker/mount/data/{}", self.destination.clone()));
 
-                let data = Data
-                {
+                let data = Data {
                     name: self.name,
                     src: self.source.clone().into(),
                     dst: remote_location.clone(),
-                    dependency: self.dependency
+                    dependency: self.dependency,
                 };
 
-                let mount = Mount
-                {
+                let mount = Mount {
                     src: remote_location,
                     dst: self.destination.into(),
                     read_only: false,
@@ -115,36 +113,34 @@ pub struct ExtVolatile {
     pub name: Option<String>,
     pub destination: String,
     #[serde(flatten)]
-    pub volatile_types: VolatileTypes
+    pub volatile_types: VolatileTypes,
 }
 
 impl ToInternal<(DataTypes, Option<Mount>)> for ExtVolatile {
     fn to_internal(self) -> (DataTypes, Option<Mount>) {
-
-
         match self.location {
             Location::Node => {
-                let data = VolatileData
-                {
+                let data = VolatileData {
                     name: self.name,
                     dst: self.destination.clone().into(),
-                    content: self.volatile_types.to_string()
+                    content: self.volatile_types.to_string(),
                 };
-                
-                (DataTypes::VolatileData(data), None)
-            },
-            Location::Container => {
-                let remote_location = PathBuf::from(format!("docker/mount/volatile/{}", self.destination.clone()));
 
-                let data = VolatileData
-                {
+                (DataTypes::VolatileData(data), None)
+            }
+            Location::Container => {
+                let remote_location = PathBuf::from(format!(
+                    "docker/mount/volatile/{}",
+                    self.destination.clone()
+                ));
+
+                let data = VolatileData {
                     name: self.name,
                     dst: remote_location.clone().into(),
-                    content: self.volatile_types.to_string()
+                    content: self.volatile_types.to_string(),
                 };
-                
-                let mount = Mount
-                {
+
+                let mount = Mount {
                     src: remote_location,
                     dst: self.destination.into(),
                     read_only: false,
@@ -175,7 +171,6 @@ pub enum VolatileTypes {
     Env(HashMap<String, String>),
 }
 
-
 impl Display for VolatileTypes {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -188,9 +183,10 @@ impl Display for VolatileTypes {
                 string.pop();
 
                 write!(f, "{string}")
-            },
+            }
             VolatileTypes::Json(json) => {
-                let string = serde_json::to_string_pretty(&json).expect("Unable to parse volatile json to string");
+                let string = serde_json::to_string_pretty(&json)
+                    .expect("Unable to parse volatile json to string");
                 write!(f, "{string}")
             }
         }

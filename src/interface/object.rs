@@ -1,5 +1,3 @@
-use log::{debug, error};
-use serde::{Deserialize, Serialize};
 use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::{Graph, Object};
 use crate::interface::data::ExtDataTypes;
@@ -8,6 +6,8 @@ use crate::interface::execute::ExtExecutables;
 use crate::interface::node::ExtNode;
 use crate::shared::Amount;
 use crate::shared::traits::ToInternal;
+use log::{debug, error};
+use serde::{Deserialize, Serialize};
 
 /// External representation of the internal [`Object`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -29,20 +29,25 @@ pub struct ExtObject {
     #[serde(default)]
     pub resources: Amount<ExtDataTypes>,
     #[serde(default)]
-    pub executables: Amount<ExtExecutables>
+    pub executables: Amount<ExtExecutables>,
 }
 
 impl Default for ExtObject {
     fn default() -> Self {
-        ExtObject
-        {
+        ExtObject {
             name: None,
             graph: Graph::default(),
             docker: Some(ExtDocker::default()),
             node: None,
             attach_config: Amount::None,
-            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, source: "".to_string(), destination: "".to_string(), dependency: None })),
-            executables: Amount::None
+            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData {
+                location: super::location::Location::Container,
+                name: None,
+                source: "".to_string(),
+                destination: "".to_string(),
+                dependency: None,
+            })),
+            executables: Amount::None,
         }
     }
 }
@@ -62,11 +67,9 @@ impl ToInternal<Object> for ExtObject {
         if let Some(docker) = self.docker {
             if docker.compose.is_some() {
                 object.docker_group_builder = Some(docker.to_internal());
-            }
-            else 
-            {
+            } else {
                 object.docker_container_builder = Some(docker.to_internal());
-            } 
+            }
         }
 
         let resources = self.resources.to_internal();
@@ -76,13 +79,12 @@ impl ToInternal<Object> for ExtObject {
             if let Some(mount) = mount {
                 if let Some(container) = object.docker_container_builder.as_mut() {
                     container.mount(mount);
-                }
-                else {
+                } else {
                     error!("Mount data provided but no container available")
                 }
             }
         }
-        
+
         let vec = self.executables.clone().to_internal();
         for (script, data) in vec {
             if let Some(data) = data {
@@ -93,7 +95,5 @@ impl ToInternal<Object> for ExtObject {
 
         debug!("Finished parsing object to internal");
         object
-    } 
+    }
 }
-
-

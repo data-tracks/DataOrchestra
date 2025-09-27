@@ -1,5 +1,13 @@
 {
-  "object": {
+  "api": {
+    "kafka_host": {
+      "name": "node-161",
+      "host": "10.34.64.161",
+      "username": "ubuntu"
+    }
+  },
+  "items": {
+    "type": "object",
     "resources": {
       "type": "data",
       "source": "examples/test/data",

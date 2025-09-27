@@ -7,13 +7,22 @@ use crate::core::adapters::portainer::Portainer;
 use crate::core::config::Config;
 use crate::core::object::Object;
 use crate::core::traits::Creator;
-use crate::shared::{Amount, Arguments, ToInternal, ToInternalVec};
+use crate::shared::{Amount, ToInternal, ToInternalVec};
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum Types {
+    Object(ExtObject),
+    Generate(ExtGenerate),
+    Process(ExtProcess),
+    Store(ExtStore),
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ExtConfig {
-    pub arguments: Arguments,
+    //pub arguments: Arguments,
     pub api: API,
     #[serde(default)]
     pub portainer: Portainer,

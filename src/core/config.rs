@@ -1,8 +1,6 @@
-use std::thread;
-use super::
-
 use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
 use crate::core::traits::Spawner;
+use std::thread;
 
 /// The config object. Contains all object types tasks
 #[derive(Debug)]
@@ -25,6 +23,13 @@ impl Default for Config {
 }
 
 impl Config {
+    pub fn combine(&mut self, other: Config) {
+        self.store.extend(other.store);
+        self.object.extend(other.object);
+        self.process.extend(other.process);
+        self.generate.extend(other.generate);
+    }
+
     /// Get mutable reference from all nodes from all object types
     pub fn get_object_nodes_mut(&mut self) -> Vec<&mut Node> {
         let mut nodes = Vec::new();

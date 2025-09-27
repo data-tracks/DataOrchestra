@@ -1,10 +1,10 @@
 use log::LevelFilter;
-use serde::{de::Error, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de::Error};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Arguments {
     // Address where data should be sent to
-    pub address: String,    
+    pub address: String,
     // Address (host:port) of kafka
     pub consumer: String,
     // Group id of consumer
@@ -16,7 +16,7 @@ pub struct Arguments {
     pub level: LevelFilter,
     // Address of logging system
     #[serde(default)]
-    pub logger: Option<String>
+    pub logger: Option<String>,
 }
 
 pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>
@@ -32,6 +32,6 @@ where
         "debug" => Ok(LevelFilter::Debug),
         "trace" => Ok(LevelFilter::Trace),
         "off" => Ok(LevelFilter::Off),
-        _ => Err(Error::custom("No Value exists"))
+        _ => Err(Error::custom("No Value exists")),
     }
 }

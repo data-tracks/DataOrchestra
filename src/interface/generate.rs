@@ -1,8 +1,11 @@
-use log::debug;
-use serde::{Deserialize, Serialize};
-use crate::{core::generate::{generate_types::{GeneratorTypeConfig}, Generate}, shared::traits::{ToInternal, ToInternalVec}};
 use crate::core::object::Object;
 use crate::interface::object::ExtObject;
+use crate::{
+    core::generate::{Generate, generate_types::GeneratorTypeConfig},
+    shared::traits::{ToInternal, ToInternalVec},
+};
+use log::debug;
+use serde::{Deserialize, Serialize};
 
 /// External representation of the internal [`Generate`] object
 #[derive(Debug, Deserialize, Serialize)]
@@ -12,18 +15,16 @@ pub struct ExtGenerate {
     #[serde(default = "ExtGenerate::default_amount")]
     pub amount: usize,
     #[serde(flatten)]
-    pub object: ExtObject
+    pub object: ExtObject,
 }
-
 
 impl Default for ExtGenerate {
     fn default() -> Self {
-        ExtGenerate 
-        {
+        ExtGenerate {
             //generate_type: None,
             config: None,
             amount: ExtGenerate::default_amount(),
-            object: ExtObject::default()
+            object: ExtObject::default(),
         }
     }
 }

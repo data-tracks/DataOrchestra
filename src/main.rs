@@ -1,6 +1,8 @@
+use actix_cors::Cors;
+use actix_web::{App, HttpServer, http, web};
 use clap::Parser;
-use data_orchestra::api::api::start_api;
-use data_orchestra::api::state::APIState;
+use data_orchestra::api;
+use data_orchestra::api::state::State;
 use data_orchestra::core::adapters::docker::{self};
 use data_orchestra::core::adapters::{
     ContainerType, Executor, Local, Portainer, Uploader, ping_node,
@@ -26,16 +28,37 @@ use tokio::sync::RwLock;
 // are set and other related things.
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn main() {
-    print_logo();
-
-    dotenvy::dotenv().ok();
+#[actix_web::main]
+async fn main() {
     let args: Arguments = Arguments::parse();
+    let config_path = Path::new(args.file.as_ref().unwrap());
+    let config = fs::read_to_string(config_path).expect("Unable to read config file");
+    let x: ExtConfig = serde_json::from_str(config.as_str()).expect("");
+    dbg!(x);
+    exit(-1);
+
+    print_logo();
+    dotenvy::dotenv().ok();
 
     init_logger(args.level);
 
     info!("Starting DataOrchestra");
     viable_check();
+
+    let _ = HttpServer::new(move || {
+        App::new().app_data(web::Data::new(State::default())).wrap(
+            Cors::default()
+                .allow_any_origin()
+                .allowed_methods(vec!["GET", "POST", "OPTIONS", "PUT", "DELETE"])
+                .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+                .allowed_header(http::header::CONTENT_TYPE)
+                .max_age(3600),
+        )
+    })
+    .bind(("127.0.0.1", args.api_port))
+    .unwrap()
+    .run()
+    .await;
 
     if let Some(json_type) = args.generate_valid_json.as_ref() {
         json_type.print_json();
@@ -55,8 +78,6 @@ fn main() {
     }
 
     info!("Parsing config file");
-    let config_path = Path::new(args.file.as_ref().unwrap());
-    let config = fs::read_to_string(config_path).expect("Unable to read config file");
 
     // Read only variables from config into struct and transform config string to replace variables
     // with actual values before parsing the modified string to the config struct
@@ -118,40 +139,9 @@ fn main() {
     }
      */
 
-    ////////////////////////////////////////////////////////
-    // By here all components are set. No new ones are added.
-    ////////////////////////////////////////////////////////
-
-    let api_state = Arc::new(RwLock::new(APIState::default()));
-    let clone_api_state = api_state.clone();
-    let api_thread = thread::Builder::new()
-        .name("api".to_string())
-        .spawn(|| {
-            info!("Starting API");
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(start_api(clone_api_state));
-        })
-        .unwrap();
-
     if !args.api_only {
         configuration_pipeline(&mut config, &mut portainer, &args);
     }
-
-    info!("Closing DataOrchestra");
-
-    let amount_objects = format!("Amount of objects: {}", config.get_mut_spawners().count());
-
-    println!("Stats:");
-    println!("{amount_objects}");
-
-    // Send config to API
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async {
-        let mut state = api_state.write().await;
-        state.set_config(config);
-    });
-
-    let _ = api_thread.join();
 }
 
 /// Main creation pipeline of the programm. Processes and executes all main steps of the objects

@@ -26,8 +26,7 @@
     "kafka_host": "${NODE161}"
   },
 
-  "generate":
-  [
+  "generate": [
     {
       "amount": 4,
       "node": "${NODE161}",
@@ -63,8 +62,7 @@
     }
   ],
 
-  "process":
-  [
+  "process": [
     {
       "node": "${NODE162}",
       "name": "energy_filter",
@@ -92,7 +90,12 @@
     {
       "node": "${NODE162}",
       "name": "kafka",
-      "to": ["energy_filter", "energy_aggregator","mongodb_adapter", "postgres_adapter"],
+      "to": [
+        "energy_filter",
+        "energy_aggregator",
+        "mongodb_adapter",
+        "postgres_adapter"
+      ],
       "kafka": {
         "topics": ["EnergyIn", "EnergyFiltered", "EnergyAggregated"]
       }
@@ -123,8 +126,7 @@
     }
   ],
 
-  "store":
-  [
+  "store": [
     {
       "name": "mongodb",
       "node": "${NODE163}",
