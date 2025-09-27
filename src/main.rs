@@ -1,7 +1,7 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use clap::Parser;
-use data_orchestra::api;
+use data_orchestra::api::register::register_scope;
 use data_orchestra::api::state::State;
 use data_orchestra::core::adapters::docker::{self};
 use data_orchestra::core::adapters::{
@@ -16,12 +16,10 @@ use data_orchestra::logger::init_logger;
 use data_orchestra::shared::arguments::Arguments;
 use data_orchestra::shared::traits::ToInternal;
 use data_orchestra::variables::variables::Variables;
-use log::{error, info, warn};
+use log::{error, info};
 use std::path::Path;
-use std::process::exit;
 use std::sync::Arc;
 use std::{fs, thread};
-use tokio::sync::RwLock;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // This is the main entry point of the orchestrator. Here the configuration file is read, arguments
@@ -30,101 +28,81 @@ use tokio::sync::RwLock;
 
 #[actix_web::main]
 async fn main() {
-    let args: Arguments = Arguments::parse();
-    let config_path = Path::new(args.file.as_ref().unwrap());
-    let config = fs::read_to_string(config_path).expect("Unable to read config file");
-    let x: ExtConfig = serde_json::from_str(config.as_str()).expect("");
-    dbg!(x);
-    exit(-1);
-
     print_logo();
+
     dotenvy::dotenv().ok();
+    let args: Arguments = Arguments::parse();
 
     init_logger(args.level);
 
     info!("Starting DataOrchestra");
     viable_check();
 
+    // Set state based on if file was specified in CLI arguments
+    let state = if let Some(file) = args.file.as_ref() {
+        info!("Parsing config file");
+        let config_path = Path::new(file);
+        let config = fs::read_to_string(config_path).expect("Unable to read config file");
+
+        // Read only variables from config into struct and transform config string to replace variables
+        // with actual values before parsing the modified string to the config struct
+        let variables: Variables =
+            serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
+        let ext_config_string = variables.parse(config);
+
+        let mut ext_config: ExtConfig = serde_json::from_str(ext_config_string.as_str())
+            .expect("Unable to parse config to struct");
+        info!("Finished parsing config file");
+
+        // Transform attachable objects to configured objects
+        let attach_objects = ext_config.extract_attachables();
+        let (mut config, mut portainer) = ext_config.to_internal();
+
+        config.object.extend(attach_objects);
+
+        // Inject portainer agents as objects
+        let mut agents = Vec::<Object>::new();
+        if args.portainer {
+            for node in config.get_nodes() {
+                agents.push(portainer.create_agent(node));
+            }
+        }
+
+        config.object.extend(agents);
+        Arc::new(State::new(config, args))
+    } else {
+        Arc::new(State {
+            args,
+            ..Default::default()
+        })
+    };
+
+    let api_port = state.args.api_port;
     let _ = HttpServer::new(move || {
-        App::new().app_data(web::Data::new(State::default())).wrap(
-            Cors::default()
-                .allow_any_origin()
-                .allowed_methods(vec!["GET", "POST", "OPTIONS", "PUT", "DELETE"])
-                .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
-                .allowed_header(http::header::CONTENT_TYPE)
-                .max_age(3600),
-        )
+        App::new()
+            .app_data(web::Data::new(state.clone()))
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS", "PUT", "DELETE"])
+                    .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+                    .allowed_header(http::header::CONTENT_TYPE)
+                    .max_age(3600),
+            )
+            .service(register_scope())
     })
-    .bind(("127.0.0.1", args.api_port))
+    .bind(("127.0.0.1", api_port))
     .unwrap()
     .run()
     .await;
 
-    if let Some(json_type) = args.generate_valid_json.as_ref() {
-        json_type.print_json();
-        exit(0);
-    }
-
-    if args.file.is_none() {
-        panic!(
-            "No config file specified. Please specify a config file with -f | --file  <path> argument or via the .env file key FILE=<path>"
-        );
-    }
-
+    /*
     if args.ssh_key.is_none() {
         warn!(
             "No ssh key was provided. A ssh key is necessary when tasks are created on nodes. Please specify a ssh key with -s | --ssh-key <path> argument or via the .env file key SSH_KEY=<path>"
         );
     }
-
-    info!("Parsing config file");
-
-    // Read only variables from config into struct and transform config string to replace variables
-    // with actual values before parsing the modified string to the config struct
-    let variables: Variables =
-        serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
-    let ext_config_string = variables.parse(config);
-
-    let mut ext_config: ExtConfig =
-        serde_json::from_str(ext_config_string.as_str()).expect("Unable to parse config to struct");
-    info!("Finished parsing config file");
-
-    // Transform attachable objects to configured objects
-    let attach_objects = ext_config.extract_attachables();
-    let (mut config, mut portainer) = ext_config.to_internal();
-
-    config.object.extend(attach_objects);
-
-    // Inject portainer agents as objects
-    let mut agents = Vec::<Object>::new();
-    if args.portainer {
-        for node in config.get_nodes() {
-            agents.push(portainer.create_agent(node));
-        }
-    }
-
-    config.object.extend(agents);
-
-    // If isolated objects are given, remove all object not matching given objects
-    if let Some(isolated_objects) = &args.isolate
-        && !isolated_objects.is_empty()
-    {
-        if !isolated_objects.is_empty() {
-            let isolated_set: std::collections::HashSet<_> = isolated_objects.iter().collect();
-            config
-                .object
-                .retain(|object| isolated_set.contains(&object.name));
-            config
-                .generate
-                .retain(|generate| isolated_set.contains(&generate.object.name));
-            config
-                .process
-                .retain(|process| isolated_set.contains(&process.object.name));
-            config
-                .store
-                .retain(|store| isolated_set.contains(&store.object.name));
-        }
-    }
+    */
 
     /*
     // Create ssh session for all objects
@@ -138,10 +116,6 @@ async fn main() {
         }
     }
      */
-
-    if !args.api_only {
-        configuration_pipeline(&mut config, &mut portainer, &args);
-    }
 }
 
 /// Main creation pipeline of the programm. Processes and executes all main steps of the objects

@@ -36,6 +36,7 @@ impl Default for Graph {
 #[builder(pattern = "owned")]
 pub struct Object {
     // If the object is up and functional
+    #[builder(default)]
     pub running: bool,
     // Name of object. Default is the object type itself
     #[builder(setter(into), default = "Object::default_name()")]

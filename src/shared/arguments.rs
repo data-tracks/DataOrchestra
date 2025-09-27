@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Arg, Parser};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use tracing_subscriber::filter::LevelFilter;
 
@@ -92,6 +92,8 @@ impl Arguments {
     pub fn default_level() -> LevelFilter {
         LevelFilter::INFO
     }
+
+    pub fn combine(&mut self, other: Arguments) {}
 }
 
 pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>

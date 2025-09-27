@@ -17,7 +17,7 @@ pub struct State {
     pub messages: RwLock<Vec<BroadcastMessage>>,
     /// Orchestra config
     pub config: RwLock<Config>,
-    pub portainer: Portainer,
+    pub portainer: Option<Portainer>,
     /// CLI arguments
     pub args: Arguments,
 }
@@ -33,6 +33,7 @@ impl State {
         State {
             messages: RwLock::new(Vec::new()),
             args,
+            portainer: None,
             config: RwLock::new(config),
         }
     }

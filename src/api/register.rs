@@ -5,6 +5,7 @@ use actix_web::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::info;
 
 use crate::{
     api::state::State,
@@ -25,52 +26,74 @@ pub enum Types {
     Store,
 }
 
+impl Display for Types {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Config => "config",
+            Self::Generate => "generate",
+            Self::Object => "object",
+            Self::Process => "process",
+            Self::Store => "store",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
 pub fn register_scope() -> Scope {
-    web::scope("/register").service(register_item)
+    web::scope("/register").service(route_register_item)
 }
 
 #[post("/{item}")]
-async fn register_item(
+async fn route_register_item(
     item: web::Path<Types>,
     json: web::Json<Value>,
-    state: web::Data<Arc<State>>,
+    state: web::Data<State>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    match item.into_inner() {
+    register_item(item.into_inner(), json.into_inner(), state.into_inner())
+        .await
+        .map_err(|err| ErrorBadRequest(err))?;
+    Ok(HttpResponse::Created().finish())
+}
+
+pub async fn register_item(
+    json_type: Types,
+    json: Value,
+    state: Arc<State>,
+) -> Result<(), serde_json::Error> {
+    info!("Adding new item of type {json_type}");
+
+    match json_type {
         Types::Config => {
-            let new_config: ExtConfig =
-                serde_json::from_value(json.into_inner()).map_err(|e| ErrorBadRequest(e))?;
+            let new_config: ExtConfig = serde_json::from_value(json)?;
 
             let (new_config, _portainer) = new_config.to_internal();
             let mut config = state.config.write().await;
             config.combine(new_config);
         }
         Types::Object => {
-            let object: Amount<ExtObject> =
-                serde_json::from_value(json.into_inner()).map_err(|e| ErrorBadRequest(e))?;
+            let object: Amount<ExtObject> = serde_json::from_value(json)?;
 
             let object = object.to_internal();
             let mut config = state.config.write().await;
             config.object.extend(object);
         }
         Types::Store => {
-            let store: Amount<ExtStore> =
-                serde_json::from_value(json.into_inner()).map_err(|e| ErrorBadRequest(e))?;
+            let store: Amount<ExtStore> = serde_json::from_value(json)?;
 
             let store = store.to_internal();
             let mut config = state.config.write().await;
             config.store.extend(store);
         }
         Types::Process => {
-            let process: Amount<ExtProcess> =
-                serde_json::from_value(json.into_inner()).map_err(|e| ErrorBadRequest(e))?;
+            let process: Amount<ExtProcess> = serde_json::from_value(json)?;
 
             let process = process.to_internal();
             let mut config = state.config.write().await;
             config.process.extend(process);
         }
         Types::Generate => {
-            let generate: Amount<ExtGenerate> =
-                serde_json::from_value(json.into_inner()).map_err(|e| ErrorBadRequest(e))?;
+            let generate: Amount<ExtGenerate> = serde_json::from_value(json)?;
 
             let generate = generate.to_internal();
             let mut config = state.config.write().await;
@@ -78,7 +101,9 @@ async fn register_item(
         }
     }
 
-    Ok(HttpResponse::Created().finish())
+    info!("Successfully added item of type {json_type}");
+
+    Ok(())
 }
 
 #[post("/config")]
