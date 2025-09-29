@@ -1,6 +1,7 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use clap::Parser;
+
 use data_orchestra::api::register::register_scope;
 use data_orchestra::api::state::State;
 use data_orchestra::core::adapters::docker::{self};
@@ -20,6 +21,7 @@ use log::{error, info};
 use std::path::Path;
 use std::sync::Arc;
 use std::{fs, thread};
+use tokio::task::spawn_blocking;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // This is the main entry point of the orchestrator. Here the configuration file is read, arguments
@@ -56,7 +58,7 @@ async fn main() {
 
         // Transform attachable objects to configured objects
         let attach_objects = ext_config.extract_attachables();
-        let (mut config, mut portainer) = ext_config.to_internal();
+        let (mut config, portainer) = ext_config.to_internal();
 
         config.object.extend(attach_objects);
 
@@ -69,7 +71,7 @@ async fn main() {
         }
 
         config.object.extend(agents);
-        Arc::new(State::new(config, args))
+        Arc::new(State::new(config, portainer, args))
     } else {
         Arc::new(State {
             args,
@@ -77,8 +79,9 @@ async fn main() {
         })
     };
 
+    let state_for_pipeline = state.clone();
     let api_port = state.args.api_port;
-    let _ = HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
             .wrap(
@@ -93,8 +96,20 @@ async fn main() {
     })
     .bind(("127.0.0.1", api_port))
     .unwrap()
-    .run()
-    .await;
+    .run();
+
+    let pipeline_task = spawn_blocking(move || {
+        let mut config_guard = state_for_pipeline.config.blocking_write();
+        let mut portainer_guard = state_for_pipeline.portainer.blocking_write();
+
+        configuration_pipeline(
+            &mut *config_guard,
+            &mut *portainer_guard,
+            &state_for_pipeline.args,
+        );
+    });
+
+    tokio::join!(server, async move { pipeline_task.await.ok() });
 
     /*
     if args.ssh_key.is_none() {
