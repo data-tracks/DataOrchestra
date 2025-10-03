@@ -38,6 +38,7 @@ pub struct Arguments {
     #[serde(default)]
     pub ssh_key: Option<String>,
 
+    /// Port of the API
     #[arg(short, long)]
     #[arg(env = "API_PORT")]
     #[serde(default = "Arguments::default_api_port")]
@@ -69,8 +70,6 @@ impl Arguments {
     pub fn default_level() -> LevelFilter {
         LevelFilter::INFO
     }
-
-    pub fn combine(&mut self, other: Arguments) {}
 }
 
 pub fn deserialize_levelfilter<'de, D>(deserializer: D) -> Result<LevelFilter, D::Error>

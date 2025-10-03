@@ -46,7 +46,7 @@ pub struct Object {
     pub graph: Graph,
     // Docker builder for compose
     #[builder(setter(strip_option), default)]
-    pub docker_group_builder: Option<ComposeBuilder>,
+    pub docker_compose_builder: Option<ComposeBuilder>,
     // Docker builder for container
     #[builder(setter(strip_option), default)]
     pub docker_container_builder: Option<ContainerBuilder>,
@@ -91,7 +91,7 @@ impl Default for Object {
             running: false,
             name: Object::default_name(),
             graph: Graph::default(),
-            docker_group_builder: None,
+            docker_compose_builder: None,
             docker_container_builder: None,
             docker_manager: ContainerType::Empty,
             node: None,
@@ -112,7 +112,7 @@ impl Spawner for Object {
         info!("Building {}", self.name);
 
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move
-        if let Some(group) = self.docker_group_builder.take() {
+        if let Some(group) = self.docker_compose_builder.take() {
             info!("Setting up docker compose");
             let mut compose = group.build().expect("Unable to build compose");
             // If a node was specified, docker compose file needs to be uploaded to node

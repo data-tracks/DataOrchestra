@@ -109,38 +109,33 @@ impl Config {
     pub fn get_mut_spawners<'a>(
         &'a mut self,
     ) -> impl Iterator<Item = (&'a mut (dyn Spawner + Send + 'a), String)> {
-        let mut vec_objects: Vec<&'a mut (dyn Spawner + Send + 'a)> = Vec::new();
-        let mut vec_names: Vec<String> = Vec::new();
+        let mut vec_objects: Vec<(&'a mut (dyn Spawner + Send + 'a), String)> = Vec::new();
 
         for object in self.object.iter_mut() {
             let name = object.name.clone();
             let spawner = object as _;
-            vec_objects.push(spawner);
-            vec_names.push(name);
+            vec_objects.push((spawner, name));
         }
 
         for store in self.store.iter_mut() {
             let name = store.object.name.clone();
             let spawner = store as _;
-            vec_objects.push(spawner);
-            vec_names.push(name);
+            vec_objects.push((spawner, name));
         }
 
         for process in self.process.iter_mut() {
             let name = process.object.name.clone();
             let spawner = process as _;
-            vec_objects.push(spawner);
-            vec_names.push(name);
+            vec_objects.push((spawner, name));
         }
 
         for generate in self.generate.iter_mut() {
             let name = generate.object.name.clone();
             let spawner = generate as _;
-            vec_objects.push(spawner);
-            vec_names.push(name);
+            vec_objects.push((spawner, name));
         }
 
-        vec_objects.into_iter().zip(vec_names)
+        vec_objects.into_iter()
     }
 }
 

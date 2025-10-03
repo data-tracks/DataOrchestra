@@ -30,7 +30,7 @@ impl Configurator<Process> for Kafka {
 
         parent
             .object
-            .docker_group_builder
+            .docker_compose_builder
             .as_mut()
             .unwrap()
             .compose("images/compose-kafka.yaml")

@@ -66,7 +66,7 @@ pub async fn register_item(
         Types::Config => {
             let new_config: ExtConfig = serde_json::from_value(json)?;
 
-            let (new_config, _portainer) = new_config.to_internal();
+            let new_config = new_config.to_internal();
             let mut config = state.config.write().await;
             config.combine(new_config);
         }

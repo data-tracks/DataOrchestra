@@ -1,13 +1,15 @@
-use super::api::API;
+use std::fs;
+use std::path::Path;
+
 use super::generate::ExtGenerate;
 use super::object::ExtObject;
 use super::process::ExtProcess;
 use super::store::ExtStore;
-use crate::adapters::portainer::Portainer;
 use crate::config::Config;
 use crate::object::Object;
 use crate::shared::{Amount, ToInternal, ToInternalVec};
 use crate::traits::Creator;
+use crate::variables::variables::Variables;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -19,13 +21,15 @@ pub enum Types {
     Store(ExtStore),
 }
 
+/// External configuration type. Represents the external interface config of the internal [Config] type.
+///
+/// # Fields
+///
+/// The object types are wrapped into [shared::Amount] to allow for none, single or multiple items
+/// to be specified in the JSON.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ExtConfig {
-    //pub arguments: Arguments,
-    pub api: API,
-    #[serde(default)]
-    pub portainer: Portainer,
     #[serde(default)]
     pub generate: Amount<ExtGenerate>,
     #[serde(default)]
@@ -36,25 +40,28 @@ pub struct ExtConfig {
     pub object: Amount<ExtObject>,
 }
 
-impl ToInternal<(Config, Portainer)> for ExtConfig {
-    fn to_internal(self) -> (Config, Portainer) {
-        let (process, consumer) = self.api.to_internal();
-
-        let mut config = Config {
+impl ToInternal<Config> for ExtConfig {
+    fn to_internal(self) -> Config {
+        Config {
             generate: self.generate.to_internal(),
             process: self.process.to_internal(),
             store: self.store.to_internal(),
             object: self.object.to_internal(),
-        };
-
-        config.process.push(process);
-        config.object.push(consumer);
-
-        (config, self.portainer)
+        }
     }
 }
 
 impl ExtConfig {
+    /// Parse file location to external configuration type
+    pub fn parse(path: &Path) -> ExtConfig {
+        let config = fs::read_to_string(path).expect("Unable to read config file");
+        let variables: Variables =
+            serde_json::from_str(config.as_str()).expect("Unable to parse config to struct");
+        let ext_config_string = variables.parse(config);
+
+        serde_json::from_str(ext_config_string.as_str()).expect("Unable to parse config to struct")
+    }
+
     /// Extract the attachable components from the different components and parse them into their
     /// own objects
     pub fn extract_attachables(&mut self) -> Vec<Object> {

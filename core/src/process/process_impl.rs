@@ -18,7 +18,7 @@ impl Spawner for Process {
         // Setup container based on specified config. Default setup if only process_type was provided,
         // otherwise custom
         if let Some(mut process_config) = self.config.clone() {
-            let _ = self.object.docker_group_builder.get_or_insert_default();
+            let _ = self.object.docker_compose_builder.get_or_insert_default();
 
             process_config.configure(self);
             self.config = Some(process_config);

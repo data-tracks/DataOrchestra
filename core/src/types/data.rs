@@ -5,7 +5,7 @@ use derive_builder::Builder;
 #[derive(Debug, Clone)]
 pub enum DataTypes {
     Data(Data),
-    VolatileData(VolatileData)
+    VolatileData(VolatileData),
 }
 
 impl DataTypes {
@@ -16,32 +16,32 @@ impl DataTypes {
     pub fn is_volatile_data(&self) -> bool {
         matches!(self, DataTypes::VolatileData(_))
     }
-    
+
     pub fn get_data_ref(&self) -> &Data {
         match self {
             DataTypes::Data(data) => data,
-            _ => panic!("Get data from non data datatype")
+            _ => panic!("Get data from non data datatype"),
         }
     }
 
     pub fn get_data_mut(&mut self) -> &mut Data {
         match self {
             DataTypes::Data(data) => data,
-            _ => panic!("Get data from non data datatype")
+            _ => panic!("Get data from non data datatype"),
         }
     }
 
     pub fn get_volatile_data_ref(&self) -> &VolatileData {
         match self {
             DataTypes::VolatileData(volatile) => volatile,
-            _ => panic!("Get data from non data datatype")
+            _ => panic!("Get data from non data datatype"),
         }
     }
 
     pub fn get_volatile_data_mut(&mut self) -> &mut VolatileData {
         match self {
             DataTypes::VolatileData(volatile) => volatile,
-            _ => panic!("Get data from non data datatype")
+            _ => panic!("Get data from non data datatype"),
         }
     }
 }
@@ -83,124 +83,6 @@ pub trait GetVecData {
     fn get_data_mut(&mut self) -> Vec<&mut Data>;
 }
 
-/*
-impl DataTypes {
-    pub fn get_volatile_node_data_ref(&self) -> &VolatileData {
-        match self {
-            DataTypes::VolatileNodeData(data) => data,
-            _ => panic!("Get volatile node on non-volatile node")
-        }
-    }
-
-    pub fn get_volatile_docker_data_ref(&self) -> &VolatileData {
-        match self {
-            DataTypes::VolatileDockerData(data) => data,
-            _ => panic!("Get volatile node on non-volatile docker")
-        }
-    }
-
-    pub fn get_node_data_ref(&self) -> &Data {
-        match self {
-            DataTypes::NodeData(data) => data,
-            _ => panic!("Get data node on non-data node")
-        }
-    }
-
-    pub fn get_docker_data_ref(&self) -> &Data {
-        match self {
-            DataTypes::DockerData(data) => data,
-            _ => panic!("Get volatile node on non-volatile docker")
-        }
-    }
-
-    pub fn get_volatile_node_data_mut(&mut self) -> &mut VolatileData {
-        match self {
-            DataTypes::VolatileNodeData(data) => data,
-            _ => panic!("Get volatile node on non-volatile node")
-        }
-    }
-
-    pub fn get_volatile_docker_data_mut(&mut self) -> &mut VolatileData {
-        match self {
-            DataTypes::VolatileDockerData(data) => data,
-            _ => panic!("Get volatile node on non-volatile docker")
-        }
-    }
-
-    pub fn get_node_data_mut(&mut self) -> &mut Data {
-        match self {
-            DataTypes::DockerData(data) => data,
-            _ => panic!("Get volatile node on non-volatile node")
-        }
-    }
-
-    pub fn get_docker_data_mut(&mut self) -> &mut Data {
-        match self {
-            DataTypes::NodeData(data) => data,
-            _ => panic!("Get volatile node on non-volatile docker")
-        }
-    }
-}
-
-pub trait GetData {
-    fn get_volatile_docker_data(&self) -> Vec<&VolatileData>;
-    fn get_volatile_node_data(&self) -> Vec<&VolatileData>;
-    fn get_docker_data(&self) -> Vec<&Data>;
-    fn get_node_data(&self) -> Vec<&Data>;
-}
-
-impl GetData for Vec<DataTypes> {
-    fn get_volatile_docker_data(&self) -> Vec<&VolatileData> {
-        let mut vec = Vec::new();
-        for item in self {
-            match item {
-                DataTypes::VolatileDockerData(data) => vec.push(data),        
-                _ => ()
-            }
-        }
-
-        vec
-    }
-
-    fn get_volatile_node_data(&self) -> Vec<&VolatileData> {
-        let mut vec = Vec::new();
-        for item in self {
-            match item {
-                DataTypes::VolatileNodeData(data) => vec.push(data),        
-                _ => ()
-            }
-        }
-
-        vec
-    }
-
-    fn get_node_data(&self) -> Vec<&Data> {
-        let mut vec = Vec::new();
-        for item in self {
-            match item {
-                DataTypes::NodeData(data) => vec.push(data),        
-                _ => ()
-            }
-        }
-
-        vec
-    }
-
-    fn get_docker_data(&self) -> Vec<&Data> {
-        let mut vec = Vec::new();
-        for item in self {
-            match item {
-                DataTypes::DockerData(data) => vec.push(data),        
-                _ => ()
-            }
-        }
-
-        vec
-    }
-}
- */
-
-
 #[derive(Debug, Clone, Builder)]
 pub struct VolatileData {
     /// Name of docker container
@@ -211,7 +93,7 @@ pub struct VolatileData {
     pub dst: PathBuf,
     /// Data written into file
     #[builder(setter(into))]
-    pub content: String
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Builder)]

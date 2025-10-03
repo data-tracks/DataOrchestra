@@ -6,6 +6,7 @@ use log::{debug, error};
 
 use super::{Container, ContainerBuilder, Run};
 
+/// The compose type. Represents `Docker compose` type
 #[derive(Debug)]
 pub struct Compose {
     pub config: ComposeConfig,
