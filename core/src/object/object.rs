@@ -1,6 +1,7 @@
 use crate::adapters::{
     ComposeBuilder, Container, ContainerBuilder, ContainerType, Executor, Local, Run, Uploader,
 };
+use crate::state::State;
 use crate::traits::Spawner;
 use crate::types::data::{Data, DataTypes, GetVecData, VolatileData};
 use crate::types::{Executables, GetExecutables, Node, Script};
@@ -37,7 +38,7 @@ impl Default for Graph {
 pub struct Object {
     // If the object is up and functional
     #[builder(default)]
-    pub running: bool,
+    pub state: State,
     // Name of object. Default is the object type itself
     #[builder(setter(into), default = "Object::default_name()")]
     pub name: String,
@@ -88,7 +89,7 @@ impl ObjectBuilder {
 impl Default for Object {
     fn default() -> Self {
         Object {
-            running: false,
+            state: State::NotRunning,
             name: Object::default_name(),
             graph: Graph::default(),
             docker_compose_builder: None,
@@ -104,6 +105,10 @@ impl Default for Object {
 }
 
 impl Spawner for Object {
+    fn state(&self) -> State {
+        self.state
+    }
+
     /// Building of Object. After invocation:
     /// - Base variables set for systems
     /// - Node ssh connection available
@@ -236,6 +241,8 @@ impl Spawner for Object {
         if let Err(error) = result {
             error!("Unable to start script ({error})");
         }
+
+        self.state = State::Running;
 
         info!("Finished deploying {}", self.name);
     }

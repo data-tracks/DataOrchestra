@@ -1,17 +1,17 @@
-use std::{fmt::Display, sync::Arc};
-
-use actix_web::{HttpResponse, Responder, Scope, error::ErrorBadRequest, post, web};
+use actix_web::{HttpResponse, Scope, error::ErrorBadRequest, post, web};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::info;
+use std::fmt::Display;
 
 use crate::state::State;
 
 use data_orchestra_core::{
+    config::Config,
     interface::{
         config::ExtConfig, generate::ExtGenerate, object::ExtObject, process::ExtProcess,
         store::ExtStore,
     },
+    pipeline::{Pipeline, PipelineBuilder},
     shared::{Amount, ToInternal, ToInternalVec},
 };
 
@@ -49,63 +49,64 @@ async fn route_register_item(
     json: web::Json<Value>,
     state: web::Data<State>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    register_item(item.into_inner(), json.into_inner(), state.into_inner())
+    let config = register_items(item.into_inner(), json.into_inner())
         .await
         .map_err(|err| ErrorBadRequest(err))?;
+
+    let mut state_config = state.config.write().await;
+    state_config.combine(config);
+
+    let pipeline: Pipeline<(), String> = PipelineBuilder::default()
+        .spawner_config(&mut state_config)
+        .build()
+        .expect("Unable to build pipeline");
+
+    pipeline.run().map_err(|err| ErrorBadRequest(err))?;
+
     Ok(HttpResponse::Created().finish())
 }
 
-pub async fn register_item(
-    json_type: Types,
-    json: Value,
-    state: Arc<State>,
-) -> Result<(), serde_json::Error> {
-    info!("Adding new item of type {json_type}");
-
+pub async fn register_items(json_type: Types, json: Value) -> Result<Config, serde_json::Error> {
     match json_type {
         Types::Config => {
             let new_config: ExtConfig = serde_json::from_value(json)?;
-
-            let new_config = new_config.to_internal();
-            let mut config = state.config.write().await;
-            config.combine(new_config);
+            return Ok(new_config.to_internal());
         }
         Types::Object => {
             let object: Amount<ExtObject> = serde_json::from_value(json)?;
 
             let object = object.to_internal();
-            let mut config = state.config.write().await;
-            config.object.extend(object);
+            return Ok(Config {
+                object,
+                ..Default::default()
+            });
         }
         Types::Store => {
             let store: Amount<ExtStore> = serde_json::from_value(json)?;
 
             let store = store.to_internal();
-            let mut config = state.config.write().await;
-            config.store.extend(store);
+            return Ok(Config {
+                store,
+                ..Default::default()
+            });
         }
         Types::Process => {
             let process: Amount<ExtProcess> = serde_json::from_value(json)?;
 
             let process = process.to_internal();
-            let mut config = state.config.write().await;
-            config.process.extend(process);
+            return Ok(Config {
+                process,
+                ..Default::default()
+            });
         }
         Types::Generate => {
             let generate: Amount<ExtGenerate> = serde_json::from_value(json)?;
 
             let generate = generate.to_internal();
-            let mut config = state.config.write().await;
-            config.generate.extend(generate);
+            return Ok(Config {
+                generate,
+                ..Default::default()
+            });
         }
     }
-
-    info!("Successfully added item of type {json_type}");
-
-    Ok(())
-}
-
-#[post("/config")]
-async fn register(config: web::Json<ExtConfig>, state: web::Data<Arc<State>>) -> impl Responder {
-    return HttpResponse::Ok();
 }

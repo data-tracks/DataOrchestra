@@ -41,12 +41,20 @@ pub struct ExtConfig {
 }
 
 impl ToInternal<Config> for ExtConfig {
-    fn to_internal(self) -> Config {
+    fn to_internal(mut self) -> Config {
+        let attachables = self.extract_attachables();
+
+        let generate = self.generate.to_internal();
+        let process = self.process.to_internal();
+        let store = self.store.to_internal();
+        let mut object = self.object.to_internal();
+        object.extend(attachables);
+
         Config {
-            generate: self.generate.to_internal(),
-            process: self.process.to_internal(),
-            store: self.store.to_internal(),
-            object: self.object.to_internal(),
+            store,
+            process,
+            generate,
+            object,
         }
     }
 }

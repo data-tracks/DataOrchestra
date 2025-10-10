@@ -18,6 +18,8 @@ pub struct Pipeline<'spawn, T, E> {
     /// Runnable function for before the deploy stage of spawnables
     #[builder(default, setter(each = "before_deploy_hook"))]
     before_deploy_hooks: Vec<Box<dyn Fn() -> Result<T, E>>>,
+    #[builder(default, setter(each = "after_deploy_hook"))]
+    after_deploy_hooks: Vec<Box<dyn Fn() -> Result<T, E>>>,
 }
 
 impl<'spawn, T, E> PipelineBuilder<'spawn, T, E> {
@@ -38,7 +40,9 @@ impl<'spawn, T, E> Pipeline<'spawn, T, E> {
         }
 
         for spawner in self.spawners.iter_mut() {
-            spawner.build();
+            if !spawner.state().is_not_running() {
+                spawner.build();
+            }
         }
 
         for hook in self.before_setup_hooks.iter() {
@@ -46,7 +50,9 @@ impl<'spawn, T, E> Pipeline<'spawn, T, E> {
         }
 
         for spawner in self.spawners.iter_mut() {
-            spawner.setup();
+            if !spawner.state().is_not_running() {
+                spawner.setup();
+            }
         }
 
         for hook in self.before_deploy_hooks.iter() {
@@ -54,7 +60,13 @@ impl<'spawn, T, E> Pipeline<'spawn, T, E> {
         }
 
         for spawner in self.spawners.iter_mut() {
-            spawner.deploy();
+            if !spawner.state().is_not_running() {
+                spawner.deploy();
+            }
+        }
+
+        for hook in self.after_deploy_hooks.iter() {
+            hook()?;
         }
 
         Ok(())

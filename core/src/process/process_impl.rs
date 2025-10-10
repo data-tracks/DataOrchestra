@@ -1,5 +1,6 @@
 use crate::adapters::{ContainerType, Local};
 use crate::process::process_types::ProcessTypeConfig;
+use crate::state::State;
 use crate::traits::Configurator;
 use crate::traits::Spawner;
 use log::info;
@@ -7,6 +8,10 @@ use log::info;
 use super::Process;
 
 impl Spawner for Process {
+    fn state(&self) -> State {
+        self.object.state()
+    }
+
     fn build(&mut self) {
         if let Some(process_type) = &self.process_type {
             if self.config.is_none() {

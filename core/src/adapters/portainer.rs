@@ -144,6 +144,15 @@ impl Portainer {
         info!("Finished setting up portainer");
     }
 
+    /// Create remote portainer agents as objects
+    pub fn create_agents(&self, nodes: Vec<&Node>) -> Vec<Object> {
+        let mut objects = Vec::new();
+        for node in nodes.iter() {
+            objects.push(self.create_agent(node));
+        }
+        objects
+    }
+
     /// Create a remote portainer agent as object
     pub fn create_agent(&self, node: &Node) -> Object {
         let mut container = ContainerBuilder::default();

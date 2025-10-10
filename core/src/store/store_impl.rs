@@ -1,3 +1,4 @@
+use crate::state::State;
 use crate::traits::Configurator;
 use crate::traits::Spawner;
 use log::info;
@@ -5,6 +6,10 @@ use log::info;
 use super::Store;
 
 impl Spawner for Store {
+    fn state(&self) -> State {
+        self.object.state()
+    }
+
     fn build(&mut self) {
         if let Some(db_type) = &self.db_type
             && self.config.is_none()

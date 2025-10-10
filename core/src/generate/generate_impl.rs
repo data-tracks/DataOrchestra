@@ -1,8 +1,13 @@
 use super::Generate;
+use crate::state::State;
 use crate::traits::Configurator;
 use crate::traits::Spawner;
 
 impl Spawner for Generate {
+    fn state(&self) -> State {
+        self.object.state()
+    }
+
     fn build(&mut self) {
         /*
         if let Some(generate_type) = &self.generate_type {

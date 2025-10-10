@@ -1,4 +1,5 @@
 use std::{
+    fs,
     path::Path,
     sync::{Arc, Mutex},
 };
@@ -6,8 +7,11 @@ use std::{
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use clap::Parser;
+use data_orchestra_api::config::MetaAPIConfig;
 use data_orchestra_api::{arguments::Arguments, routes::register::register_scope, state::State};
 use data_orchestra_core::{
+    adapters::Portainer,
+    config::Config,
     interface::config::ExtConfig,
     logger::init_logger,
     pipeline::{Pipeline, PipelineBuilder},
@@ -21,25 +25,41 @@ use tracing::{error, info};
 async fn main() {
     print_logo();
 
-    dotenvy::dotenv().ok();
     let args: Arguments = Arguments::parse();
+    let config = fs::read_to_string(&args.config_file).expect("Unable to read config");
 
-    init_logger(args.level);
+    let mut meta_config: MetaAPIConfig =
+        toml::from_str(config.as_str()).expect("Unable to read config file");
+
+    meta_config.combine(args);
+
+    init_logger(meta_config.api.log_level);
 
     let mut state = State::default();
 
-    if let Some(path) = args.file.as_ref() {
-        info!("Reading config file from {path}");
-        let mut ext_config = ExtConfig::parse(&Path::new(path));
+    if let Some(paths) = meta_config.config.as_ref() {
+        let mut main_config = Config::default();
+        let portainer = Portainer::default();
 
-        // Transform attachable objects to configured objects
-        let attach_objects = ext_config.extract_attachables();
-        let mut config = ext_config.to_internal();
+        for path in paths.as_ref_vec().iter() {
+            info!("Reading config file from {path}");
+            let mut ext_config = ExtConfig::parse(&Path::new(path));
 
-        config.object.extend(attach_objects);
+            // Transform attachable objects to configured objects
+            let attach_objects = ext_config.extract_attachables();
+            let mut config = ext_config.to_internal();
 
-        state.config = RwLock::new(config);
-        //state.portainer = RwLock::new(portainer);
+            config.object.extend(attach_objects);
+
+            config
+                .object
+                .extend(portainer.create_agents(config.get_nodes()));
+
+            main_config.combine(config);
+        }
+
+        state.config = RwLock::new(main_config);
+        state.portainer = RwLock::new(portainer)
     }
 
     // Wrap in arc and mutex to allow passing to API while still being mutable for the pipeline
@@ -75,11 +95,12 @@ async fn main() {
             )
             .service(register_scope())
     })
-    .bind(("127.0.0.1", args.api_port))
+    .bind((meta_config.api.ip, meta_config.api.port))
     .unwrap()
     .run();
 
     // Join async server and async pipeline such that both are executed on start
+    info!("Starting API");
     let _ = tokio::join!(server, pipe);
 }
 

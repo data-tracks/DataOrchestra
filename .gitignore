@@ -27,3 +27,5 @@ metric/
 
 .DS_Store
 .env
+
+api/config.toml

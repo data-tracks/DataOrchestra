@@ -1,5 +1,5 @@
 use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
-use crate::traits::Spawner;
+use crate::{state::State, traits::Spawner};
 use std::thread;
 
 /// The config object. Contains all object types tasks
@@ -9,6 +9,7 @@ pub struct Config {
     pub process: Vec<Process>,
     pub generate: Vec<Generate>,
     pub object: Vec<Object>,
+    //agents: Vec<Object>,
 }
 
 impl Default for Config {
@@ -105,6 +106,38 @@ impl Config {
         nodes
     }
 
+    pub fn get_spawners<'a>(
+        &'a self,
+    ) -> impl Iterator<Item = (&'a (dyn Spawner + Send + 'a), String)> {
+        let mut vec_objects: Vec<(&'a (dyn Spawner + Send + 'a), String)> = Vec::new();
+
+        for object in self.object.iter() {
+            let name = object.name.clone();
+            let spawner = object as _;
+            vec_objects.push((spawner, name));
+        }
+
+        for store in self.store.iter() {
+            let name = store.object.name.clone();
+            let spawner = store as _;
+            vec_objects.push((spawner, name));
+        }
+
+        for process in self.process.iter() {
+            let name = process.object.name.clone();
+            let spawner = process as _;
+            vec_objects.push((spawner, name));
+        }
+
+        for generate in self.generate.iter() {
+            let name = generate.object.name.clone();
+            let spawner = generate as _;
+            vec_objects.push((spawner, name));
+        }
+
+        vec_objects.into_iter()
+    }
+
     /// Get mutable reference to all objects in config which implement the [`Spawner`] trait.
     pub fn get_mut_spawners<'a>(
         &'a mut self,
@@ -140,6 +173,16 @@ impl Config {
 }
 
 impl Spawner for Config {
+    fn state(&self) -> State {
+        for (spawner, _) in self.get_spawners() {
+            if spawner.state().is_not_running() {
+                return State::NotRunning;
+            }
+        }
+
+        State::Running
+    }
+
     fn build(&mut self) {
         let spawners = self.get_mut_spawners();
         thread::scope(|s| {

@@ -20,6 +20,8 @@ pub struct Rsync {
     pub recursive: bool,
     #[builder(default = "true")]
     pub delete: bool,
+    #[builder(default)]
+    pub commands: Vec<String>,
 }
 
 impl Rsync {

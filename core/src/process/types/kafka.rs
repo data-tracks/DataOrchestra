@@ -11,12 +11,8 @@ use serde::{Deserialize, Serialize};
 pub struct Kafka {
     #[serde(default)]
     pub topics: Vec<String>,
-    #[serde(default = "default_host")]
+    #[serde(default = "Kafka::default_host")]
     pub host: IpAddr,
-}
-
-pub fn default_host() -> IpAddr {
-    IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
 impl Configurator<Process> for Kafka {
@@ -26,7 +22,7 @@ impl Configurator<Process> for Kafka {
             .node
             .as_ref()
             .map(|n| n.host.to_owned())
-            .unwrap_or(default_host());
+            .unwrap_or(Self::default_host());
 
         parent
             .object
@@ -48,6 +44,10 @@ impl Default for Kafka {
 }
 
 impl Kafka {
+    pub fn default_host() -> IpAddr {
+        IpAddr::V4(Ipv4Addr::LOCALHOST)
+    }
+
     pub fn new(topics: Vec<String>, host: IpAddr) -> Self {
         Kafka { topics, host }
     }

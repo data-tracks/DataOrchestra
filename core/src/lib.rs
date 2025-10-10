@@ -8,6 +8,7 @@ pub mod object;
 pub mod pipeline;
 pub mod process;
 pub mod shared;
+pub mod state;
 pub mod store;
 pub mod traits;
 pub mod types;
