@@ -1,5 +1,5 @@
 use crate::arguments::Arguments;
-use data_orchestra_core::{adapters::Portainer, config::Config};
+use data_orchestra_core::{adapters::portainer::portainer::Portainer, config::Config};
 use tokio::sync::RwLock;
 
 use serde::{Deserialize, Serialize};

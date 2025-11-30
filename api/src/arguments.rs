@@ -37,11 +37,6 @@ pub struct Arguments {
     #[arg(short, long)]
     #[serde(default)]
     pub ssh_key: Option<String>,
-
-    /// Port of the API
-    #[arg(short, long)]
-    #[serde(default = "Arguments::default_api_port")]
-    pub api_port: u16,
 }
 
 impl Default for Arguments {
@@ -53,7 +48,6 @@ impl Default for Arguments {
             remove_all: false,
             portainer: true,
             ssh_key: None,
-            api_port: Arguments::default_api_port(),
         }
     }
 }
@@ -65,10 +59,6 @@ impl Arguments {
 
     pub fn default_portainer() -> bool {
         true
-    }
-
-    pub fn default_api_port() -> u16 {
-        5000
     }
 
     pub fn default_level() -> LevelFilter {

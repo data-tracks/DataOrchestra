@@ -68,7 +68,7 @@ impl<T> Amount<T> {
     ///
     /// When [`Amount`] is not of type `single`
     #[inline]
-    pub fn get_ref_mut_single(&mut self) -> &mut T {
+    pub fn get_mut_single(&mut self) -> &mut T {
         match self {
             Self::Single(value) => value,
             _ => panic!("Get mut single on non single value"),
@@ -94,7 +94,7 @@ impl<T> Amount<T> {
     ///
     /// When [`Amount`] is not of type `multiple`
     #[inline]
-    pub fn get_ref_mut_multiple(&mut self) -> &mut Vec<T> {
+    pub fn get_mut_multiple(&mut self) -> &mut Vec<T> {
         match self {
             Self::Multiple(values) => values,
             _ => panic!("Get ref mut multiple on non multiple value"),
@@ -123,7 +123,7 @@ impl<T> Amount<T> {
 
     /// Transform Amount enum value into vector of mutable references
     #[inline]
-    pub fn as_mut_ref_vec(&mut self) -> Vec<&mut T> {
+    pub fn as_mut_vec(&mut self) -> Vec<&mut T> {
         match self {
             Amount::None => Vec::new(),
             Amount::Single(value) => vec![value],

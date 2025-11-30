@@ -1,7 +1,7 @@
 use std::{collections::HashMap, thread, time::Duration};
 
 use crate::{
-    adapters::{ContainerBuilder, Local, docker, traits::Executor},
+    adapters::{ContainerBuilder, Local, agent::Agent, docker, traits::Executor},
     object::{Object, ObjectBuilder},
     types::Node,
 };
@@ -145,16 +145,16 @@ impl Portainer {
     }
 
     /// Create remote portainer agents as objects
-    pub fn create_agents(&self, nodes: Vec<&Node>) -> Vec<Object> {
-        let mut objects = Vec::new();
+    pub fn create_agents(&self, nodes: Vec<&Node>) -> Vec<Agent> {
+        let mut agents = Vec::new();
         for node in nodes.iter() {
-            objects.push(self.create_agent(node));
+            agents.push(self.create_agent(node));
         }
-        objects
+        agents
     }
 
     /// Create a remote portainer agent as object
-    pub fn create_agent(&self, node: &Node) -> Object {
+    pub fn create_agent(&self, node: &Node) -> Agent {
         let mut container = ContainerBuilder::default();
         container
             .publish_map(9001, 9001)
@@ -165,13 +165,15 @@ impl Portainer {
             .volume("/:/host")
             .image("portainer/agent:2.27.6");
 
-        ObjectBuilder::default()
+        let object = ObjectBuilder::default()
             .ignore_graph(true)
             .name(format!("portainer-agent-{}", node.host))
             .node(node.to_owned())
             .docker_container_builder(container)
             .build()
-            .expect("Unable to build portainer agent object")
+            .expect("Unable to build portainer agent object");
+
+        Agent { object }
     }
 
     /// Add agent environment to portainer

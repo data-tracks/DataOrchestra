@@ -6,6 +6,7 @@ use super::object::ExtObject;
 use super::process::ExtProcess;
 use super::store::ExtStore;
 use crate::config::Config;
+use crate::interface::upload::UploadTypes;
 use crate::object::Object;
 use crate::shared::{Amount, ToInternal, ToInternalVec};
 use crate::traits::Creator;
@@ -55,11 +56,38 @@ impl ToInternal<Config> for ExtConfig {
             process,
             generate,
             object,
+            agents: Vec::new(),
         }
     }
 }
 
 impl ExtConfig {
+    pub fn set_uploader(&mut self, uploader: UploadTypes) {
+        for object in self.object.as_mut_vec().iter_mut() {
+            if let Some(node) = object.node.as_mut() {
+                node.upload_schema = uploader.clone();
+            }
+        }
+
+        for store in self.store.as_mut_vec().iter_mut() {
+            if let Some(node) = store.object.node.as_mut() {
+                node.upload_schema = uploader.clone();
+            }
+        }
+
+        for process in self.process.as_mut_vec().iter_mut() {
+            if let Some(node) = process.object.node.as_mut() {
+                node.upload_schema = uploader.clone();
+            }
+        }
+
+        for generate in self.generate.as_mut_vec().iter_mut() {
+            if let Some(node) = generate.object.node.as_mut() {
+                node.upload_schema = uploader.clone();
+            }
+        }
+    }
+
     /// Parse file location to external configuration type
     pub fn parse(path: &Path) -> ExtConfig {
         let config = fs::read_to_string(path).expect("Unable to read config file");
@@ -74,25 +102,25 @@ impl ExtConfig {
     /// own objects
     pub fn extract_attachables(&mut self) -> Vec<Object> {
         let mut attach_objects = Vec::new();
-        for object in self.object.as_mut_ref_vec() {
+        for object in self.object.as_mut_vec() {
             for config in object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&object));
             }
         }
 
-        for store in self.store.as_mut_ref_vec() {
+        for store in self.store.as_mut_vec() {
             for config in store.object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&store.object));
             }
         }
 
-        for process in self.process.as_mut_ref_vec() {
+        for process in self.process.as_mut_vec() {
             for config in process.object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&process.object));
             }
         }
 
-        for generate in self.generate.as_mut_ref_vec() {
+        for generate in self.generate.as_mut_vec() {
             for config in generate.object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&generate.object));
             }

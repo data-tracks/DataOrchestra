@@ -1,6 +1,7 @@
 use std::{
     fs,
     path::Path,
+    process::exit,
     sync::{Arc, Mutex},
 };
 
@@ -10,7 +11,7 @@ use clap::Parser;
 use data_orchestra_api::config::MetaAPIConfig;
 use data_orchestra_api::{arguments::Arguments, routes::register::register_scope, state::State};
 use data_orchestra_core::{
-    adapters::Portainer,
+    adapters::portainer::portainer::Portainer,
     config::Config,
     interface::config::ExtConfig,
     logger::init_logger,
@@ -18,16 +19,23 @@ use data_orchestra_core::{
     shared::ToInternal,
 };
 use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 /// Main entry point of the Data Orchestra API
 #[actix_web::main]
 async fn main() {
     print_logo();
 
+    // Load CLI arguments
+    debug!("Loading CLI arguments");
     let args: Arguments = Arguments::parse();
+
+    if fs::exists(&args.config_file).is_err() {
+        panic!("Config file path {} invalid", args.config_file);
+    }
     let config = fs::read_to_string(&args.config_file).expect("Unable to read config");
 
+    // Load orchestrator configuration file
     let mut meta_config: MetaAPIConfig =
         toml::from_str(config.as_str()).expect("Unable to read config file");
 
@@ -35,8 +43,10 @@ async fn main() {
 
     init_logger(meta_config.api.log_level);
 
+    // Initialize API global state
     let mut state = State::default();
 
+    // Load a architecture configuration file if present
     if let Some(paths) = meta_config.config.as_ref() {
         let mut main_config = Config::default();
         let portainer = Portainer::default();
@@ -47,12 +57,18 @@ async fn main() {
 
             // Transform attachable objects to configured objects
             let attach_objects = ext_config.extract_attachables();
+
+            // Cascade uploader if specified in the orchestrator configuration
+            if let Some(uploader) = meta_config.uploader.as_ref() {
+                ext_config.set_uploader(uploader.clone());
+            }
+
             let mut config = ext_config.to_internal();
 
             config.object.extend(attach_objects);
 
             config
-                .object
+                .agents
                 .extend(portainer.create_agents(config.get_nodes()));
 
             main_config.combine(config);

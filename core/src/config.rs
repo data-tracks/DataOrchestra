@@ -1,5 +1,7 @@
 use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
-use crate::{state::State, traits::Spawner};
+use crate::adapters::agent::Agent;
+use crate::state::State;
+use crate::traits::Spawner;
 use std::thread;
 
 /// The config object. Contains all object types tasks
@@ -9,7 +11,7 @@ pub struct Config {
     pub process: Vec<Process>,
     pub generate: Vec<Generate>,
     pub object: Vec<Object>,
-    //agents: Vec<Object>,
+    pub agents: Vec<Agent>,
 }
 
 impl Default for Config {
@@ -19,16 +21,33 @@ impl Default for Config {
             process: Vec::new(),
             generate: Vec::new(),
             object: Vec::new(),
+            agents: Vec::new(),
         }
     }
 }
 
 impl Config {
+    /// Combine two [Config] into a single configuration
     pub fn combine(&mut self, other: Config) {
         self.store.extend(other.store);
         self.object.extend(other.object);
         self.process.extend(other.process);
         self.generate.extend(other.generate);
+
+        for other_agent in other.agents.into_iter() {
+            let other_node = other_agent.object.node.as_ref().unwrap();
+            let exists = self.agents.iter().any(|agent| {
+                agent
+                    .object
+                    .node
+                    .as_ref()
+                    .is_some_and(|node| node.host.eq(&other_node.host))
+            });
+
+            if !exists {
+                self.agents.push(other_agent);
+            }
+        }
     }
 
     /// Get mutable reference from all nodes from all object types

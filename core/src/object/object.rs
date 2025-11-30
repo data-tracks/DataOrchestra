@@ -36,7 +36,7 @@ impl Default for Graph {
 #[derive(Debug, Builder)]
 #[builder(pattern = "owned")]
 pub struct Object {
-    // If the object is up and functional
+    // State of the object
     #[builder(default)]
     pub state: State,
     // Name of object. Default is the object type itself
