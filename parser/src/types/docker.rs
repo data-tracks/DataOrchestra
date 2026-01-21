@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-use crate::adapters::{ComposeBuilder, ContainerBuilder, Mount, RestartTypes};
-use crate::shared::{Amount, traits::ToInternal};
+use data_orchestra_engine::adapters::{ComposeBuilder, ContainerBuilder, Mount, RestartTypes};
+use crate::amount::Amount;
+use crate::traits::ToInternal;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExtDocker {

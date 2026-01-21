@@ -1,14 +1,12 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use tracing_subscriber::filter::LevelFilter;
-
-use crate::interface::object::ExtObject;
+use tracing::metadata::LevelFilter;
 use data_orchestra_engine::logger::{deserialize_levelfilter, serialize_levelfilter};
 use data_orchestra_engine::object::Object;
-use crate::shared::ToInternal;
-use data_orchestra_engine::traits::Creator;
 use data_orchestra_engine::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
 use data_orchestra_engine::types::{Executables, ScriptBuilder};
+use crate::traits::{Creatable, ToInternal};
+use crate::types::object::ExtObject;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
 // and sending them further through an http request
@@ -85,17 +83,17 @@ impl Default for KafkaConsumer {
     }
 }
 
-impl Creator<ExtObject, Object> for KafkaConsumer {
-    fn create(self, parent_object: &ExtObject) -> Object {
+impl Creatable<ExtObject, Object> for KafkaConsumer {
+    fn create(self, parent: &ExtObject) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to
-        let parent_object = parent_object.clone();
+        let parent = parent.clone();
 
         let mut object = Object::default();
 
-        object.name = parent_object.name.unwrap_or("kafka-consumer".to_string());
+        object.name = parent.name.unwrap_or("kafka-consumer".to_string());
 
-        if let Some(node) = parent_object.node {
+        if let Some(node) = parent.node {
             let (node, uploader) = node.to_internal();
             object.node = Some(node);
             object.uploader = Some(uploader);

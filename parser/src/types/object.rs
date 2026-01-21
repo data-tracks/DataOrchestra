@@ -1,13 +1,13 @@
 use crate::attach::attach_types::AttachTypeConfig;
-use crate::interface::data::ExtDataTypes;
-use crate::interface::docker::ExtDocker;
-use crate::interface::execute::ExtExecutables;
-use crate::interface::node::ExtNode;
-use crate::object::{Graph, Object};
-use crate::shared::Amount;
-use crate::shared::traits::ToInternal;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
+use data_orchestra_engine::object::{Graph, Object};
+use crate::amount::Amount;
+use crate::traits::ToInternal;
+use crate::types::data::ExtDataTypes;
+use crate::types::docker::ExtDocker;
+use crate::types::execute::ExtExecutables;
+use crate::types::node::ExtNode;
 
 /// External representation of the internal [`Object`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]

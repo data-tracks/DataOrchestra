@@ -1,10 +1,10 @@
-use crate::interface::object::ExtObject;
-use crate::object::Object;
-use crate::process::Process;
-use crate::process::process_types::{ProcessType, ProcessTypeConfig};
-use crate::shared::traits::ToInternal;
+use crate::types::object::{ExtObject};
 use log::debug;
 use serde::{Deserialize, Serialize};
+use data_orchestra_engine::object::Object;
+use data_orchestra_engine::process::Process;
+use data_orchestra_engine::process::process_types::{ProcessType, ProcessTypeConfig};
+use crate::traits::ToInternal;
 
 /// External representation of the internal [`Process`] object
 #[derive(Debug, Deserialize, Serialize)]

@@ -1,11 +1,10 @@
-use crate::interface::object::ExtObject;
-use crate::object::Object;
-use crate::{
-    generate::{Generate, generate_types::GeneratorTypeConfig},
-    shared::traits::{ToInternal, ToInternalVec},
-};
 use log::debug;
 use serde::{Deserialize, Serialize};
+use data_orchestra_engine::generate::Generate;
+use data_orchestra_engine::generate::generate_types::GeneratorTypeConfig;
+use data_orchestra_engine::object::Object;
+use crate::traits::{ToInternal, ToInternalVec};
+use crate::types::object::ExtObject;
 
 /// External representation of the internal [`Generate`] object
 #[derive(Debug, Deserialize, Serialize)]

@@ -1,13 +1,12 @@
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::filter::LevelFilter;
 
-use crate::interface::object::ExtObject;
-use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
-use crate::object::Object;
-use crate::shared::ToInternal;
-use crate::traits::Creator;
-use crate::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
-use crate::types::{Executables, ScriptBuilder};
+use data_orchestra_engine::logger::{deserialize_levelfilter, serialize_levelfilter};
+use data_orchestra_engine::object::Object;
+use data_orchestra_engine::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
+use data_orchestra_engine::types::{Executables, ScriptBuilder};
+use crate::traits::{Creatable, ToInternal};
+use crate::types::object::ExtObject;
 
 // The Kafka producer type. Is an attachable object capable of producing data to kafka topic(s)
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -67,7 +66,7 @@ impl Default for KafkaProducer {
     }
 }
 
-impl Creator<ExtObject, Object> for KafkaProducer {
+impl Creatable<ExtObject, Object> for KafkaProducer {
     fn create(self, parent_object: &ExtObject) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to

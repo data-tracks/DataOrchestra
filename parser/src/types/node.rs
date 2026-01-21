@@ -1,10 +1,10 @@
-use crate::adapters::{Ssh, Uploader};
-use crate::interface::upload::UploadTypes;
-use crate::shared::ToInternal;
-use crate::types::Node;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
+use data_orchestra_engine::adapters::{Ssh, Uploader};
+use data_orchestra_engine::types::Node;
+use crate::traits::ToInternal;
+use crate::types::upload::UploadTypes;
 
 /// External representation of the internal [`Node`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]

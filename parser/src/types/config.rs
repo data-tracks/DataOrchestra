@@ -1,19 +1,17 @@
+use crate::traits::ToInternalVec;
 use std::fs;
 use std::path::Path;
-use log::debug;
-use super::generate::ExtGenerate;
-use super::object::ExtObject;
-use super::process::ExtProcess;
-use super::store::ExtStore;
-use crate::config::Config;
-use crate::interface::upload::UploadTypes;
-use crate::object::Object;
-use crate::shared::{Amount, ToInternal, ToInternalVec};
-use crate::traits::Creator;
+use crate::types::generate::ExtGenerate;
+use crate::types::object::ExtObject;
+use crate::types::process::ExtProcess;
+use crate::types::store::ExtStore;
 use crate::variables::variables::Variables;
 use serde::{Deserialize, Serialize};
+use data_orchestra_engine::config::Config;
+use data_orchestra_engine::object::Object;
 use crate::amount::Amount;
-use crate::to_internal::ToInternal;
+use crate::traits::{Creatable, ToInternal};
+use crate::types::upload::UploadTypes;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]

@@ -6,9 +6,9 @@ use std::path::Path;
 #[derive(Debug, Clone, Builder)]
 pub struct Rsync {
     // Remote SSH user name
-    pub(crate) user: String,
+    pub user: String,
     // Remote address
-    pub(crate) remote: String,
+    pub remote: String,
     #[builder(default)]
     // SSH port
     pub port: Option<u16>,

@@ -1,13 +1,12 @@
-use crate::adapters::Mount;
-use crate::shared::traits::ToInternal;
-use crate::types::data::{Data, DataTypes, VolatileData};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-
-use super::location::Location;
+use data_orchestra_engine::adapters::Mount;
+use data_orchestra_engine::types::{Data, DataTypes, VolatileData};
+use crate::traits::ToInternal;
+use crate::types::location::Location;
 
 /// Data types. Represents different types of data which can be uploaded.
 #[derive(Debug, Serialize, Deserialize, Clone)]

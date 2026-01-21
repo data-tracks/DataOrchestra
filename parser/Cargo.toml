@@ -1,0 +1,24 @@
+[package]
+name = "data_orchestra_parser"
+authors = ["Mathieu Groenen", "David Lengweiler"]
+license = "Apache-2.0"
+
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Logger
+log = "0.4"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-appender = "0.2"
+
+# Json parser
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+
+derive_builder = "0.20.2"
+
+regex = "1"
+
+data_orchestra_engine = { path = "../engine" }

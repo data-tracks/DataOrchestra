@@ -1,5 +1,5 @@
 use data_orchestra_engine::adapters::Rsync;
-use super::amount::Amount;
+use crate::amount::Amount;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use crate::traits::ToInternal;

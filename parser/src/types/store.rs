@@ -2,11 +2,12 @@ use std::path::Path;
 
 use log::debug;
 use serde::{Deserialize, Serialize};
+use data_orchestra_engine::object::Object;
+use data_orchestra_engine::store::Store;
 use data_orchestra_engine::store::store_types::{StoreType, StoreTypeConfig};
 use data_orchestra_engine::types::{DataBuilder, DataTypes};
 use crate::amount::Amount;
-use crate::config::Types::Object;
-use crate::object::ExtObject;
+use crate::types::object::ExtObject;
 use crate::traits::ToInternal;
 
 /// External representation of the internal [`Store`] object

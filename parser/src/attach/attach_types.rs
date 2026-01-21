@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-
+use data_orchestra_engine::object::Object;
+use crate::traits::Creatable;
+use crate::types::object::ExtObject;
 use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer};
-use crate::interface::object::ExtObject;
-use crate::{object::Object, traits::Creator};
 
 /// Attachable types to a [`Object`]. Allow for easy creation of systems without having to manually
 /// create adapters for systems
@@ -27,7 +27,7 @@ impl Default for AttachTypeConfig {
     }
 }
 
-impl Creator<ExtObject, Object> for AttachTypeConfig {
+impl Creatable<ExtObject, Object> for AttachTypeConfig {
     fn create(self, object: &ExtObject) -> Object {
         match self {
             AttachTypeConfig::KafkaConsumer(consumer) => consumer.create(object),

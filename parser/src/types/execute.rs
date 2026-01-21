@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-
-use super::location::Location;
-use crate::adapters::TmuxBuilder;
-use crate::shared::ToInternal;
-use crate::types::{DataTypes, Executables, Script, VolatileData};
+use data_orchestra_engine::adapters::TmuxBuilder;
+use data_orchestra_engine::types::{DataTypes, Executables, Script, VolatileData};
+use crate::traits::ToInternal;
+use crate::types::location::Location;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
