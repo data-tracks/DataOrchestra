@@ -10,16 +10,16 @@ use actix_web::{App, HttpServer, http, web};
 use clap::Parser;
 use data_orchestra_api::config::MetaAPIConfig;
 use data_orchestra_api::{arguments::Arguments, routes::register::register_scope, state::State};
-use data_orchestra_core::{
+use data_orchestra_engine::{
     adapters::portainer::portainer::Portainer,
     config::Config,
-    interface::config::ExtConfig,
     logger::init_logger,
-    pipeline::{Pipeline, PipelineBuilder},
-    shared::ToInternal,
+    pipeline::{Pipeline, PipelineBuilder}
 };
 use tokio::sync::RwLock;
 use tracing::{debug, error, info};
+use data_orchestra_parser::traits::ToInternal;
+use data_orchestra_parser::types::config::ExtConfig;
 
 /// Main entry point of the Data Orchestra API
 #[actix_web::main]
@@ -47,7 +47,7 @@ async fn main() {
     let mut state = State::default();
 
     // Load a architecture configuration file if present
-    if let Some(paths) = meta_config.config.as_ref() {
+    if let Some(paths) = meta_config.components_file.as_ref() {
         let mut main_config = Config::default();
         let portainer = Portainer::default();
 
@@ -74,9 +74,12 @@ async fn main() {
             main_config.combine(config);
         }
 
+        info!("Total of {} components", main_config.get_number_of_components());
+
         state.config = RwLock::new(main_config);
         state.portainer = RwLock::new(portainer)
     }
+
 
     // Wrap in arc and mutex to allow passing to API while still being mutable for the pipeline
     let arc_state = Arc::new(Mutex::new(state));

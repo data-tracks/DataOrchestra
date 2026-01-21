@@ -1,0 +1,7 @@
+components_file = "../examples/test/single_object.json"
+
+[api]
+ip = "127.0.0.1"
+log_level = "debug"
+port = 5000
+

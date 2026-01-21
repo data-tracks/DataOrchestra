@@ -1,17 +1,17 @@
 use crate::{arguments::Arguments, deserialize_levelfilter, serialize_levelfilter};
-use data_orchestra_core::{
-    adapters::portainer::portainer::Portainer, interface::upload::UploadTypes,
-    process::types::Kafka, shared::Amount,
-};
 use serde::{Deserialize, Serialize};
 use tracing::level_filters::LevelFilter;
+use data_orchestra_engine::adapters::portainer::portainer::Portainer;
+use data_orchestra_engine::process::types::Kafka;
+use data_orchestra_parser::amount::Amount;
+use data_orchestra_parser::types::upload::UploadTypes;
 
 /// Contains metadata configuration for the API and its subsystems
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MetaAPIConfig {
     pub api: APIConfig,
     pub portainer: Option<Portainer>,
-    pub config: Option<Amount<String>>,
+    pub components_file: Option<Amount<String>>,
     pub ssh_key: Option<SshKeySharing>,
     #[serde(default)]
     pub uploader: Option<UploadTypes>,
@@ -22,6 +22,7 @@ pub struct MetaAPIConfig {
 pub struct APIConfig {
     #[serde(default = "APIConfig::default_ip")]
     pub ip: String,
+    #[serde(default = "APIConfig::default_level")]
     #[serde(deserialize_with = "deserialize_levelfilter")]
     #[serde(serialize_with = "serialize_levelfilter")]
     pub log_level: LevelFilter,
@@ -38,6 +39,10 @@ impl APIConfig {
 
     fn default_port() -> u16 {
         5000
+    }
+
+    fn default_level() -> LevelFilter {
+        LevelFilter::INFO
     }
 }
 
@@ -60,8 +65,8 @@ impl MetaAPIConfig {
     /// Provided CLI arguments overwrite the fields in the configuration
     pub fn combine(&mut self, args: Arguments) {
         self.api.log_level = args.log_level;
-        if let Some(file) = args.file {
-            let configs = self.config.get_or_insert(Amount::None);
+        if let Some(file) = args.components_file {
+            let configs = self.components_file.get_or_insert(Amount::None);
             configs.insert(file);
         }
     }

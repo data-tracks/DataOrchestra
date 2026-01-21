@@ -7,14 +7,15 @@ use tracing_subscriber::filter::LevelFilter;
 #[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 #[command(version, about)]
 pub struct Arguments {
-    #[arg(short, long)]
+    /// Config file location
+    #[arg(long)]
     #[serde(default = "Arguments::default_config_file")]
     pub config_file: String,
 
-    /// Config file location
-    #[arg(short, long)]
+    /// Distributed components file
+    #[arg(short , long)]
     #[serde(default)]
-    pub file: Option<String>,
+    pub components_file: Option<String>,
 
     /// Logging level
     #[arg(short, long, default_value_t = LevelFilter::INFO)]
@@ -43,7 +44,7 @@ impl Default for Arguments {
     fn default() -> Self {
         Arguments {
             config_file: "./config.toml".to_string(),
-            file: None,
+            components_file: None,
             log_level: LevelFilter::INFO,
             remove_all: false,
             portainer: true,

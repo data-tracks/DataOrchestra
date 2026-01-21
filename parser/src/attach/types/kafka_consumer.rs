@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::interface::object::ExtObject;
-use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
-use crate::object::Object;
+use data_orchestra_engine::logger::{deserialize_levelfilter, serialize_levelfilter};
+use data_orchestra_engine::object::Object;
 use crate::shared::ToInternal;
-use crate::traits::Creator;
-use crate::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
-use crate::types::{Executables, ScriptBuilder};
+use data_orchestra_engine::traits::Creator;
+use data_orchestra_engine::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
+use data_orchestra_engine::types::{Executables, ScriptBuilder};
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
 // and sending them further through an http request

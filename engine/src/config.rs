@@ -189,6 +189,10 @@ impl Config {
 
         vec_objects.into_iter()
     }
+
+    pub fn get_number_of_components(&self) -> usize {
+        self.get_spawners().count()
+    }
 }
 
 impl Spawner for Config {

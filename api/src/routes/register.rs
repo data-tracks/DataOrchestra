@@ -1,19 +1,18 @@
+use data_orchestra_parser::traits::ToInternalVec;
 use actix_web::{HttpResponse, Scope, error::ErrorBadRequest, post, web};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Display;
-
+use data_orchestra_engine::config::Config;
+use data_orchestra_engine::pipeline::{Pipeline, PipelineBuilder};
+use data_orchestra_parser::amount::Amount;
+use data_orchestra_parser::traits::ToInternal;
+use data_orchestra_parser::types::config::ExtConfig;
+use data_orchestra_parser::types::generate::ExtGenerate;
+use data_orchestra_parser::types::object::ExtObject;
+use data_orchestra_parser::types::process::ExtProcess;
+use data_orchestra_parser::types::store::ExtStore;
 use crate::state::State;
-
-use data_orchestra_core::{
-    config::Config,
-    interface::{
-        config::ExtConfig, generate::ExtGenerate, object::ExtObject, process::ExtProcess,
-        store::ExtStore,
-    },
-    pipeline::{Pipeline, PipelineBuilder},
-    shared::{Amount, ToInternal, ToInternalVec},
-};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]

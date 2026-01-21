@@ -38,6 +38,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 tracing-appender = "0.2"
 
-data_orchestra_core = { path = "../core" }
+data_orchestra_engine = { path = "../engine" }
+data_orchestra_parser = { path = "../parser" }
 
 toml = "0.9.7"

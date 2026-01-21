@@ -1,8 +1,9 @@
 use crate::arguments::Arguments;
-use data_orchestra_core::{adapters::portainer::portainer::Portainer, config::Config};
 use tokio::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
+use data_orchestra_engine::adapters::portainer::portainer::Portainer;
+use data_orchestra_engine::config::Config;
 
 /// The state object. Represents global state used by the orchestrator api to manange and hold
 /// data.
