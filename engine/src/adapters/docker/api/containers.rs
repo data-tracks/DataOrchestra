@@ -8,9 +8,9 @@ use crate::adapters::{ContainerData, Executor};
 /// # Examples
 ///
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = api::kill_container(&executor, "postgres");
@@ -27,9 +27,9 @@ pub fn kill_container<T: Into<String>>(executor: &dyn Executor, name: T) -> Resu
 /// # Examples
 ///
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = api::kill_containers(&executor);
@@ -48,9 +48,9 @@ pub fn kill_containers(executor: &dyn Executor) -> Result<(), String> {
 ///
 /// # Examples
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = api::delete_containers(&executor);
@@ -69,9 +69,9 @@ pub fn delete_containers(executor: &dyn Executor) -> Result<(), String> {
 ///
 /// # Examples
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = api::delete_container("postgres", &executor);
@@ -87,9 +87,9 @@ pub fn delete_container<T: Into<String>>(name: T, executor: &dyn Executor) -> Re
 ///
 /// # Examples
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = api::stop_containers(&executor);
@@ -108,9 +108,9 @@ pub fn stop_containers(executor: &dyn Executor) -> Result<(), String> {
 ///
 /// # Examples
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = api::stop_container("postgres", &executor);
@@ -126,10 +126,10 @@ pub fn stop_container<T: Into<String>>(name: T, executor: &dyn Executor) -> Resu
 ///
 /// # Examples
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::poll_container;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::poll_container;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = poll_container("postgres", 30, &executor);
@@ -167,10 +167,10 @@ pub fn poll_container<T: Into<String>>(
 ///
 /// # Examples
 /// ```
-/// use data_orchestra::core::adapters::docker::api;
-/// use data_orchestra::core::adapters::local::Local;
-/// use data_orchestra::core::adapters::get_container_names;
-/// use data_orchestra::core::adapters::traits::Executor;
+/// use data_orchestra_engine::adapters::docker::api;
+/// use data_orchestra_engine::adapters::local::Local;
+/// use data_orchestra_engine::adapters::get_container_names;
+/// use data_orchestra_engine::adapters::traits::Executor;
 ///
 /// let executor = Local::new();
 /// let result = get_container_names(&executor);

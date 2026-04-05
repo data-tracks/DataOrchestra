@@ -14,11 +14,11 @@ pub struct Config {
 
 impl Config {
     pub fn get_objects(&self) -> Vec<&Object> {
-        self.objects.iter().map(|o| o).collect()
+        self.objects.iter().collect()
     }
 
     pub fn get_objects_mut(&mut self) -> Vec<&mut Object> {
-        self.objects.iter_mut().map(|o| o).collect()
+        self.objects.iter_mut().collect()
     }
 
     /// Combine two [Config] into a single configuration

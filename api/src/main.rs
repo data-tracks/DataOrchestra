@@ -41,6 +41,8 @@ async fn main() {
 
     meta_config.combine(args);
 
+    dbg!(&meta_config);
+
     init_logger(meta_config.api.log_level);
 
     // Initialize API global state
@@ -94,6 +96,7 @@ async fn main() {
                 .build()
                 .expect("Unable to build pipeline");
 
+            info!("Finished building pipeline");
             let result = pipeline.run();
             if let Err(error) = result {
                 error!("{error}");
