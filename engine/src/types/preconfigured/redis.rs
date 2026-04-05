@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{store::Store, traits::Configurator};
+use crate::{ traits::Configurable};
+use crate::object::Object;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename = "redis")]
 pub struct Redis {}
 
@@ -12,10 +13,9 @@ impl Default for Redis {
     }
 }
 
-impl Configurator<Store> for Redis {
-    fn configure(&mut self, parent: &mut Store) {
+impl Configurable<Object> for Redis {
+    fn configure(&mut self, parent: &mut Object) {
         let container = parent
-            .object
             .docker_container_builder
             .get_or_insert_default();
 

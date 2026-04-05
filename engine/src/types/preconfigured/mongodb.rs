@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{store::Store, traits::Configurator};
+use crate::traits::Configurable;
+use crate::object::Object;
 
 pub fn default_username() -> String {
     String::from("mongo")
@@ -11,7 +12,7 @@ pub fn default_password() -> String {
 }
 
 /// The `MongoDB` type. Represents the configurability of the MongoDB instance
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename = "mongodb")]
 pub struct MongoDB {
     #[serde(default = "default_username")]
@@ -29,10 +30,9 @@ impl Default for MongoDB {
     }
 }
 
-impl Configurator<Store> for MongoDB {
-    fn configure(&mut self, parent: &mut Store) {
+impl Configurable<Object> for MongoDB {
+    fn configure(&mut self, parent: &mut Object) {
         let container = parent
-            .object
             .docker_container_builder
             .get_or_insert_default();
 

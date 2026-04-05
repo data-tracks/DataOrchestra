@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{store::Store, traits::Configurator};
+use crate::traits::Configurable;
+use crate::object::Object;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename = "polypheny")]
 pub struct Polypheny {}
 
@@ -12,8 +13,8 @@ impl Default for Polypheny {
     }
 }
 
-impl Configurator<Store> for Polypheny {
-    fn configure(&mut self, _parent: &mut Store) {
+impl Configurable<Object> for Polypheny {
+    fn configure(&mut self, _parent: &mut Object) {
         todo!("Not yet implemented")
     }
 }

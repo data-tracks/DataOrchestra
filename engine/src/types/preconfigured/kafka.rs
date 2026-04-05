@@ -1,10 +1,10 @@
 use std::net::{IpAddr, Ipv4Addr};
 
 use crate::adapters::Executor;
-use crate::process::Process;
-use crate::traits::Configurator;
+use crate::traits::Configurable;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use crate::object::Object;
 
 /// The `Kafka` type. Represents the configurability of the Apache kafka application instance
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -15,17 +15,15 @@ pub struct Kafka {
     pub host: IpAddr,
 }
 
-impl Configurator<Process> for Kafka {
-    fn configure(&mut self, parent: &mut Process) {
+impl Configurable<Object> for Kafka {
+    fn configure(&mut self, parent: &mut Object) {
         self.host = parent
-            .object
             .node
             .as_ref()
             .map(|n| n.host.to_owned())
             .unwrap_or(Self::default_host());
 
         parent
-            .object
             .docker_compose_builder
             .as_mut()
             .unwrap()

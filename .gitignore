@@ -29,3 +29,5 @@ metric/
 .env
 
 api/config.toml
+
+logs

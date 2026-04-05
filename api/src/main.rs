@@ -65,11 +65,11 @@ async fn main() {
 
             let mut config = ext_config.to_internal();
 
-            config.object.extend(attach_objects);
+            config.objects.extend(attach_objects);
 
             config
                 .agents
-                .extend(portainer.create_agents(config.get_nodes()));
+                .extend(portainer.create_agents(config.get_unique_nodes()));
 
             main_config.combine(config);
         }

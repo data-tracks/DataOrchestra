@@ -1,38 +1,29 @@
-use super::{generate::Generate, object::Object, process::Process, store::Store, types::Node};
+use super::{object::Object, types::Node};
 use crate::adapters::agent::Agent;
 use crate::state::State;
-use crate::traits::Spawner;
+use crate::traits::Spawnable;
 use std::thread;
 
 /// The config object. Contains all object types tasks
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Config {
-    pub store: Vec<Store>,
-    pub process: Vec<Process>,
-    pub generate: Vec<Generate>,
-    pub object: Vec<Object>,
+    pub objects: Vec<Object>,
     pub agents: Vec<Agent>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            store: Vec::new(),
-            process: Vec::new(),
-            generate: Vec::new(),
-            object: Vec::new(),
-            agents: Vec::new(),
-        }
-    }
-}
 
 impl Config {
+    pub fn get_objects(&self) -> Vec<&Object> {
+        self.objects.iter().map(|o| o).collect()
+    }
+
+    pub fn get_objects_mut(&mut self) -> Vec<&mut Object> {
+        self.objects.iter_mut().map(|o| o).collect()
+    }
+
     /// Combine two [Config] into a single configuration
     pub fn combine(&mut self, other: Config) {
-        self.store.extend(other.store);
-        self.object.extend(other.object);
-        self.process.extend(other.process);
-        self.generate.extend(other.generate);
+        self.objects.extend(other.objects);
 
         for other_agent in other.agents.into_iter() {
             let other_node = other_agent.object.node.as_ref().unwrap();
@@ -54,25 +45,7 @@ impl Config {
     pub fn get_object_nodes_mut(&mut self) -> Vec<&mut Node> {
         let mut nodes = Vec::new();
 
-        for generate in self.generate.iter_mut() {
-            if let Some(node) = generate.object.node.as_mut() {
-                nodes.push(node);
-            }
-        }
-
-        for process in self.process.iter_mut() {
-            if let Some(node) = process.object.node.as_mut() {
-                nodes.push(node);
-            }
-        }
-
-        for store in self.store.iter_mut() {
-            if let Some(node) = store.object.node.as_mut() {
-                nodes.push(node);
-            }
-        }
-
-        for object in self.object.iter_mut() {
+        for object in self.get_objects_mut().into_iter() {
             if let Some(node) = object.node.as_mut() {
                 nodes.push(node);
             }
@@ -82,43 +55,14 @@ impl Config {
     }
 
     /// Get reference from all unique nodes from all object types
-    pub fn get_nodes(&self) -> Vec<&Node> {
+    pub fn get_unique_nodes(&self) -> Vec<&Node> {
         let mut nodes = Vec::new();
         let mut hosts = Vec::new();
 
-        for generate in self.generate.iter() {
-            if let Some(node) = generate.object.node.as_ref() {
-                if !hosts.contains(&node.host) {
-                    nodes.push(node);
-                    hosts.push(node.host);
-                }
-            }
-        }
-
-        for process in self.process.iter() {
-            if let Some(node) = process.object.node.as_ref() {
-                if !hosts.contains(&node.host) {
-                    nodes.push(node);
-                    hosts.push(node.host);
-                }
-            }
-        }
-
-        for store in self.store.iter() {
-            if let Some(node) = store.object.node.as_ref() {
-                if !hosts.contains(&node.host) {
-                    nodes.push(node);
-                    hosts.push(node.host);
-                }
-            }
-        }
-
-        for object in self.object.iter() {
-            if let Some(node) = object.node.as_ref() {
-                if !hosts.contains(&node.host) {
-                    nodes.push(node);
-                    hosts.push(node.host);
-                }
+        for object in self.get_objects().into_iter() {
+            if let Some(node) = object.node.as_ref() && !hosts.contains(&node.host){
+                nodes.push(node);
+                hosts.push(node.host);
             }
         }
 
@@ -127,63 +71,27 @@ impl Config {
 
     pub fn get_spawners<'a>(
         &'a self,
-    ) -> impl Iterator<Item = (&'a (dyn Spawner + Send + 'a), String)> {
-        let mut vec_objects: Vec<(&'a (dyn Spawner + Send + 'a), String)> = Vec::new();
+    ) -> impl Iterator<Item = (&'a (dyn Spawnable + Send + 'a), String)> {
+        let mut vec_objects: Vec<(&'a (dyn Spawnable + Send + 'a), String)> = Vec::new();
 
-        for object in self.object.iter() {
+        for object in self.objects.iter() {
             let name = object.name.clone();
             let spawner = object as _;
-            vec_objects.push((spawner, name));
-        }
-
-        for store in self.store.iter() {
-            let name = store.object.name.clone();
-            let spawner = store as _;
-            vec_objects.push((spawner, name));
-        }
-
-        for process in self.process.iter() {
-            let name = process.object.name.clone();
-            let spawner = process as _;
-            vec_objects.push((spawner, name));
-        }
-
-        for generate in self.generate.iter() {
-            let name = generate.object.name.clone();
-            let spawner = generate as _;
             vec_objects.push((spawner, name));
         }
 
         vec_objects.into_iter()
     }
 
-    /// Get mutable reference to all objects in config which implement the [`Spawner`] trait.
+    /// Get mutable reference to all objects in config which implement the [`Spawnable`] trait.
     pub fn get_mut_spawners<'a>(
         &'a mut self,
-    ) -> impl Iterator<Item = (&'a mut (dyn Spawner + Send + 'a), String)> {
-        let mut vec_objects: Vec<(&'a mut (dyn Spawner + Send + 'a), String)> = Vec::new();
+    ) -> impl Iterator<Item = (&'a mut (dyn Spawnable + Send + 'a), String)> {
+        let mut vec_objects: Vec<(&'a mut (dyn Spawnable + Send + 'a), String)> = Vec::new();
 
-        for object in self.object.iter_mut() {
+        for object in self.objects.iter_mut() {
             let name = object.name.clone();
             let spawner = object as _;
-            vec_objects.push((spawner, name));
-        }
-
-        for store in self.store.iter_mut() {
-            let name = store.object.name.clone();
-            let spawner = store as _;
-            vec_objects.push((spawner, name));
-        }
-
-        for process in self.process.iter_mut() {
-            let name = process.object.name.clone();
-            let spawner = process as _;
-            vec_objects.push((spawner, name));
-        }
-
-        for generate in self.generate.iter_mut() {
-            let name = generate.object.name.clone();
-            let spawner = generate as _;
             vec_objects.push((spawner, name));
         }
 
@@ -195,7 +103,7 @@ impl Config {
     }
 }
 
-impl Spawner for Config {
+impl Spawnable for Config {
     fn state(&self) -> State {
         for (spawner, _) in self.get_spawners() {
             if spawner.state().is_not_running() {

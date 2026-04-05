@@ -2,7 +2,7 @@ use crate::adapters::{
     ComposeBuilder, Container, ContainerBuilder, ContainerType, Executor, Local, Run, Uploader,
 };
 use crate::state::State;
-use crate::traits::Spawner;
+use crate::traits::{Configurable, Spawnable};
 use crate::types::data::{Data, DataTypes, GetVecData, VolatileData};
 use crate::types::{Executables, GetExecutables, Node, Script};
 use derive_builder::Builder;
@@ -10,6 +10,7 @@ use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
+use crate::types::preconfigured_type::{PreconfiguredType, PreconfiguredTypeConfig};
 
 /// Represents connection in the distributed system
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +66,10 @@ pub struct Object {
     pub executor: Box<dyn Executor + Send + Sync>,
     #[builder(default)]
     pub uploader: Option<Box<dyn Uploader + Send + Sync>>,
+    #[builder(default)]
+    pub preconfigured_type: Option<PreconfiguredType>,
+    #[builder(default)]
+    pub preconfigured_type_config: Option<PreconfiguredTypeConfig>
 }
 impl ObjectBuilder {
     pub fn ignore_graph(mut self, ignore_graph: bool) -> Self {
@@ -100,11 +105,13 @@ impl Default for Object {
             executables: Vec::new(),
             executor: Object::default_executor(),
             uploader: None,
+            preconfigured_type: None,
+            preconfigured_type_config: None
         }
     }
 }
 
-impl Spawner for Object {
+impl Spawnable for Object {
     fn state(&self) -> State {
         self.state
     }
@@ -115,6 +122,21 @@ impl Spawner for Object {
     /// - Node data uploaded
     fn build(&mut self) {
         info!("Building {}", self.name);
+
+        if let Some(preconfigured_type) = &self.preconfigured_type
+            && preconfigured_type.has_default()
+            && self.preconfigured_type_config.is_none()
+        {
+            info!("No config given for pre-configured type. Loading default config");
+            self.preconfigured_type_config = Some(preconfigured_type.get_default());
+        }
+
+        // Setup container based on specified config. Default setup if only db_type was provided,
+        // otherwise custom
+        if let Some(mut config) = self.preconfigured_type_config.take() {
+            let _ = self.docker_container_builder.get_or_insert_default();
+            config.configure(self);
+        }
 
         // Take ownership of ComposeGroupBuilder out of object to prevent partial move
         if let Some(group) = self.docker_compose_builder.take() {
@@ -229,6 +251,20 @@ impl Spawner for Object {
             error!("{error}");
         }
 
+        // Create kafka topic
+        if let Some(config) = self.preconfigured_type_config.as_mut()
+            && let PreconfiguredTypeConfig::Kafka(kafka) = config
+            && let ContainerType::Compose(group) = &self.docker_manager
+            && let Some(broker) = group.get_containers("kafka-broker")
+        {
+            if let Some(ssh) = self.node.as_ref().and_then(|node| node.ssh.as_ref())
+            {
+                kafka.create_topic(broker.id.as_ref().unwrap(), ssh);
+            } else {
+                kafka.create_topic(broker.id.as_ref().unwrap(), &Local::new());
+            }
+        }
+
         info!("Finished setting up {}", self.name);
     }
 
@@ -275,13 +311,11 @@ impl Object {
             ));
             if let Err(error) = result {
                 error!("{error}");
-            } else if let Ok(result) = result {
-                if result.eq("err") {
-                    error!(
-                        "Unable to find file {}. Check if the path is correctly formatted",
-                        script.path
-                    );
-                }
+            } else if let Ok(result) = result && result.eq("err") {
+                error!(
+                    "Unable to find file {}. Check if the path is correctly formatted",
+                    script.path
+                );
             }
 
             if script.path.ends_with(".sh") {

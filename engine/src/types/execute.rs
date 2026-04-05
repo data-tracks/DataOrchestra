@@ -1,15 +1,12 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone)]
 pub enum Executables {
     Script(Script),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Builder)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Builder)]
 pub struct Script {
     #[builder(setter(strip_option, into), default)]
     pub name: Option<String>,

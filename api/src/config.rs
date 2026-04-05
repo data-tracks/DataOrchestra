@@ -2,7 +2,7 @@ use crate::{arguments::Arguments, deserialize_levelfilter, serialize_levelfilter
 use serde::{Deserialize, Serialize};
 use tracing::level_filters::LevelFilter;
 use data_orchestra_engine::adapters::portainer::portainer::Portainer;
-use data_orchestra_engine::process::types::Kafka;
+use data_orchestra_engine::types::preconfigured::Kafka;
 use data_orchestra_parser::amount::Amount;
 use data_orchestra_parser::types::upload::UploadTypes;
 

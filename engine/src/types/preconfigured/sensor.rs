@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::adapters::TmuxBuilder;
 use crate::{
-    generate::Generate,
-    traits::Configurator,
+    traits::Configurable,
     types::{
         Executables, ScriptBuilder,
         data::{DataBuilder, DataTypes, VolatileDataBuilder},
     },
 };
+use crate::object::Object;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sensor {
@@ -38,8 +38,8 @@ impl Sensor {
     }
 }
 
-impl Configurator<Generate> for Sensor {
-    fn configure(&mut self, parent: &mut Generate) {
+impl Configurable<Object> for Sensor {
+    fn configure(&mut self, parent: &mut Object) {
         let data = DataBuilder::default()
             .src("services/sensor")
             .dst("/sensor")
@@ -63,7 +63,6 @@ impl Configurator<Generate> for Sensor {
             .expect("Unable to build script");
 
         let docker = parent
-            .object
             .docker_container_builder
             .get_or_insert_default();
 
@@ -73,10 +72,9 @@ impl Configurator<Generate> for Sensor {
             .image("rust_base");
 
         parent
-            .object
             .resources
             .push(DataTypes::VolatileData(volatile));
-        parent.object.resources.push(DataTypes::Data(data));
-        parent.object.executables.push(Executables::Script(script));
+        parent.resources.push(DataTypes::Data(data));
+        parent.executables.push(Executables::Script(script));
     }
 }

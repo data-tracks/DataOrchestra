@@ -1,14 +1,14 @@
 use derive_builder::Builder;
 
-use crate::{config::Config, traits::Spawner};
+use crate::{config::Config, traits::Spawnable};
 
-/// The pipeline type. Represents a pipeline creation of spawnable types ([Spawner]) with intermediate hooks.
+/// The pipeline type. Represents a pipeline creation of spawnable types ([Spawnable]) with intermediate hooks.
 #[derive(Builder)]
 #[builder(pattern = "owned")]
 pub struct Pipeline<'spawn, T, E> {
     /// Spawnable types
     #[builder(default, setter(each = "spawner"))]
-    spawners: Vec<&'spawn mut (dyn Spawner + Send)>,
+    spawners: Vec<&'spawn mut (dyn Spawnable + Send)>,
     /// Runnable function for before the building stage of spawnables
     #[builder(default, setter(each = "before_build_hook"))]
     before_build_hooks: Vec<Box<dyn Fn() -> Result<T, E>>>,

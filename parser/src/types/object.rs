@@ -1,17 +1,22 @@
+use std::path::Path;
 use crate::attach::attach_types::AttachTypeConfig;
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
 use data_orchestra_engine::object::{Graph, Object};
+use data_orchestra_engine::types::{DataBuilder, DataTypes};
 use crate::amount::Amount;
 use crate::traits::ToInternal;
 use crate::types::data::ExtDataTypes;
 use crate::types::docker::ExtDocker;
 use crate::types::execute::ExtExecutables;
 use crate::types::node::ExtNode;
+use data_orchestra_engine::types::preconfigured_type::{PreconfiguredType, PreconfiguredTypeConfig};
 
 /// External representation of the internal [`Object`] object
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExtObject {
+    #[serde(default = "ExtObject::default_amount")]
+    pub amount: usize,
     /// Name of object
     pub name: Option<String>,
     #[serde(default)]
@@ -30,24 +35,29 @@ pub struct ExtObject {
     pub resources: Amount<ExtDataTypes>,
     #[serde(default)]
     pub executables: Amount<ExtExecutables>,
+    pub preconfigured_type: Option<PreconfiguredType>,
+    pub preconfigured_type_config: Option<PreconfiguredTypeConfig>
+}
+
+impl ExtObject {
+    pub fn default_amount() -> usize {
+        1
+    }
 }
 
 impl Default for ExtObject {
     fn default() -> Self {
         ExtObject {
             name: None,
+            amount: ExtObject::default_amount(),
             graph: Graph::default(),
             docker: Some(ExtDocker::default()),
             node: None,
             attach_config: Amount::None,
-            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData {
-                location: super::location::Location::Container,
-                name: None,
-                source: "".to_string(),
-                destination: "".to_string(),
-                dependency: None,
-            })),
+            resources: Amount::None,
             executables: Amount::None,
+            preconfigured_type: None,
+            preconfigured_type_config: None
         }
     }
 }
@@ -55,6 +65,30 @@ impl Default for ExtObject {
 impl ToInternal<Object> for ExtObject {
     fn to_internal(self) -> Object {
         let mut object = Object::default();
+
+        object.preconfigured_type = self.preconfigured_type;
+        object.preconfigured_type_config = self.preconfigured_type_config;
+
+        if let Some(config) = object.preconfigured_type_config.as_mut()
+            && let PreconfiguredTypeConfig::PostgreSQL(postgres) = config
+            && self.node.is_some()
+        {
+            for schema in postgres.schema.iter_mut() {
+                if let Some(file_name) =
+                    Path::new(schema).file_name().and_then(|name| name.to_str())
+                {
+                    // Alter path to that of the remote location
+                    let data = DataBuilder::default()
+                        .src(schema.clone())
+                        .dst(format!("docker/mount/{file_name}"))
+                        .build()
+                        .expect("Unable to build data for store schema");
+                    object.resources.push(DataTypes::Data(data));
+
+                    *schema = format!("docker/mount/{file_name}");
+                }
+            }
+        }
 
         object.graph = self.graph;
 

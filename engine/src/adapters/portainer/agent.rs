@@ -1,4 +1,4 @@
-use crate::{object::Object, state::State, traits::Spawner};
+use crate::{object::Object, state::State, traits::Spawnable};
 
 /// Representing a remote portainer agent
 #[derive(Debug)]
@@ -6,7 +6,7 @@ pub struct Agent {
     pub object: Object,
 }
 
-impl Spawner for Agent {
+impl Spawnable for Agent {
     fn state(&self) -> State {
         self.object.state()
     }

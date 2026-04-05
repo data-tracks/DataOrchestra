@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use serde::{de::Error, Deserialize, Deserializer, Serializer};
 use tracing_appender::rolling;
 use tracing_subscriber::{fmt::{self}, layer::SubscriberExt, util::SubscriberInitExt};
@@ -32,31 +33,13 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-
-    match s.to_lowercase().trim() {
-        "error" => Ok(LevelFilter::ERROR),
-        "warn" => Ok(LevelFilter::WARN),
-        "info" => Ok(LevelFilter::INFO),
-        "debug" => Ok(LevelFilter::DEBUG),
-        "trace" => Ok(LevelFilter::TRACE),
-        "off" => Ok(LevelFilter::OFF),
-        _ => Err(Error::custom("No Value exists"))
-    }
-
+    LevelFilter::from_str(s.to_lowercase().trim())
+        .map_err(|e| Error::custom("No value exists"))
 }
 
 pub fn serialize_levelfilter<S>(level: &LevelFilter, s: S) -> Result<S::Ok, S::Error> 
 where
     S: Serializer,
 {
-    let level_str = match level {
-        &LevelFilter::OFF => "off",
-        &LevelFilter::ERROR => "error",
-        &LevelFilter::WARN => "warn",
-        &LevelFilter::INFO => "info",
-        &LevelFilter::DEBUG => "debug",
-        &LevelFilter::TRACE => "trace",
-    };
-
-    s.serialize_str(level_str)
+    s.serialize_str(level.to_string().as_str())
 }

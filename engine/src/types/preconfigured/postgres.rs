@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    store::Store,
-    traits::{Checkable, Configurator},
+    traits::{Checkable, Configurable},
 };
+use crate::adapters::RestartTypes::No;
+use crate::object::Object;
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename = "postgres")]
-pub struct PostGres {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename = "postgresql")]
+pub struct PostgreSQL {
     #[serde(default = "default_db")]
     pub postgres_db: String,
     #[serde(default = "default_user")]
@@ -16,6 +17,8 @@ pub struct PostGres {
     pub postgres_password: String,
     #[serde(default = "default_initdb_args")]
     pub postgres_initdb_args: Option<String>,
+    //TODO: Adjust type here
+    pub schema: Vec<String>
 }
 
 pub fn default_db() -> String {
@@ -34,10 +37,9 @@ pub fn default_initdb_args() -> Option<String> {
     None
 }
 
-impl Configurator<Store> for PostGres {
-    fn configure(&mut self, parent: &mut Store) {
+impl Configurable<Object> for PostgreSQL {
+    fn configure(&mut self, parent: &mut Object) {
         let container = parent
-            .object
             .docker_container_builder
             .get_or_insert_default();
         container
@@ -53,7 +55,7 @@ impl Configurator<Store> for PostGres {
         }
 
         // Mount sql schemas to container
-        for mount in parent.schema.iter() {
+        for mount in self.schema.iter() {
             // TODO: Conditionally check if user already provides full path
             // Mount requires full path, $(pwd) inserts the needed base directory
             container.volume(format!(
@@ -68,18 +70,19 @@ impl Configurator<Store> for PostGres {
     }
 }
 
-impl Default for PostGres {
-    fn default() -> PostGres {
-        PostGres {
+impl Default for PostgreSQL {
+    fn default() -> PostgreSQL {
+        PostgreSQL {
             postgres_db: default_db(),
             postgres_user: default_user(),
             postgres_password: default_password(),
             postgres_initdb_args: default_initdb_args(),
+            schema: Vec::new()
         }
     }
 }
 
-impl PostGres {
+impl PostgreSQL {
     /// Get connection string for postgres DB
     pub fn get_connection_string(&self, host: String, port: u16) -> String {
         format!(
@@ -89,7 +92,7 @@ impl PostGres {
     }
 }
 
-impl Checkable<()> for PostGres {
+impl Checkable<()> for PostgreSQL {
     fn check(&self) -> Result<(), String> {
         Ok(())
     }
