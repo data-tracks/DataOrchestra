@@ -55,7 +55,7 @@ async fn main() {
 
         for path in paths.as_ref_vec().iter() {
             info!("Reading config file from {path}");
-            let mut ext_config = ExtConfig::parse(&Path::new(path));
+            let mut ext_config = ExtConfig::parse(Path::new(path));
 
             // Transform attachable objects to configured objects
             let attach_objects = ext_config.extract_attachables();

@@ -565,6 +565,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "data_orchestra_agent"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "log",
+ "reqwest",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "data_orchestra_api"
 version = "0.1.0"
 dependencies = [
