@@ -7,6 +7,9 @@ pub struct Agent {
 }
 
 impl Spawnable for Agent {
+    fn name(&self) -> String {
+        "agent".to_string()
+    }
     fn state(&self) -> State {
         self.object.state()
     }

@@ -36,6 +36,8 @@ pub struct ExtDocker {
     pub publish: Amount<u16>,
     #[serde(default)]
     pub publish_map: Amount<String>,
+    #[serde(default)]
+    privileged: bool
 }
 
 impl Default for ExtDocker {
@@ -55,6 +57,7 @@ impl Default for ExtDocker {
             mounts: Amount::None,
             publish: Amount::None,
             publish_map: Amount::None,
+            privileged: false,
         }
     }
 }
@@ -132,6 +135,8 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
 
         builder.publish_all(self.publish_all);
         builder.restart(self.restart);
+
+        builder.privileged(self.privileged);
 
         builder
     }

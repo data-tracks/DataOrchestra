@@ -12,6 +12,7 @@ pub trait Checkable<T> {
 
 /// Represents an object which can be deployed
 pub trait Spawnable {
+    fn name(&self) -> String;
     fn state(&self) -> State;
     fn build(&mut self);
     fn setup(&mut self);

@@ -1,3 +1,4 @@
+use std::thread;
 use derive_builder::Builder;
 use log::info;
 use crate::{config::Config, traits::Spawnable};
@@ -41,11 +42,16 @@ impl<'spawn, T, E> Pipeline<'spawn, T, E> {
         }
 
         info!("Build spawn");
-        for spawner in self.spawners.iter_mut() {
-            if spawner.state().is_not_running() {
-                spawner.build();
+        thread::scope(|s| {
+            for spawner in self.spawners.iter_mut() {
+                thread::Builder::new()
+                    .name(spawner.name())
+                    .spawn_scoped(s, move || {
+                        spawner.build();
+                    })
+                    .unwrap();
             }
-        }
+        });
 
         info!("Setup hook");
         for hook in self.before_setup_hooks.iter() {
@@ -53,11 +59,16 @@ impl<'spawn, T, E> Pipeline<'spawn, T, E> {
         }
 
         info!("Setup spawn");
-        for spawner in self.spawners.iter_mut() {
-            if spawner.state().is_not_running() {
-                spawner.setup();
+        thread::scope(|s| {
+            for spawner in self.spawners.iter_mut() {
+                thread::Builder::new()
+                    .name(spawner.name())
+                    .spawn_scoped(s, move || {
+                        spawner.setup();
+                    })
+                    .unwrap();
             }
-        }
+        });
 
         info!("Deploy hook");
         for hook in self.before_deploy_hooks.iter() {
@@ -65,11 +76,16 @@ impl<'spawn, T, E> Pipeline<'spawn, T, E> {
         }
 
         info!("Deploy spawn");
-        for spawner in self.spawners.iter_mut() {
-            if spawner.state().is_not_running() {
-                spawner.deploy();
+        thread::scope(|s| {
+            for spawner in self.spawners.iter_mut() {
+                thread::Builder::new()
+                    .name(spawner.name())
+                    .spawn_scoped(s, move || {
+                        spawner.deploy();
+                    })
+                    .unwrap();
             }
-        }
+        });
 
         info!("Final hook");
         for hook in self.after_deploy_hooks.iter() {

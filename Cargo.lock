@@ -570,32 +570,12 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-web",
- "log",
- "reqwest",
- "serde",
- "tokio",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "data_orchestra_api"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "clap",
  "data_orchestra_engine",
- "data_orchestra_parser",
- "derive_builder",
  "log",
  "reqwest",
  "serde",
  "serde_json",
- "ssh2",
  "tokio",
- "toml",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
@@ -618,6 +598,28 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "walkdir",
+]
+
+[[package]]
+name = "data_orchestra_master"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "clap",
+ "data_orchestra_engine",
+ "data_orchestra_parser",
+ "derive_builder",
+ "log",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "ssh2",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
 ]
 
 [[package]]

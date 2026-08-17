@@ -104,6 +104,10 @@ impl Config {
 }
 
 impl Spawnable for Config {
+    fn name(&self) -> String {
+        "config".to_string()
+    }
+
     fn state(&self) -> State {
         for (spawner, _) in self.get_spawners() {
             if spawner.state().is_not_running() {

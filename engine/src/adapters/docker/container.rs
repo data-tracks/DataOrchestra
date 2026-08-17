@@ -215,7 +215,7 @@ impl Container {
             .executor
             .exec(format!(
                 "docker run {} -it {}",
-                self.config.parse_options(),
+                self.config.parse_config(),
                 self.config.image.as_ref().unwrap()
             ))
             .map_err(|err| err.to_string())?;

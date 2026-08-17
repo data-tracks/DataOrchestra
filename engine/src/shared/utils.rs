@@ -1,4 +1,5 @@
 use std::{thread, time::Duration};
+use crate::traits::Spawnable;
 
 pub fn repeat_on_err<R, E, F>(f: F, amount: usize, sleep: Option<Duration>) -> Result<R, E>
     where F: Fn() -> Result<R, E>
@@ -32,4 +33,4 @@ pub fn repeat_on_err_mut<R, E, F>(mut f: F, amount: usize, sleep: Option<Duratio
     }
 
     result 
-}  
+}

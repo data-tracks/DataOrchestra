@@ -1,0 +1,6 @@
+components_file = "./examples/dind.json"
+
+[api]
+ip = "localhost"
+log_level = "debug"
+port = 5000

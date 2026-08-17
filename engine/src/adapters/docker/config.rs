@@ -50,6 +50,8 @@ pub struct ContainerConfig {
     /// Building args for dockerfile
     #[builder(setter(custom), default)]
     pub build_args: HashMap<String, String>,
+    #[builder(default)]
+    pub privileged: bool
 }
 
 impl ContainerBuilder {
@@ -109,6 +111,7 @@ impl Default for ContainerConfig {
             image: None,
             dockerfile: None,
             build_args: HashMap::new(),
+            privileged: false
         }
     }
 }
@@ -119,7 +122,7 @@ impl ContainerConfig {
     }
 
     /// Parser to parse [`ContainerConfig`] to valid docker run command
-    pub fn parse_options(&self) -> String {
+    pub fn parse_config(&self) -> String {
         let mut command: String = String::from("-d -q");
 
         // Parse network variable
@@ -179,6 +182,11 @@ impl ContainerConfig {
             RestartTypes::OnFailure(max_retries) => {
                 command = format!("{command} --restart=on-failure:{max_retries}")
             }
+        }
+
+        // Parse privileged
+        if self.privileged {
+            command = format!("{command} --privileged");
         }
 
         command

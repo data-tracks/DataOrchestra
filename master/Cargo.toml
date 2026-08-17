@@ -1,5 +1,5 @@
 [package]
-name = "data_orchestra_api"
+name = "data_orchestra_master"
 authors = ["Mathieu Groenen", "David Lengweiler"]
 license = "Apache-2.0"
 

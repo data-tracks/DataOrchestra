@@ -1,6 +1,4 @@
-use crate::adapters::{
-    ComposeBuilder, Container, ContainerBuilder, ContainerType, Executor, Local, Run, Uploader,
-};
+use crate::adapters::{create_network, docker, ComposeBuilder, Container, ContainerBuilder, ContainerType, Executor, Local, Run, Uploader};
 use crate::state::State;
 use crate::traits::{Configurable, Spawnable};
 use crate::types::data::{Data, DataTypes, GetVecData, VolatileData};
@@ -112,6 +110,10 @@ impl Default for Object {
 }
 
 impl Spawnable for Object {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+    
     fn state(&self) -> State {
         self.state
     }
@@ -245,6 +247,10 @@ impl Spawnable for Object {
     /// - Docker container data uploaded
     fn setup(&mut self) {
         info!("Setting up {}", self.name);
+
+        for container in self.docker_manager.containers_ref_vec() {
+            create_network(container.config.network.clone(), self.executor.as_ref());
+        }
 
         let result = self.docker_manager.run();
         if let Err(error) = result {
