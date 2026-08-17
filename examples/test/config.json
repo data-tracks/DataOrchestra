@@ -1,5 +1,9 @@
 {
   "objects": {
+    "node": {
+      "name": "dind-1",
+      "host": "dind-1",
+    }
     "resources": {
       "type": "data",
       "source": "../examples/test/data",

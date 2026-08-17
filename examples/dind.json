@@ -1,0 +1,37 @@
+{
+  "objects": [
+    {
+      "docker": {
+        "name": "dind-1",
+        "image": "docker:dind",
+        "network": "docker-in-docker",
+        "privileged": true,
+        "environment": {
+          "DOCKER_TLS_CERTDIR": "/certs"
+        }
+      }
+    },
+    {
+      "docker": {
+        "name": "dind-2",
+        "image": "docker:dind",
+        "network": "docker-in-docker",
+        "privileged": true,
+        "environment": {
+          "DOCKER_TLS_CERTDIR": "/certs"
+        }
+      }
+    },
+    {
+      "docker": {
+        "name": "dind-3",
+        "image": "docker:dind",
+        "network": "docker-in-docker",
+        "privileged": true,
+        "environment": {
+          "DOCKER_TLS_CERTDIR": "/certs"
+        }
+      }
+    }
+  ]
+}

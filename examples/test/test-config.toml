@@ -1,0 +1,6 @@
+components_file = "./examples/test/test.json"
+
+[api]
+ip = "localhost"
+log_level = "debug"
+port = 5000

@@ -37,9 +37,22 @@ impl StateManager {
 
     pub fn start(tx: Sender<Message>) {
         loop {
-            let message = Message {};
-            tx.send(message).expect("Error while sending message over channel");
-            sleep(Duration::from_secs(1));
+            tokio::time::sleep(Duration::from_secs(2)).await;
+            if self.master.is_none() {
+                continue;
+            }
+
+            };
+
+            let client = reqwest::Client::new();
+            let res = client
+                .post(format!("localhost:{}", self.port))
+                .body(serde_json::to_string(&message).expect("Error"))
+                .send()
+                .await;
+
+            info!("{}", res.is_err());
+            */
         }
     }
 }
