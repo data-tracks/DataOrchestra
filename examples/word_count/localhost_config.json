@@ -1,0 +1,103 @@
+{
+  "api": {
+      "kafka_host": "localhost"
+  },
+
+  "objects":
+  [
+    {
+      "name": "sentence_generator",
+      "to": ["kafka"],
+      "resources": {
+        "type": "data",
+        "name": "sentence_generator",
+        "source": "examples/word_count/sentence_generator",
+        "destination": "/sentence_generator"
+      },
+      "executables": {
+        "type": "tmux",
+        "session": "SentenceGenerator",
+        "destination": "/sentence_generator/start.sh",
+        "commands": [
+          "cd /sentence_generator",
+          "cargo run -- --producer localhost:9092 --topic SentenceGenerator -l debug --interval 1"
+        ]
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust_base",
+        "name": "sentence_generator"
+      },
+      "attach": {
+        "kafka_producer": {
+          "topics": ["Sentence"],
+          "address": "localhost:9092",
+          "logger": "localhost:9092",
+          "api_port": 5000
+        }
+      }
+    },
+    {
+      "name": "sentence_splitter",
+      "to": ["kafka"],
+      "resources": {
+        "type": "data",
+        "name": "sentence_splitter",
+        "source": "examples/word_count/sentence_splitter",
+        "destination": "/sentence_splitter"
+      },
+      "executables": {
+        "type": "tmux",
+        "session": "SentenceSplitter",
+        "destination": "/sentence_splitter/start.sh",
+        "commands": [
+          "cd /sentence_splitter",
+          "cargo run -- --consumer broker:29092 --producer broker:29092 --consumer-topic Sentence --producer-topic Word -l debug"
+        ]
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust_base",
+        "name": "sentence_splitter"
+      }
+    },
+    {
+      "name": "kafka",
+      "to": ["postgres_adapter"],
+      "kafka": {
+        "topics": ["Sentence", "Word"]
+      }
+    },
+    {
+      "name": "postgres_adapter",
+      "to": ["postgres"],
+      "resources": {
+        "type": "data",
+        "name": "word-generator",
+        "source": "examples/word_count/postgres_adapter",
+        "destination": "/postgres_adapter"
+      },
+      "executables": {
+        "type": "tmux",
+        "session": "PostgresAdapter",
+        "destination": "/postgres_adapter/start.sh",
+        "commands": [
+          "cd /postgres_adapter",
+          "cargo run -- -l debug --topic Word --consumer localhost:9092"
+        ]
+      },
+      "docker": {
+        "dockerfile": "images/rust.dockerfile",
+        "image": "rust_base",
+        "name": "postgres_adapter"
+      }
+    },
+    {
+      "name": "postgres",
+      "schema": "examples/word_count/postgres_adapter/words.sql",
+      "postgres": {
+        "postgres_db": "words"
+      }
+    }
+  ]
+}

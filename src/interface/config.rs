@@ -17,7 +17,7 @@ pub struct ExtConfig {
     pub portainer: Portainer,
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_object")]
-    pub object: Amount<ExtObject>,
+    pub objects: Amount<ExtObject>,
 }
 
 impl ToInternal<(Config, Portainer)> for ExtConfig {
@@ -25,7 +25,7 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
         let (kafka_api, kafka_consumer) = self.api.to_internal();
 
         let mut config = Config {
-            objects: self.object.to_internal(),
+            objects: self.objects.to_internal(),
         };
 
         config.objects.push(kafka_consumer);
@@ -41,7 +41,7 @@ impl ExtConfig {
     /// own objects
     pub fn extract_attachables(&mut self) -> Vec<Object> {
         let mut attach_objects = Vec::new();
-        for object in self.object.as_mut_ref_vec() {
+        for object in self.objects.as_mut_ref_vec() {
             for config in object.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&object));
             }
