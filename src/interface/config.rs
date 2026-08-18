@@ -1,5 +1,5 @@
 use super::api::API;
-use super::object::ExtObject;
+use super::ext_object::ExtObject;
 use crate::core::adapters::portainer::portainer::Portainer;
 use crate::core::config::Config;
 use crate::core::object::Object;

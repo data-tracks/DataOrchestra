@@ -5,7 +5,7 @@ use crate::core::object::Object;
 use crate::core::traits::Creator;
 use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
 use crate::core::types::{Executables, ScriptBuilder};
-use crate::interface::object::ExtObject;
+use crate::interface::ext_object::ExtObject;
 use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
 use crate::shared::ToInternal;
 

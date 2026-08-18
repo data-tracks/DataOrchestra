@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use data_orchestra::interface::object::ExtObject;
+    use data_orchestra::interface::ext_object::ExtObject;
     use serde_json::json;
 
     pub fn get_object(json: serde_json::Value) -> ExtObject {

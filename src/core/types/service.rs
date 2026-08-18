@@ -2,68 +2,9 @@ use crate::core::object::Object;
 use crate::core::traits::Configurator;
 use crate::core::types::services::*;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
-
-#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum Service {
-    PostgreSQL,
-    Redis,
-    MongoDB,
-    Polypheny,
-
-    Flink,
-    Kafka,
-    Spark,
-    Storm,
-}
-
-impl Service {
-    pub fn has_default(&self) -> bool {
-        match self {
-            Self::PostgreSQL => true,
-            Self::Redis => true,
-            Self::MongoDB => true,
-            Self::Polypheny => true,
-            Self::Flink => true,
-            Self::Kafka => true,
-            Self::Spark => true,
-            Self::Storm => true,
-        }
-    }
-
-    pub fn get_default(&self) -> ServiceConfig {
-        match self {
-            Self::PostgreSQL => ServiceConfig::PostgreSQL(PostgreSQL::default()),
-            Self::Redis => ServiceConfig::Redis(Redis::default()),
-            Self::MongoDB => ServiceConfig::MongoDB(MongoDB::default()),
-            Self::Polypheny => ServiceConfig::Polypheny(Polypheny::default()),
-            Self::Flink => ServiceConfig::Flink(Flink::new()),
-            Self::Kafka => ServiceConfig::Kafka(Kafka::default()),
-            Self::Spark => ServiceConfig::Spark(Spark::new()),
-            Self::Storm => ServiceConfig::Storm(Storm::new()),
-        }
-    }
-}
-
-impl Display for Service {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            Self::PostgreSQL => String::from("PostgreSQL"),
-            Self::Redis => String::from("Redis"),
-            Self::MongoDB => String::from("MongoDB"),
-            Self::Polypheny => String::from("Polypheny"),
-            Self::Flink => String::from("Flink"),
-            Self::Kafka => String::from("Kafka"),
-            Self::Spark => String::from("Spark"),
-            Self::Storm => String::from("Storm"),
-        };
-        write!(f, "{}", str)
-    }
-}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "lowercase", tag = "type")]
 pub enum ServiceConfig {
     // Stores
     PostgreSQL(PostgreSQL),

@@ -1,7 +1,10 @@
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::{Graph, Object};
+use crate::core::traits::Configurator;
+use crate::core::types::ServiceConfig;
 use crate::interface::data::ExtDataTypes;
 use crate::interface::docker::ExtDocker;
 use crate::interface::execute::ExtExecutables;
@@ -32,6 +35,8 @@ pub struct ExtObject {
     pub resources: Amount<ExtDataTypes>,
     #[serde(default)]
     pub executables: Amount<ExtExecutables>,
+    #[serde(rename = "service")]
+    pub service_config: Option<ServiceConfig>,
 }
 
 impl Default for ExtObject {
@@ -51,6 +56,7 @@ impl Default for ExtObject {
                 dependency: None,
             })),
             executables: Amount::None,
+            service_config: None,
         }
     }
 }
@@ -87,6 +93,10 @@ impl ToInternal<Object> for ExtObject {
                 object.resources.push(data);
             }
             object.executables.push(script);
+        }
+
+        if let Some(service_config) = self.service_config {
+            object.service_config = Some(service_config);
         }
 
         object

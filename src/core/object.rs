@@ -4,7 +4,7 @@ use crate::core::adapters::{
 use crate::core::traits::Configurator;
 use crate::core::traits::Spawner;
 use crate::core::types::data::{Data, DataTypes, GetData, VolatileData};
-use crate::core::types::{Executables, GetExecutables, Node, Script, Service, ServiceConfig};
+use crate::core::types::{Executables, GetExecutables, Node, Script, ServiceConfig};
 use crate::log_time;
 use crate::shared::{repeat_on_err, repeat_on_err_mut};
 use derive_builder::Builder;
@@ -69,8 +69,6 @@ pub struct Object {
     #[builder(default = "default_runner()")]
     pub runner: Box<dyn Runner + Send + Sync>,
     #[builder(default)]
-    pub service: Option<Service>,
-    #[builder(default)]
     pub service_config: Option<ServiceConfig>,
 }
 
@@ -123,7 +121,6 @@ impl Default for Object {
             executables: Vec::new(),
             ansible: default_ansible(),
             runner: default_runner(),
-            service: None,
             service_config: None,
         }
     }
@@ -136,12 +133,6 @@ impl Spawner for Object {
     /// - Node data uploaded
     fn build(&mut self) {
         info!("Building {}", self.name);
-
-        if let Some(service) = self.service.as_ref()
-            && self.service_config.is_none()
-        {
-            self.service_config = Some(service.get_default());
-        }
 
         if let Some(mut service_config) = self.service_config.take() {
             service_config.configure(self);

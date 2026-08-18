@@ -1,8 +1,9 @@
 {
   "api": {
-      "kafka_host": "localhost"
+    "kafka_host": {
+      "host": "127.0.0.1"
+    }
   },
-
   "objects":
   [
     {
@@ -64,7 +65,8 @@
     {
       "name": "kafka",
       "to": ["postgres_adapter"],
-      "kafka": {
+      "service": {
+        "type": "kafka",
         "topics": ["Sentence", "Word"]
       }
     },
@@ -95,7 +97,8 @@
     {
       "name": "postgres",
       "schema": "examples/word_count/postgres_adapter/words.sql",
-      "postgres": {
+      "service": {
+        "type": "postgresql",
         "postgres_db": "words"
       }
     }

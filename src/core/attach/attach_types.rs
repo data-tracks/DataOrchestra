@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{object::Object, traits::Creator},
-    interface::object::ExtObject,
+    interface::ext_object::ExtObject,
 };
 
 use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer};

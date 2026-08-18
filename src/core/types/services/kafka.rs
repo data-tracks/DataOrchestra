@@ -29,8 +29,7 @@ impl Configurator<Object> for Kafka {
 
         parent
             .docker_group_builder
-            .as_mut()
-            .unwrap()
+            .get_or_insert_default()
             .compose("images/compose-kafka.yaml")
             .interpolation_variable("KAFKA_HOST", self.host.to_string());
     }

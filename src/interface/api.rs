@@ -9,7 +9,7 @@ use crate::core::object::{Object, ObjectBuilder};
 use crate::core::traits::Creator;
 use crate::core::types::data::{DataBuilder, VolatileDataBuilder};
 use crate::core::types::{Kafka, ScriptBuilder, ServiceConfig};
-use crate::interface::object::ExtObject;
+use crate::interface::ext_object::ExtObject;
 use crate::shared::ToInternal;
 
 #[derive(Debug, Deserialize, Serialize)]
