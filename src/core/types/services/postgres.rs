@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::{store::Store, traits::{Checkable, Configurator}};
+use crate::core::{
+    object::Object,
+    traits::{Checkable, Configurator},
+};
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename = "postgres")]
-pub struct PostGres {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename = "postgresql")]
+pub struct PostgreSQL {
     #[serde(default = "default_db")]
     pub postgres_db: String,
     #[serde(default = "default_user")]
@@ -16,25 +19,24 @@ pub struct PostGres {
 }
 
 pub fn default_db() -> String {
-    String::from("postgres")
+    String::from("postgresql")
 }
 
 pub fn default_user() -> String {
-    String::from("postgres")
+    String::from("postgresql")
 }
 
 pub fn default_password() -> String {
-    String::from("postgres")
+    String::from("postgresql")
 }
 
 pub fn default_initdb_args() -> Option<String> {
     None
 }
 
-impl Configurator<Store> for PostGres {
-    fn configure(&mut self, parent: &mut Store) {
-
-        let container = parent.object.docker_container_builder.get_or_insert_default(); 
+impl Configurator<Object> for PostgreSQL {
+    fn configure(&mut self, parent: &mut Object) {
+        let container = parent.docker_container_builder.get_or_insert_default();
         container
             .try_name("postgres")
             .image("postgres")
@@ -48,36 +50,46 @@ impl Configurator<Store> for PostGres {
             container.environment("POSTGRES_INITDB_ARGS", format!("\"{}\"", initdb_args));
         }
 
+        /*
         // Mount sql schemas to container
         for mount in parent.schema.iter() {
             // TODO: Conditionally check if user already provides full path
             // Mount requires full path, $(pwd) inserts the needed base directory
-            container.volume(format!("$(pwd)/{}:{}", &mount, format!("/docker-entrypoint-initdb.d/{}", mount.clone().split("/").last().unwrap())));
-        }
+            container.volume(format!(
+                "$(pwd)/{}:{}",
+                &mount,
+                format!(
+                    "/docker-entrypoint-initdb.d/{}",
+                    mount.clone().split("/").last().unwrap()
+                )
+            ));
+        }*/
     }
 }
 
-impl Default for PostGres {
-    fn default() -> PostGres {
-        PostGres 
-        { 
-            postgres_db: default_db(), 
-            postgres_user: default_user(), 
+impl Default for PostgreSQL {
+    fn default() -> PostgreSQL {
+        PostgreSQL {
+            postgres_db: default_db(),
+            postgres_user: default_user(),
             postgres_password: default_password(),
-            postgres_initdb_args: default_initdb_args()
+            postgres_initdb_args: default_initdb_args(),
         }
     }
 }
 
-impl PostGres {
+impl PostgreSQL {
     /// Get connection string for postgres DB
     pub fn get_connection_string(&self, host: String, port: u16) -> String {
-        format!("host={} port=5432 user={} password={}", host, port, self.postgres_password)
+        format!(
+            "host={} port=5432 user={} password={}",
+            host, port, self.postgres_password
+        )
     }
 }
 
-impl Checkable<()> for PostGres {
+impl Checkable<()> for PostgreSQL {
     fn check(&self) -> Result<(), String> {
-        Ok(()) 
+        Ok(())
     }
 }

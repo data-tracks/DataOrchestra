@@ -19,8 +19,5 @@ pub use traits::*;
 pub mod local;
 pub use local::*;
 
-pub mod heartbeats;
-pub use heartbeats::*;
-
 pub mod tmux;
 pub use tmux::*;

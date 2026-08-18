@@ -1,35 +1,38 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use super::node::ExtNode;
 use crate::core::adapters::{ContainerBuilder, TmuxBuilder};
-use crate::core::types::ScriptBuilder;
-use crate::core::types::data::{DataBuilder, VolatileDataBuilder};
-use crate::core::traits::Creator;
-use crate::core::process::{process_types::ProcessTypeConfig, types::Kafka, Process};
-use crate::core::object::{Object, ObjectBuilder};
-use crate::core::attach::types::kafka_consumer::KafkaConsumer;
 use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
+use crate::core::attach::types::kafka_consumer::KafkaConsumer;
+use crate::core::object::{Object, ObjectBuilder};
+use crate::core::traits::Creator;
+use crate::core::types::data::{DataBuilder, VolatileDataBuilder};
+use crate::core::types::{Kafka, ScriptBuilder, ServiceConfig};
+use crate::interface::object::ExtObject;
 use crate::shared::ToInternal;
-use super::{general::General, node::ExtNode};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct API {
     #[serde(default = "default_port")]
     port: u16,
-    kafka_host: ExtNode 
+    kafka_host: ExtNode,
 }
 
 pub fn default_port() -> u16 {
     5000
 }
 
-impl ToInternal<(Process, Object)> for API {
-    fn to_internal(self) -> (Process, Object) {
+impl ToInternal<(Object, Object)> for API {
+    fn to_internal(self) -> (Object, Object) {
         let docker_name = "orchestra-api".to_string();
 
         // Build the api object
         let args = ArgumentsBuilder::default()
-            .address(format!("http://host.docker.internal:{}/orchestra/broadcast", self.port))
+            .address(format!(
+                "http://host.docker.internal:{}/orchestra/broadcast",
+                self.port
+            ))
             .consumer(format!("{}:9092", self.kafka_host.host.clone()))
             .topic("orchestra-log")
             .group_id("logger")
@@ -75,7 +78,6 @@ impl ToInternal<(Process, Object)> for API {
             .build()
             .expect("Unable to build script");
 
-
         let api = ObjectBuilder::default()
             .name("orchestra-api".to_string())
             .docker_container_builder(container)
@@ -86,26 +88,25 @@ impl ToInternal<(Process, Object)> for API {
             .build()
             .expect("Unable to build object");
 
-
         // Inject consumer which consumes from kafka and sends it to the API
         let mut consumer = KafkaConsumer::default();
         consumer.args = args;
 
-        let mut general = General::default(); 
-        general.name = Some("kafka-api-consumer".to_string());
+        let mut kafka_api_consumer_object = ExtObject::default();
+        kafka_api_consumer_object.name = Some("kafka-api-consumer".to_string());
 
-        let consumer = consumer.create(&general);
+        let consumer = consumer.create(&kafka_api_consumer_object);
 
-        let mut process = Process::default();
+        let mut kafka_api_object = Object::default();
 
-        process.object.name = "kafka-api".to_string();
-        process.object.graph.ignore = true;
+        kafka_api_object.name = "kafka-api".to_string();
+        kafka_api_object.graph.ignore = true;
 
         let kafka = Kafka::new(vec!["orchestra-log".to_string()], self.kafka_host.host);
-        process.config = Some(ProcessTypeConfig::Kafka(kafka));
+        kafka_api_object.service_config = Some(ServiceConfig::Kafka(kafka));
 
-        process.object.node = Some(self.kafka_host.to_internal());
+        kafka_api_object.node = Some(self.kafka_host.to_internal());
 
-        (process, consumer)
-    } 
+        (kafka_api_object, consumer)
+    }
 }

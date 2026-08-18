@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use data_orchestra::interface::object::ExtObject;
+    use serde_json::json;
 
     pub fn get_object(json: serde_json::Value) -> ExtObject {
         serde_json::from_value(json).expect("Unable to get object from json")

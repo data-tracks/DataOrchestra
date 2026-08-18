@@ -1,11 +1,10 @@
 use std::net::{IpAddr, Ipv4Addr};
 
+use crate::core::adapters::Runner;
+use crate::core::object::Object;
+use crate::core::traits::Configurator;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use crate::core::adapters::Runner;
-use crate::core::process::Process;
-use crate::core::traits::Configurator;
-
 
 /// The `Kafka` type. Represents the configurability of the Apache kafka application instance
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -13,33 +12,35 @@ pub struct Kafka {
     #[serde(default)]
     pub topics: Vec<String>,
     #[serde(default = "default_host")]
-    pub host: IpAddr 
+    pub host: IpAddr,
 }
 
 pub fn default_host() -> IpAddr {
     IpAddr::V4(Ipv4Addr::LOCALHOST)
 }
 
-impl Configurator<Process> for Kafka {
-    fn configure(&mut self, parent: &mut Process) {
-        self.host = parent.object.node.as_ref()
+impl Configurator<Object> for Kafka {
+    fn configure(&mut self, parent: &mut Object) {
+        self.host = parent
+            .node
+            .as_ref()
             .map(|n| n.host.to_owned())
             .unwrap_or(default_host());
 
-        parent.object.docker_group_builder.as_mut().unwrap()
+        parent
+            .docker_group_builder
+            .as_mut()
+            .unwrap()
             .compose("images/compose-kafka.yaml")
             .interpolation_variable("KAFKA_HOST", self.host.to_string());
     }
 }
 
-
-
 impl Default for Kafka {
     fn default() -> Self {
-        Kafka 
-        { 
-            topics: Vec::new(), 
-            host: IpAddr::V4(Ipv4Addr::LOCALHOST)
+        Kafka {
+            topics: Vec::new(),
+            host: IpAddr::V4(Ipv4Addr::LOCALHOST),
         }
     }
 }
@@ -67,4 +68,3 @@ impl Kafka {
         }
     }
 }
-

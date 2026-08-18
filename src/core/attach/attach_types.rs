@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::{object::Object, traits::Creator}, interface::general::General};
+use crate::{
+    core::{object::Object, traits::Creator},
+    interface::object::ExtObject,
+};
 
 use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer};
 
@@ -10,7 +13,7 @@ use super::types::{kafka_consumer::KafkaConsumer, kafka_producer::KafkaProducer}
 #[serde(rename_all = "snake_case")]
 pub enum AttachType {
     KafkaProducer,
-    KafkaConsumer
+    KafkaConsumer,
 }
 
 /// Configuration of attachable types from [`AttachType`]
@@ -18,7 +21,7 @@ pub enum AttachType {
 #[serde(rename_all = "snake_case")]
 pub enum AttachTypeConfig {
     KafkaConsumer(KafkaConsumer),
-    KafkaProducer(KafkaProducer)
+    KafkaProducer(KafkaProducer),
 }
 
 impl Default for AttachTypeConfig {
@@ -27,11 +30,11 @@ impl Default for AttachTypeConfig {
     }
 }
 
-impl Creator<Object> for AttachTypeConfig {
-    fn create(self, general: &General) ->  Object {
+impl Creator<ExtObject, Object> for AttachTypeConfig {
+    fn create(self, parent: &ExtObject) -> Object {
         match self {
-            AttachTypeConfig::KafkaConsumer(consumer) => consumer.create(general),
-            AttachTypeConfig::KafkaProducer(producer) => producer.create(general),
+            AttachTypeConfig::KafkaConsumer(consumer) => consumer.create(parent),
+            AttachTypeConfig::KafkaProducer(producer) => producer.create(parent),
         }
     }
 }

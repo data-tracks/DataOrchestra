@@ -1,10 +1,15 @@
-use std::collections::HashMap;
-
 use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{generate::Generate, process::process_types::ProcessType, traits::Configurator, types::{data::{DataBuilder, DataTypes, VolatileDataBuilder}, Executables, ScriptBuilder}};
 use crate::core::adapters::TmuxBuilder;
+use crate::core::{
+    object::Object,
+    traits::Configurator,
+    types::{
+        Executables, ScriptBuilder,
+        data::{DataBuilder, DataTypes, VolatileDataBuilder},
+    },
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sensor {
@@ -16,7 +21,6 @@ pub struct Sensor {
 pub fn default_interval() -> u64 {
     1
 }
-
 
 pub fn default_level() -> LevelFilter {
     LevelFilter::Info
@@ -34,8 +38,8 @@ impl Sensor {
     }
 }
 
-impl Configurator<Generate> for Sensor {
-    fn configure(&mut self, parent: &mut Generate) {
+impl Configurator<Object> for Sensor {
+    fn configure(&mut self, parent: &mut Object) {
         let docker_data = DataBuilder::default()
             .source("services/sensor")
             .destination("/sensor")
@@ -58,15 +62,17 @@ impl Configurator<Generate> for Sensor {
             .build()
             .expect("Unable to build script");
 
-        let docker = parent.object.docker_container_builder.get_or_insert_default();
+        let docker = parent.docker_container_builder.get_or_insert_default();
 
         docker
             .try_name("sensor")
             .dockerfile("images/rust.dockerfile")
             .image("rust_base");
-    
-        parent.object.resources.push(DataTypes::VolatileDockerData(volatile_data));
-        parent.object.resources.push(DataTypes::DockerData(docker_data));
-        parent.object.executables.push(Executables::Script(script));
+
+        parent
+            .resources
+            .push(DataTypes::VolatileDockerData(volatile_data));
+        parent.resources.push(DataTypes::DockerData(docker_data));
+        parent.executables.push(Executables::Script(script));
     }
 }

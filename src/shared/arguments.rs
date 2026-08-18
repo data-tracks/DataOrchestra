@@ -1,8 +1,6 @@
 use clap::Parser;
 use tracing_subscriber::filter::LevelFilter;
 
-use super::ObjectTypes;
-
 /// CLI arguments for the Orchestrator
 #[derive(Parser, Debug, Clone)]
 #[command(version, about)]
@@ -22,11 +20,6 @@ pub struct Arguments {
     #[arg(env = "REMOVE_ALL")]
     pub remove_all: bool,
 
-    /// Generate a valid config file 
-    #[arg(long = "generate_valid_json")]
-    #[arg(env = "GENERATE_VALID_JSON")]
-    pub generate_valid_json: Option<ObjectTypes>,
-
     /// Setup portainer manager
     #[arg(long = "portainer", default_value_t = true)]
     #[arg(env = "PORTAINER")]
@@ -45,11 +38,19 @@ pub struct Arguments {
     /// Start only subset if items provided by name from config
     #[arg(short, long)]
     #[arg(env = "ISOLATE")]
-    pub isolate: Option<Vec<String>>
+    pub isolate: Option<Vec<String>>,
 }
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments { file: None, level: LevelFilter::INFO, remove_all: false, generate_valid_json: None, portainer: true, ssh_key: None, api_only: false, isolate: None }
+        Arguments {
+            file: None,
+            level: LevelFilter::INFO,
+            remove_all: false,
+            portainer: true,
+            ssh_key: None,
+            api_only: false,
+            isolate: None,
+        }
     }
 }

@@ -1,13 +1,10 @@
-use crate::interface::general::General;
-
 /// Represent an object which can configure its parent
 pub trait Configurator<T> {
     fn configure(&mut self, parent: &mut T);
 }
 
-/// Represents an object which can create an object
-pub trait Creator<T> {
-    fn create(self, general: &General) -> T;
+pub trait Creator<T, S> {
+    fn create(self, o: &T) -> S;
 }
 
 /// Represents an object which can be checked. This is normally implemented as a healthcheck

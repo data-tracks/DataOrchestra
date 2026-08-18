@@ -1,30 +1,29 @@
 use derive_builder::Builder;
-use tracing_subscriber::filter::LevelFilter;
 use serde::{Deserialize, Serialize};
+use tracing_subscriber::filter::LevelFilter;
 
-use crate::core::traits::Creator;
-use crate::core::types::{Executables, ScriptBuilder};
-use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
-use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
-use crate::shared::ToInternal;
-use crate::interface::general::General;
 use crate::core::object::Object;
+use crate::core::traits::Creator;
+use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
+use crate::core::types::{Executables, ScriptBuilder};
+use crate::interface::object::ExtObject;
+use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
+use crate::shared::ToInternal;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
 // and sending them further through an http request
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KafkaConsumer {
     #[serde(flatten)]
-    pub args: Arguments
+    pub args: Arguments,
 }
-
 
 #[derive(Debug, Clone, Deserialize, Serialize, Builder)]
 pub struct Arguments {
     /// Address where data should be sent to
     #[builder(setter(into))]
-    pub address: String,    
-    /// Address (host:port) of kafka 
+    pub address: String,
+    /// Address (host:port) of kafka
     #[serde(default = "default_consumer")]
     #[builder(default = "default_consumer()")]
     #[builder(setter(into))]
@@ -43,10 +42,8 @@ pub struct Arguments {
 
     #[serde(default)]
     #[builder(default)]
-    pub logger: Option<String>
+    pub logger: Option<String>,
 }
-
-
 
 impl ArgumentsBuilder {
     pub fn topic(&mut self, topic: impl Into<String>) -> &mut Self {
@@ -61,7 +58,14 @@ impl ArgumentsBuilder {
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments {  address: "".to_string(), consumer: default_consumer(), group_id: "".to_string(), topics: Vec::new(), level: default_level(), logger: None }
+        Arguments {
+            address: "".to_string(),
+            consumer: default_consumer(),
+            group_id: "".to_string(),
+            topics: Vec::new(),
+            level: default_level(),
+            logger: None,
+        }
     }
 }
 
@@ -75,24 +79,23 @@ pub fn default_level() -> LevelFilter {
 
 impl Default for KafkaConsumer {
     fn default() -> Self {
-        KafkaConsumer 
-        { 
-            args: Arguments::default()
+        KafkaConsumer {
+            args: Arguments::default(),
         }
     }
 }
 
-impl Creator<Object> for KafkaConsumer {
-    fn create(self, general: &General) -> Object {
+impl Creator<ExtObject, Object> for KafkaConsumer {
+    fn create(self, parent: &ExtObject) -> Object {
         // Clone due to the general struct later also being used to parse the actual object where
         // the attach object is attached to
-        let general = general.clone();
+        let general = parent.clone();
 
         let mut object = Object::default();
 
         object.name = general.name.unwrap_or("kafka-consumer".to_string());
 
-        if let Some(node) = general.node {
+        if let Some(node) = general.node.clone() {
             object.node = Some(node.to_internal());
         }
 
@@ -120,7 +123,8 @@ impl Creator<Object> for KafkaConsumer {
                 .image("rust_base");
         }
 
-        let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
+        let json =
+            serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
 
         let volatile_data = VolatileDataBuilder::default()
             .destination("/kafka_consumer/config.json")
@@ -128,9 +132,11 @@ impl Creator<Object> for KafkaConsumer {
             .build()
             .expect("Unable to build volatile data");
 
-        object.resources.push(DataTypes::VolatileDockerData(volatile_data));
+        object
+            .resources
+            .push(DataTypes::VolatileDockerData(volatile_data));
         object.executables.push(Executables::Script(script));
-        
+
         object
     }
 }

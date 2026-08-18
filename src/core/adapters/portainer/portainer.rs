@@ -1,10 +1,14 @@
 use std::{collections::HashMap, net::IpAddr, thread, time::Duration};
 
+use crate::core::{
+    adapters::{ContainerBuilder, Local, docker, traits::Runner},
+    object::{Graph, Object, ObjectBuilder},
+    types::Node,
+};
 use log::{error, info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::core::{adapters::{docker, traits::Runner, ContainerBuilder, Local}, object::{Graph, Object, ObjectBuilder}, types::Node};
 
 /// Portainer struct. Holds general configuration of the local portainer container
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,7 +33,7 @@ pub struct Portainer {
 
     #[serde(skip)]
     #[serde(default = "default_runner")]
-    pub runner: Box<dyn Runner + Send + Sync>
+    pub runner: Box<dyn Runner + Send + Sync>,
 }
 
 #[derive(Debug)]
@@ -41,7 +45,7 @@ struct PortainerResponse {
 /// Temporary struct to easily deserialize the jwt token
 #[derive(Debug, Serialize, Deserialize)]
 struct JWT {
-    jwt: String
+    jwt: String,
 }
 
 pub fn default_volume() -> String {
@@ -70,15 +74,14 @@ pub fn default_runner() -> Box<dyn Runner + Send + Sync> {
 
 impl Default for Portainer {
     fn default() -> Self {
-        Portainer 
-        { 
-            volume: default_volume(), 
-            host: default_host(), 
-            port: default_port(), 
-            username: default_username(), 
-            password: default_password(), 
+        Portainer {
+            volume: default_volume(),
+            host: default_host(),
+            port: default_port(),
+            username: default_username(),
+            password: default_password(),
             jwt: String::new(),
-            runner: default_runner()
+            runner: default_runner(),
         }
     }
 }
@@ -93,8 +96,7 @@ impl Portainer {
 
         if containers.contains(&String::from("portainer")) {
             info!("Portainer container already exists");
-        }
-        else {
+        } else {
             info!("Setting up portainer");
 
             let volumes = docker::api::get_all_volumes(&*self.runner);
@@ -104,22 +106,24 @@ impl Portainer {
             let volumes = volumes.unwrap();
 
             if !volumes.contains(&String::from("portainer_data")) {
-                let result = self.runner.exec("docker volume create portainer_data".to_string());
+                let result = self
+                    .runner
+                    .exec("docker volume create portainer_data".to_string());
                 if let Err(error) = result {
                     error!("{error}");
                 }
             }
 
-            let result = self.runner.exec 
-                (
-                    "docker run -d \
+            let result = self.runner.exec(
+                "docker run -d \
                     -p 8000:8000 \
                     -p 9443:9443 \
                     --name portainer \
                     --restart=always \
                     -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v portainer_data:/data portainer/portainer-ce:lts".to_string()
-                );
+                    -v portainer_data:/data portainer/portainer-ce:lts"
+                    .to_string(),
+            );
             if let Err(error) = result {
                 error!("{error}");
             }
@@ -133,7 +137,7 @@ impl Portainer {
             thread::sleep(Duration::from_secs(1));
         }
 
-        let rt = tokio::runtime::Runtime::new().unwrap(); 
+        let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(self.create_account());
         rt.block_on(self.authenticate_account());
 
@@ -147,7 +151,7 @@ impl Portainer {
             .ignore_ssh(true)
             .publish_map(9001, 9001)
             .name("portainer_agent")
-            .restart(docker::RestartTypes::Always) 
+            .restart(docker::RestartTypes::Always)
             .volume("/var/run/docker.sock:/var/run/docker.sock")
             .volume("/var/lib/docker/volumes:/var/lib/docker/volumes")
             .volume("/:/host")
@@ -179,21 +183,22 @@ impl Portainer {
         params.insert("TLS".to_string(), true.to_string());
         params.insert("TLSSkipVerify".to_string(), true.to_string());
         params.insert("TLSSkipClientVerify".to_string(), true.to_string());
-       
+
         let client = Client::builder()
             .danger_accept_invalid_certs(true)
-            .build().unwrap();
+            .build()
+            .unwrap();
 
         let result = client
             .post(format!("https://{}:{}/api/endpoints", self.host, self.port))
             .bearer_auth(self.jwt.clone())
             .form(&params)
-            .send().await;
+            .send()
+            .await;
 
         if let Err(error) = result {
             error!("{error}");
-        }
-        else if let Ok(response) = result {
+        } else if let Ok(response) = result {
             let body = response.text().await.unwrap();
             info!("{:?}", body);
         }
@@ -202,26 +207,33 @@ impl Portainer {
     /// Create portainer account
     pub async fn create_account(&self) {
         let client = Client::builder()
-            .danger_accept_invalid_certs(true) 
-            .build().unwrap();
+            .danger_accept_invalid_certs(true)
+            .build()
+            .unwrap();
 
         let response = client
-            .post(format!("https://{}:{}/api/users/admin/init", self.host, self.port))
+            .post(format!(
+                "https://{}:{}/api/users/admin/init",
+                self.host, self.port
+            ))
             .header("Content-Type", "application/json")
             .json(&json!({
                 "Username": self.username,
                 "Password": self.password
             }))
-            .send().await;
-        
+            .send()
+            .await;
+
         if let Ok(response) = response {
             match response.status() {
-                reqwest::StatusCode::OK => info!("User successfully created with credentials [Username: {}, Password: {}]", self.username, self.password),
+                reqwest::StatusCode::OK => info!(
+                    "User successfully created with credentials [Username: {}, Password: {}]",
+                    self.username, self.password
+                ),
                 reqwest::StatusCode::CONFLICT => warn!("User already exists"),
-                _ => error!("{:?}", response)
+                _ => error!("{:?}", response),
             }
-        }
-        else if let Err(response) = response {
+        } else if let Err(response) = response {
             error!("{:?}", response);
         }
     }
@@ -231,8 +243,9 @@ impl Portainer {
     /// Required for interaction with the portainer api due to the need for the jwt key
     pub async fn authenticate_account(&mut self) {
         let client = Client::builder()
-            .danger_accept_invalid_certs(true) 
-            .build().unwrap();
+            .danger_accept_invalid_certs(true)
+            .build()
+            .unwrap();
 
         let response = client
             .post(format!("https://{}:{}/api/auth", self.host, self.port))
@@ -241,15 +254,15 @@ impl Portainer {
                 "Username": self.username,
                 "Password": self.password
             }))
-            .send().await;
-        
+            .send()
+            .await;
+
         if let Ok(response) = response {
             let body = response.text().await.unwrap();
             let jwt: JWT = serde_json::from_str(body.as_str()).unwrap();
             self.jwt = jwt.jwt;
             info!("User successfully authenticated");
-        }
-        else if let Err(response) = response {
+        } else if let Err(response) = response {
             error!("{:?}", response);
         }
     }
