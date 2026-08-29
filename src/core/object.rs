@@ -282,8 +282,8 @@ impl Spawner for Object {
         match &mut self.docker_manager {
             ContainerType::Compose(compose) => {
                 for container in compose.containers.iter_mut() {
-                    if let Some(ref node) = self.node {
-                        if container.get_ssh_port().is_some() {
+                    if container.get_ssh_port().is_some() {
+                        if let Some(ref node) = self.node {
                             debug!("Loading ssh session for container");
 
                             let result = repeat_on_err_mut(
@@ -294,22 +294,26 @@ impl Spawner for Object {
                             if let Err(error) = result {
                                 error!("({}) ({error})", node.host);
                             }
-                        }
-                    } else {
-                        let result = repeat_on_err_mut(
-                            || container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST)),
-                            10,
-                            Some(Duration::from_secs(2)),
-                        );
-                        if let Err(error) = result {
-                            error!("Unable to load ssh connection for local container ({error})");
+                        } else {
+                            if container.get_ssh_port().is_some() {
+                                let result = repeat_on_err_mut(
+                                    || container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST)),
+                                    10,
+                                    Some(Duration::from_secs(2)),
+                                );
+                                if let Err(error) = result {
+                                    error!(
+                                        "Unable to load ssh connection for local container ({error})"
+                                    );
+                                }
+                            }
                         }
                     }
                 }
             }
             ContainerType::Container(container) => {
-                if let Some(ref node) = self.node {
-                    if container.get_ssh_port().is_some() {
+                if container.get_ssh_port().is_some() {
+                    if let Some(ref node) = self.node {
                         debug!("Loading ssh session for container");
                         let result = repeat_on_err_mut(
                             || container.load_ssh(node.host),
@@ -319,15 +323,15 @@ impl Spawner for Object {
                         if let Err(error) = result {
                             error!("({}) ({error})", node.host);
                         }
-                    }
-                } else {
-                    let result = repeat_on_err_mut(
-                        || container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST)),
-                        5,
-                        Some(Duration::from_secs(1)),
-                    );
-                    if let Err(error) = result {
-                        error!("Unable to load ssh connection for local container ({error})");
+                    } else {
+                        let result = repeat_on_err_mut(
+                            || container.load_ssh(IpAddr::V4(Ipv4Addr::LOCALHOST)),
+                            5,
+                            Some(Duration::from_secs(1)),
+                        );
+                        if let Err(error) = result {
+                            error!("Unable to load ssh connection for local container ({error})");
+                        }
                     }
                 }
             }

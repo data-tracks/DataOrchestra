@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::{Graph, Object};
-use crate::core::traits::Configurator;
 use crate::core::types::ServiceConfig;
 use crate::interface::data::ExtDataTypes;
 use crate::interface::docker::ExtDocker;
