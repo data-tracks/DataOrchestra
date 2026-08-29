@@ -7,14 +7,10 @@ pub struct Flink {}
 
 impl Flink {
     pub fn new() -> Self {
-        Flink { }
+        Flink {}
     }
 
     pub fn setup_container(&self, docker: &mut ComposeBuilder) {
-        docker.compose("images/compose-flink.yaml");
+        docker.file("images/compose-flink.yaml");
     }
 }
-
-
-
-

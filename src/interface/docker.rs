@@ -1,12 +1,20 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::core::adapters::{ComposeBuilder, ContainerBuilder, Mount, RestartTypes};
-use crate::shared::{traits::ToInternal, Amount};
-
+use crate::interface::location::Location::Container;
+use crate::shared::{Amount, traits::ToInternal};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ExtDocker {
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ExtDocker {
+    Container(ExtContainer),
+    Compose(ExtCompose),
+    Dind(Dind),
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ExtContainer {
     // Name of container
     pub name: Option<String>,
     // Network of container
@@ -19,69 +27,27 @@ pub struct ExtDocker {
     // How container(s) are created
     pub image: Option<String>,
     pub dockerfile: Option<String>,
-    pub compose: Option<String>,
     // Building arguments for dockerfile
     pub build_args: Option<HashMap<String, String>>,
-    // Interpolation variables (Environment variables) for compose file
-    pub interpolation_variables: Option<HashMap<String, String>>,
     // Container restart policy
     #[serde(default)]
     pub restart: RestartTypes,
     // Volumes attached to container
     #[serde(default)]
     pub volumes: Amount<String>,
-    // Mounts attached to container 
+    // Mounts attached to container
     #[serde(default)]
     pub mounts: Amount<Mount>,
     #[serde(default)]
     pub publish: Amount<u16>,
     #[serde(default)]
-    pub publish_map: Amount<String>
+    pub publish_map: Amount<String>,
 }
 
-impl Default for ExtDocker {
-    fn default() -> Self {
-        ExtDocker 
-        { 
-            name: None, 
-            network: None, 
-            environment: None,
-            volumes: Amount::None, 
-            publish_all: false, 
-            image: None, 
-            dockerfile: None, 
-            build_args: None, 
-            compose: None, 
-            interpolation_variables: None,
-            restart: RestartTypes::default(),
-            mounts: Amount::None,
-            publish: Amount::None,
-            publish_map: Amount::None
-        }
-    }
-}
-
-impl ToInternal<ComposeBuilder> for ExtDocker {
-    fn to_internal(self) -> ComposeBuilder {
-        let mut builder = ComposeBuilder::default();
-        if let Some(compose) = self.compose {
-            builder.compose(compose);
-        }
-
-        if let Some(variables) = self.interpolation_variables {
-            for (key, value) in variables {
-                builder.interpolation_variable(key, value);
-            }
-        }
-
-        builder
-    }
-}
-
-impl ToInternal<ContainerBuilder> for ExtDocker {
+impl ToInternal<ContainerBuilder> for ExtContainer {
     fn to_internal(self) -> ContainerBuilder {
         let mut builder = ContainerBuilder::default();
-        
+
         if let Some(name) = self.name {
             builder.name(name);
         }
@@ -132,10 +98,44 @@ impl ToInternal<ContainerBuilder> for ExtDocker {
             }
         }
 
-
         builder.publish_all(self.publish_all);
         builder.restart(self.restart);
 
+        builder
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ExtCompose {
+    pub file: String,
+    // Environment variables
+    pub interpolation_variables: Option<HashMap<String, String>>,
+}
+
+impl ToInternal<ComposeBuilder> for ExtCompose {
+    fn to_internal(self) -> ComposeBuilder {
+        let mut builder = ComposeBuilder::default();
+        builder.file(self.file);
+
+        if let Some(variables) = self.interpolation_variables {
+            for (key, value) in variables {
+                builder.interpolation_variable(key, value);
+            }
+        }
+
+        builder
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Dind {}
+
+impl ToInternal<ContainerBuilder> for Dind {
+    fn to_internal(self) -> ContainerBuilder {
+        let mut builder = ContainerBuilder::default();
+        builder
+            .image("docker:dind")
+            .environment("DOCKER_TLS_CERTDIR", "/certs");
         builder
     }
 }

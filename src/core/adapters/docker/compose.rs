@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use crate::core::adapters::{Local, Runner};
 use derive_builder::Builder;
 use log::{debug, error};
-use crate::core::adapters::{Local, Runner};
 
 use super::{Container, ContainerBuilder, Run};
 
@@ -10,7 +10,7 @@ use super::{Container, ContainerBuilder, Run};
 pub struct Compose {
     pub config: ComposeConfig,
     pub containers: Vec<Container>,
-    pub runner: Box<dyn Runner + Send + Sync>
+    pub runner: Box<dyn Runner + Send + Sync>,
 }
 
 impl Compose {
@@ -21,10 +21,10 @@ impl Compose {
             if let Some(container_name) = container.config.name.as_ref() {
                 if container_name.eq(&name) {
                     return Some(container);
-                } 
+                }
             }
         }
-        
+
         None
     }
 }
@@ -34,17 +34,18 @@ impl Run for Compose {
     type Error = String;
 
     fn run(&mut self) -> Result<(), String> {
-        if let Some(ref compose) = self.config.compose {
+        if let Some(ref compose) = self.config.file {
             let mut interpolation = String::new();
             for (key, value) in self.config.interpolation_variables.iter() {
                 interpolation = format!("{interpolation} {key}={value}");
             }
-            let result = self.runner.exec(format!("{interpolation} docker compose -f {compose} up -d --build"));
+            let result = self.runner.exec(format!(
+                "{interpolation} docker compose -f {compose} up -d --build"
+            ));
             if let Err(error) = result {
                 error!("{error}");
             }
-        }
-        else {
+        } else {
             panic!("No compose to execute");
         }
 
@@ -71,8 +72,11 @@ impl Run for Compose {
 
         // Load data from running docker containers spawned by compose file
         for container in self.containers.iter_mut() {
-            debug!("Setting up container for compose {}", self.config.compose.as_ref().unwrap());
-            container.load(); 
+            debug!(
+                "Setting up container for compose {}",
+                self.config.file.as_ref().unwrap()
+            );
+            container.load();
         }
 
         Ok(())
@@ -82,23 +86,22 @@ impl Run for Compose {
 impl Compose {
     pub fn load_ids(&self) -> Vec<String> {
         let mut id_vec = Vec::new();
-        let result = self.runner.exec(format!("docker compose -f {} ps -q", self.config.compose.as_ref().unwrap()));
+        let result = self.runner.exec(format!(
+            "docker compose -f {} ps -q",
+            self.config.file.as_ref().unwrap()
+        ));
         if let Ok(ids) = result {
-            let ids = ids
-                .split("\n")
-                .filter(|item| !item.is_empty());
+            let ids = ids.split("\n").filter(|item| !item.is_empty());
             for id in ids {
                 id_vec.push(id.trim().to_string());
             }
-        }
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             error!("{error}");
         }
 
         id_vec
     }
 }
-
 
 /// Compose config builder sitting ontop of [`Compose`] object.
 #[derive(Debug, Clone, Builder)]
@@ -111,22 +114,29 @@ pub struct ComposeConfig {
     #[builder(setter(custom))]
     pub interpolation_variables: HashMap<String, String>,
     #[builder(setter(into, strip_option), default)]
-    pub compose: Option<String>,
+    pub file: Option<String>,
 }
 
 impl ComposeBuilder {
-    pub fn interpolation_variable(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
+    pub fn interpolation_variable(
+        &mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> &mut Self {
         let hashmap = self.interpolation_variables.get_or_insert_default();
         hashmap.insert(key.into(), value.into());
         self
     }
 
     pub fn build(&self) -> Result<Compose, String> {
-        let config = 
-            self.build_internal()
-            .expect("Unable to build compose config"); 
+        let config = self
+            .build_internal()
+            .expect("Unable to build compose config");
 
-        assert!(config.compose.is_some(), "Docker compose requires a compose file");
+        assert!(
+            config.file.is_some(),
+            "Docker compose requires a compose file"
+        );
 
         let containers = Vec::new();
         let runner = Box::new(Local::new());
@@ -141,30 +151,28 @@ impl ComposeBuilder {
 
 impl Default for ComposeConfig {
     fn default() -> Self {
-        ComposeConfig 
-        { 
-            interpolation_variables: HashMap::new(), 
-            compose: None
+        ComposeConfig {
+            interpolation_variables: HashMap::new(),
+            file: None,
         }
     }
 }
 
 impl Default for Compose {
     fn default() -> Self {
-        Compose
-        { 
+        Compose {
             config: ComposeConfig::default(),
             runner: Box::new(Local::new()),
-            containers: Vec::new()
+            containers: Vec::new(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
-    use crate::core::adapters::{Run, Runner, RunnerError};
     use super::ComposeBuilder;
+    use crate::core::adapters::{Run, Runner, RunnerError};
+    use std::sync::{Arc, Mutex};
 
     #[derive(Debug, Clone)]
     pub struct DummyRunner {
@@ -174,16 +182,14 @@ mod tests {
     impl Default for DummyRunner {
         fn default() -> Self {
             let arc = Arc::new(Mutex::new(String::new()));
-            DummyRunner {output: arc}
+            DummyRunner { output: arc }
         }
     }
 
     impl DummyRunner {
         #[allow(dead_code)]
         pub fn new(mutex: Arc<Mutex<String>>) -> Self {
-            DummyRunner {
-                output: mutex,
-            }
+            DummyRunner { output: mutex }
         }
 
         #[allow(dead_code)]
@@ -205,9 +211,9 @@ mod tests {
     }
 
     ////////////////////////////////////////////////
-    /// Tests    
+    /// Tests
     ////////////////////////////////////////////////
-    
+
     #[test]
     #[should_panic]
     fn docker_no_compose() {

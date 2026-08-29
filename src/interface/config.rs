@@ -1,17 +1,17 @@
-use log::debug;
-use serde::{Deserialize, Deserializer, Serialize};
-use serde::de::Error;
-use serde_json::Value;
+use super::api::API;
+use super::generate::ExtGenerate;
+use super::object::ExtObject;
+use super::process::ExtProcess;
+use super::store::ExtStore;
 use crate::core::adapters::portainer::portainer::Portainer;
 use crate::core::config::Config;
 use crate::core::object::Object;
 use crate::core::traits::Creator;
 use crate::shared::{Amount, ToInternal, ToInternalVec};
-use super::api::API;
-use super::store::ExtStore;
-use super::process::ExtProcess;
-use super::object::ExtObject;
-use super::generate::ExtGenerate;
+use log::debug;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,8 +37,7 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
     fn to_internal(self) -> (Config, Portainer) {
         let (process, consumer) = self.api.to_internal();
 
-        let mut config = Config 
-        {
+        let mut config = Config {
             generate: self.generate.to_internal(),
             process: self.process.to_internal(),
             store: self.store.to_internal(),
@@ -69,14 +68,14 @@ impl ExtConfig {
             for config in store.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&store.general));
             }
-        } 
+        }
 
         for process in self.store.as_mut_ref_vec() {
             for config in process.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&process.general));
             }
         }
-        
+
         for generate in self.generate.as_mut_ref_vec() {
             for config in generate.general.attach_config.take().to_vec() {
                 attach_objects.push(config.create(&generate.general));
@@ -98,20 +97,17 @@ where
         let result = Vec::deserialize(value.clone());
         if let Ok(compact) = result {
             return Ok(Amount::Multiple(compact));
-        }    
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             panic!("Error while deserializing Vec<generate> [{}]", error);
         }
-    }
-    else {
+    } else {
         let result = ExtGenerate::deserialize(value.clone());
         if let Ok(full) = result {
             return Ok(Amount::Single(full));
-        }
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing generate: [{}]", error);
-        }  
+        }
     }
 
     Err(Error::custom(
@@ -130,21 +126,18 @@ where
         let result = Vec::deserialize(value.clone());
         if let Ok(compact) = result {
             return Ok(Amount::Multiple(compact));
-        }    
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing Vec<process> [{}]", error);
         }
-    }
-    else {
+    } else {
         let result = ExtProcess::deserialize(value.clone());
         if let Ok(full) = result {
             return Ok(Amount::Single(full));
-        }
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing process: [{}]", error);
-        }  
+        }
     }
 
     Err(Error::custom(
@@ -163,21 +156,18 @@ where
         let result = Vec::deserialize(value.clone());
         if let Ok(compact) = result {
             return Ok(Amount::Multiple(compact));
-        }    
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing Vec<store> [{}]", error);
         }
-    }
-    else {
+    } else {
         let result = ExtStore::deserialize(value.clone());
         if let Ok(full) = result {
             return Ok(Amount::Single(full));
-        }
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing store: [{}]", error);
-        }  
+        }
     }
 
     Err(serde::de::Error::custom(
@@ -196,21 +186,18 @@ where
         let result = Vec::deserialize(value.clone());
         if let Ok(compact) = result {
             return Ok(Amount::Multiple(compact));
-        }    
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing Vec<object> [{}]", error);
         }
-    }
-    else {
+    } else {
         let result = ExtObject::deserialize(value.clone());
         if let Ok(full) = result {
             return Ok(Amount::Single(full));
-        }
-        else if let Err(error) = result {
+        } else if let Err(error) = result {
             debug!("{}", value.clone());
             panic!("Error while deserializing object: [{}]", error);
-        }  
+        }
     }
 
     Err(serde::de::Error::custom(

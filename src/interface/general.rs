@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::{attach::attach_types::AttachTypeConfig};
+use crate::core::attach::attach_types::AttachTypeConfig;
 use crate::core::object::Graph;
 use crate::interface::data::ExtDataTypes;
 use crate::shared::Amount;
@@ -18,7 +18,7 @@ pub struct General {
     #[serde(flatten)]
     pub graph: Graph,
     /// Docker container
-    pub docker: Option<ExtDocker>, 
+    pub docker: Option<ExtDocker>,
     /// Remote node connection
     pub node: Option<ExtNode>,
     /// Ansible configuration script
@@ -30,21 +30,26 @@ pub struct General {
     #[serde(default)]
     pub resources: Amount<ExtDataTypes>,
     #[serde(default)]
-    pub executables: Amount<ExtExecutables>
+    pub executables: Amount<ExtExecutables>,
 }
 
 impl Default for General {
     fn default() -> Self {
-        General 
-        { 
+        General {
             name: None,
             graph: Graph::default(),
-            docker: Some(ExtDocker::default()), 
-            node: None, 
+            docker: None,
+            node: None,
             ansible: Some("scripts/ansible/ansible-setup.yml".to_string()),
             attach_config: Amount::None,
-            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData { location: super::location::Location::Container, name: None, source: "".to_string(), destination: "".to_string(), dependency: None })),
-            executables: Amount::None
+            resources: Amount::Single(ExtDataTypes::Data(super::data::ExtData {
+                location: super::location::Location::Container,
+                name: None,
+                source: "".to_string(),
+                destination: "".to_string(),
+                dependency: None,
+            })),
+            executables: Amount::None,
         }
-    }  
+    }
 }
