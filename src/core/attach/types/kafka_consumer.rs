@@ -1,30 +1,23 @@
 use derive_builder::Builder;
-use tracing_subscriber::filter::LevelFilter;
 use serde::{Deserialize, Serialize};
+use tracing_subscriber::filter::LevelFilter;
 
-use crate::core::traits::Creator;
-use crate::core::types::{Executables, ScriptBuilder};
-use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
-use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
-use crate::shared::ToInternal;
-use crate::interface::general::General;
 use crate::core::object::Object;
+use crate::core::traits::Creator;
+use crate::core::types::data::{DataBuilder, DataTypes, VolatileDataBuilder};
+use crate::core::types::{Executables, ScriptBuilder};
+use crate::interface::general::General;
+use crate::logger::{deserialize_levelfilter, serialize_levelfilter};
+use crate::shared::ToInternal;
 
 // The Kafka consumer type. Is an attachable object capable of consuming data from kafka topic(s)
 // and sending them further through an http request
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Builder)]
 pub struct KafkaConsumer {
-    #[serde(flatten)]
-    pub args: Arguments
-}
-
-
-#[derive(Debug, Clone, Deserialize, Serialize, Builder)]
-pub struct Arguments {
     /// Address where data should be sent to
     #[builder(setter(into))]
-    pub address: String,    
-    /// Address (host:port) of kafka 
+    pub address: String,
+    /// Address (host:port) of kafka
     #[serde(default = "default_consumer")]
     #[builder(default = "default_consumer()")]
     #[builder(setter(into))]
@@ -43,12 +36,10 @@ pub struct Arguments {
 
     #[serde(default)]
     #[builder(default)]
-    pub logger: Option<String>
+    pub logger: Option<String>,
 }
 
-
-
-impl ArgumentsBuilder {
+impl KafkaConsumerBuilder {
     pub fn topic(&mut self, topic: impl Into<String>) -> &mut Self {
         if self.topics.is_none() {
             self.topics = Some(Vec::new());
@@ -59,9 +50,16 @@ impl ArgumentsBuilder {
     }
 }
 
-impl Default for Arguments {
+impl Default for KafkaConsumer {
     fn default() -> Self {
-        Arguments {  address: "".to_string(), consumer: default_consumer(), group_id: "".to_string(), topics: Vec::new(), level: default_level(), logger: None }
+        KafkaConsumer {
+            address: "".to_string(),
+            consumer: default_consumer(),
+            group_id: "".to_string(),
+            topics: Vec::new(),
+            level: default_level(),
+            logger: None,
+        }
     }
 }
 
@@ -71,15 +69,6 @@ pub fn default_consumer() -> String {
 
 pub fn default_level() -> LevelFilter {
     LevelFilter::INFO
-}
-
-impl Default for KafkaConsumer {
-    fn default() -> Self {
-        KafkaConsumer 
-        { 
-            args: Arguments::default()
-        }
-    }
 }
 
 impl Creator<Object> for KafkaConsumer {
@@ -120,7 +109,7 @@ impl Creator<Object> for KafkaConsumer {
                 .image("rust_base");
         }
 
-        let json = serde_json::to_string_pretty(&self.args).expect("Unable to parse struct to json");
+        let json = serde_json::to_string_pretty(&self).expect("Unable to parse struct to json");
 
         let volatile_data = VolatileDataBuilder::default()
             .destination("/kafka_consumer/config.json")
@@ -128,9 +117,11 @@ impl Creator<Object> for KafkaConsumer {
             .build()
             .expect("Unable to build volatile data");
 
-        object.resources.push(DataTypes::VolatileDockerData(volatile_data));
+        object
+            .resources
+            .push(DataTypes::VolatileDockerData(volatile_data));
         object.executables.push(Executables::Script(script));
-        
+
         object
     }
 }

@@ -1,14 +1,12 @@
-use data_orchestra::interface::data::ExtData;
-use data_orchestra::interface::location::Location;
-
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use data_orchestra::interface::execute::{ExtExecutables, ExtScript};
     use data_orchestra::interface::location::Location;
+    use serde_json::json;
 
     pub fn get_executable(json: serde_json::Value) -> ExtExecutables {
-        let executable: ExtExecutables = serde_json::from_value(json).expect("Unable to parse json to Executables");
+        let executable: ExtExecutables =
+            serde_json::from_value(json).expect("Unable to parse json to Executables");
         executable
     }
 
@@ -48,7 +46,11 @@ mod tests {
         });
 
         let script = get_executable(json);
-        let script_struct = ExtScript { location: Location::Node, name: Some("name".to_string()), destination: "/path".to_string() };
+        let script_struct = ExtScript {
+            location: Location::Node,
+            name: Some("name".to_string()),
+            destination: "/path".to_string(),
+        };
         assert_eq!(script.get_script_ref(), &script_struct);
     }
 

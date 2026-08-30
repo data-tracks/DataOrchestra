@@ -1,22 +1,21 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use super::{general::General, node::ExtNode};
 use crate::core::adapters::{ContainerBuilder, TmuxBuilder};
+use crate::core::attach::types::kafka_consumer::{KafkaConsumer, KafkaConsumerBuilder};
+use crate::core::object::{Object, ObjectBuilder};
+use crate::core::process::{Process, process_types::ProcessTypeConfig, types::Kafka};
+use crate::core::traits::Creator;
 use crate::core::types::ScriptBuilder;
 use crate::core::types::data::{DataBuilder, VolatileDataBuilder};
-use crate::core::traits::Creator;
-use crate::core::process::{process_types::ProcessTypeConfig, types::Kafka, Process};
-use crate::core::object::{Object, ObjectBuilder};
-use crate::core::attach::types::kafka_consumer::KafkaConsumer;
-use crate::core::attach::types::kafka_consumer::ArgumentsBuilder;
 use crate::shared::ToInternal;
-use super::{general::General, node::ExtNode};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct API {
     #[serde(default = "default_port")]
     port: u16,
-    kafka_host: ExtNode 
+    kafka_host: ExtNode,
 }
 
 pub fn default_port() -> u16 {
@@ -28,8 +27,11 @@ impl ToInternal<(Process, Object)> for API {
         let docker_name = "orchestra-api".to_string();
 
         // Build the api object
-        let args = ArgumentsBuilder::default()
-            .address(format!("http://host.docker.internal:{}/orchestra/broadcast", self.port))
+        let consumer = KafkaConsumerBuilder::default()
+            .address(format!(
+                "http://host.docker.internal:{}/orchestra/broadcast",
+                self.port
+            ))
             .consumer(format!("{}:9092", self.kafka_host.host.clone()))
             .topic("orchestra-log")
             .group_id("logger")
@@ -75,7 +77,6 @@ impl ToInternal<(Process, Object)> for API {
             .build()
             .expect("Unable to build script");
 
-
         let api = ObjectBuilder::default()
             .name("orchestra-api".to_string())
             .docker_container_builder(container)
@@ -86,12 +87,9 @@ impl ToInternal<(Process, Object)> for API {
             .build()
             .expect("Unable to build object");
 
-
         // Inject consumer which consumes from kafka and sends it to the API
-        let mut consumer = KafkaConsumer::default();
-        consumer.args = args;
 
-        let mut general = General::default(); 
+        let mut general = General::default();
         general.name = Some("kafka-api-consumer".to_string());
 
         let consumer = consumer.create(&general);
@@ -107,5 +105,5 @@ impl ToInternal<(Process, Object)> for API {
         process.object.node = Some(self.kafka_host.to_internal());
 
         (process, consumer)
-    } 
+    }
 }
