@@ -44,8 +44,13 @@ impl ToInternal<(Config, Portainer)> for ExtConfig {
             object: self.object.to_internal(),
         };
 
-        config.process.push(process);
-        config.object.push(consumer);
+        if let Some(process) = process
+            && let Some(consumer) = consumer
+        {
+            config.process.push(process);
+            config.object.push(consumer);
+        }
+
         //config.object.push(api);
         let portainer = self.portainer;
 

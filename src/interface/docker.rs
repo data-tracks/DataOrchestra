@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::core::adapters::{ComposeBuilder, ContainerBuilder, Mount, RestartTypes};
-use crate::interface::location::Location::Container;
 use crate::shared::{Amount, traits::ToInternal};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

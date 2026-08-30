@@ -2,8 +2,6 @@ use clap::{Parser, ValueEnum};
 use serde::Deserialize;
 use tracing_subscriber::filter::LevelFilter;
 
-use crate::interface::api::API;
-
 use super::ObjectTypes;
 
 #[derive(Debug, Deserialize, Clone, Copy, ValueEnum)]

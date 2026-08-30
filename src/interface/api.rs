@@ -15,95 +15,99 @@ use crate::shared::ToInternal;
 pub struct API {
     #[serde(default = "default_port")]
     port: u16,
-    kafka_host: ExtNode,
+    #[serde(default)]
+    kafka_host: Option<ExtNode>,
 }
 
 pub fn default_port() -> u16 {
     5000
 }
 
-impl ToInternal<(Process, Object)> for API {
-    fn to_internal(self) -> (Process, Object) {
+impl ToInternal<(Option<Process>, Option<Object>)> for API {
+    fn to_internal(self) -> (Option<Process>, Option<Object>) {
         let docker_name = "orchestra-api".to_string();
 
         // Build the api object
-        let consumer = KafkaConsumerBuilder::default()
-            .address(format!(
-                "http://host.docker.internal:{}/orchestra/broadcast",
-                self.port
-            ))
-            .consumer(format!("{}:9092", self.kafka_host.host.clone()))
-            .topic("orchestra-log")
-            .group_id("logger")
-            .build()
-            .expect("Unable to build arguments");
+        if let Some(kafka_host) = self.kafka_host {
+            let consumer = KafkaConsumerBuilder::default()
+                .address(format!(
+                    "http://host.docker.internal:{}/orchestra/broadcast",
+                    self.port
+                ))
+                .consumer(format!("{}:9092", kafka_host.host.clone()))
+                .topic("orchestra-log")
+                .group_id("logger")
+                .build()
+                .expect("Unable to build arguments");
 
-        let container = ContainerBuilder::default()
-            .dockerfile("images/rust.dockerfile")
-            .image("rust_base")
-            .name("orchestra-api")
-            .publish(self.port)
-            .to_owned();
+            let container = ContainerBuilder::default()
+                .dockerfile("images/rust.dockerfile")
+                .image("rust_base")
+                .name("orchestra-api")
+                .publish(self.port)
+                .to_owned();
 
-        let tmux = TmuxBuilder::default()
-            .bash()
-            .session("OrchestraApi")
-            .command("cd /DataOrchestra/services/api")
-            .command("cargo run")
-            .build();
+            let tmux = TmuxBuilder::default()
+                .bash()
+                .session("OrchestraApi")
+                .command("cd /DataOrchestra/services/api")
+                .command("cargo run")
+                .build();
 
-        let config = VolatileDataBuilder::default()
-            .destination("/DataOrchestra/services/api/config.json")
-            .content(json!({ "port": self.port }).to_string())
-            .build()
-            .expect("Unable to build config file");
+            let config = VolatileDataBuilder::default()
+                .destination("/DataOrchestra/services/api/config.json")
+                .content(json!({ "port": self.port }).to_string())
+                .build()
+                .expect("Unable to build config file");
 
-        let shell = VolatileDataBuilder::default()
-            .name(docker_name.clone())
-            .destination("/DataOrchestra/services/api/start.sh")
-            .content(tmux)
-            .build()
-            .expect("Unable to build shell script");
+            let shell = VolatileDataBuilder::default()
+                .name(docker_name.clone())
+                .destination("/DataOrchestra/services/api/start.sh")
+                .content(tmux)
+                .build()
+                .expect("Unable to build shell script");
 
-        let docker_data = DataBuilder::default()
-            .source("../DataOrchestra")
-            .destination("/DataOrchestra")
-            .build()
-            .expect("Unable to build docker data");
+            let docker_data = DataBuilder::default()
+                .source("../DataOrchestra")
+                .destination("/DataOrchestra")
+                .build()
+                .expect("Unable to build docker data");
 
-        let script = ScriptBuilder::default()
-            .name(docker_name.clone())
-            .path("/DataOrchestra/services/api/start.sh")
-            .build()
-            .expect("Unable to build script");
+            let script = ScriptBuilder::default()
+                .name(docker_name.clone())
+                .path("/DataOrchestra/services/api/start.sh")
+                .build()
+                .expect("Unable to build script");
 
-        let api = ObjectBuilder::default()
-            .name("orchestra-api".to_string())
-            .docker_container_builder(container)
-            .script(script)
-            .volatile_docker_data(config)
-            .volatile_docker_data(shell)
-            .docker_data(docker_data)
-            .build()
-            .expect("Unable to build object");
+            let api = ObjectBuilder::default()
+                .name("orchestra-api".to_string())
+                .docker_container_builder(container)
+                .script(script)
+                .volatile_docker_data(config)
+                .volatile_docker_data(shell)
+                .docker_data(docker_data)
+                .build()
+                .expect("Unable to build object");
 
-        // Inject consumer which consumes from kafka and sends it to the API
+            // Inject consumer which consumes from kafka and sends it to the API
 
-        let mut general = General::default();
-        general.name = Some("kafka-api-consumer".to_string());
+            let mut general = General::default();
+            general.name = Some("kafka-api-consumer".to_string());
 
-        let consumer = consumer.create(&general);
+            let consumer = consumer.create(&general);
 
-        let mut process = Process::default();
+            let mut process = Process::default();
 
-        process.object.name = "kafka-api".to_string();
-        process.object.graph.ignore = true;
+            process.object.name = "kafka-api".to_string();
+            process.object.graph.ignore = true;
 
-        let kafka = Kafka::new(vec!["orchestra-log".to_string()], self.kafka_host.host);
-        process.config = Some(ProcessTypeConfig::Kafka(kafka));
+            let kafka = Kafka::new(vec!["orchestra-log".to_string()], kafka_host.host);
+            process.config = Some(ProcessTypeConfig::Kafka(kafka));
 
-        process.object.node = Some(self.kafka_host.to_internal());
+            process.object.node = Some(kafka_host.to_internal());
+            return (Some(process), Some(consumer));
+        }
 
-        (process, consumer)
+        (None, None)
     }
 }

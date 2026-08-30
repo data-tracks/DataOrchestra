@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use crate::core::adapters::TmuxBuilder;
 use crate::core::{
     generate::Generate,
-    process::process_types::ProcessType,
     traits::Configurator,
     types::{
         Executables, ScriptBuilder,

@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use super::location::Location;
 use crate::core::types::DataTypes::{VolatileDockerData, VolatileNodeData};
-use crate::interface::data::{ExtData, ExtDataTypes, ExtVolatile};
 use crate::{
     core::{
         adapters::TmuxBuilder,

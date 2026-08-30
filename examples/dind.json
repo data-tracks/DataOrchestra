@@ -1,0 +1,25 @@
+{
+  "api": {
+    "port": 5000
+  },
+  "object": [
+    {
+      "name": "dind-1",
+      "docker": {
+        "type": "dind"
+      }
+    },
+    {
+      "name": "dind-2",
+      "docker": {
+        "type": "dind"
+      }
+    },
+    {
+      "name": "dind-3",
+      "docker": {
+        "type": "dind"
+      }
+    }
+  ]
+}
