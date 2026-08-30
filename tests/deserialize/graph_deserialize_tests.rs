@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use data_orchestra::core::object::Graph;
-    use data_orchestra::interface::general::General;
+    use serde_json::json;
 
     pub fn get_graph(json: serde_json::Value) -> Graph {
         serde_json::from_value(json).expect("Unable to parse json to graph")
@@ -55,6 +54,9 @@ mod tests {
         let graph = get_graph(json);
 
         assert_eq!(graph.ignore, true);
-        assert_eq!(graph.to, vec!["other".to_string(), "again_other".to_string()]);
+        assert_eq!(
+            graph.to,
+            vec!["other".to_string(), "again_other".to_string()]
+        );
     }
 }

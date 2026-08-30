@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::os::unix::raw::off_t;
-    use serde_json::json;
     use data_orchestra::core::adapters::{BindPropagation, Mount, RestartTypes};
     use data_orchestra::interface::docker::ExtDocker;
     use data_orchestra::shared::Amount;
+    use serde_json::json;
+    use std::collections::HashMap;
 
     pub fn get_docker(json: serde_json::Value) -> ExtDocker {
-        let docker: ExtDocker = serde_json::from_value(json).expect("Unable to parse json to docker");
+        let docker: ExtDocker =
+            serde_json::from_value(json).expect("Unable to parse json to docker");
         docker
     }
 
@@ -68,7 +68,10 @@ mod tests {
         });
 
         let docker = get_docker(json);
-        assert_eq!(docker.environment, Some(HashMap::from([("KEY".to_string(), "VALUE".to_string())])));
+        assert_eq!(
+            docker.environment,
+            Some(HashMap::from([("KEY".to_string(), "VALUE".to_string())]))
+        );
     }
 
     #[test]
@@ -82,7 +85,13 @@ mod tests {
         });
 
         let docker = get_docker(json);
-        assert_eq!(docker.environment, Some(HashMap::from([("KEY_1".to_string(), "VALUE_1".to_string()), ("KEY_2".to_string(), "VALUE_2".to_string())])));
+        assert_eq!(
+            docker.environment,
+            Some(HashMap::from([
+                ("KEY_1".to_string(), "VALUE_1".to_string()),
+                ("KEY_2".to_string(), "VALUE_2".to_string())
+            ]))
+        );
     }
 
     #[test]
@@ -162,7 +171,10 @@ mod tests {
         });
 
         let docker = get_docker(json);
-        assert_eq!(docker.build_args, Some(HashMap::from([("KEY".to_string(), "VALUE".to_string())])));
+        assert_eq!(
+            docker.build_args,
+            Some(HashMap::from([("KEY".to_string(), "VALUE".to_string())]))
+        );
     }
 
     #[test]
@@ -176,7 +188,13 @@ mod tests {
         });
 
         let docker = get_docker(json);
-        assert_eq!(docker.build_args, Some(HashMap::from([("KEY_1".to_string(), "VALUE_1".to_string()), ("KEY_2".to_string(), "VALUE_2".to_string())])));
+        assert_eq!(
+            docker.build_args,
+            Some(HashMap::from([
+                ("KEY_1".to_string(), "VALUE_1".to_string()),
+                ("KEY_2".to_string(), "VALUE_2".to_string())
+            ]))
+        );
     }
 
     #[test]
@@ -197,7 +215,10 @@ mod tests {
         });
 
         let docker = get_docker(json);
-        assert_eq!(docker.interpolation_variables, Some(HashMap::from([("KEY".to_string(), "VALUE".to_string())])));
+        assert_eq!(
+            docker.interpolation_variables,
+            Some(HashMap::from([("KEY".to_string(), "VALUE".to_string())]))
+        );
     }
 
     #[test]
@@ -211,7 +232,13 @@ mod tests {
         });
 
         let docker = get_docker(json);
-        assert_eq!(docker.interpolation_variables, Some(HashMap::from([("KEY_1".to_string(), "VALUE_1".to_string()), ("KEY_2".to_string(), "VALUE_2".to_string())])));
+        assert_eq!(
+            docker.interpolation_variables,
+            Some(HashMap::from([
+                ("KEY_1".to_string(), "VALUE_1".to_string()),
+                ("KEY_2".to_string(), "VALUE_2".to_string())
+            ]))
+        );
     }
 
     #[test]
@@ -276,7 +303,10 @@ mod tests {
 
         let docker = get_docker(json);
         assert_eq!(docker.volumes.get_amount(), 1);
-        assert_eq!(docker.volumes.to_vec(), Vec::from(["/src:/dst".to_string()]));
+        assert_eq!(
+            docker.volumes.to_vec(),
+            Vec::from(["/src:/dst".to_string()])
+        );
     }
 
     #[test]
@@ -289,7 +319,10 @@ mod tests {
         let docker = get_docker(json);
         dbg!(&docker);
         assert_eq!(docker.volumes.get_amount(), 2);
-        assert_eq!(docker.volumes.to_vec(), Vec::from(["/src:/dst".to_string(), "/dst:/src".to_string()]));
+        assert_eq!(
+            docker.volumes.to_vec(),
+            Vec::from(["/src:/dst".to_string(), "/dst:/src".to_string()])
+        );
     }
 
     #[test]
@@ -338,7 +371,12 @@ mod tests {
         let docker = get_docker(json);
         assert_eq!(docker.mounts.get_amount(), 2);
         let mount_1 = Mount::new("source", "destination", true, None);
-        let mount_2 = Mount::new("destination", "source", false, Some(BindPropagation::Shared));
+        let mount_2 = Mount::new(
+            "destination",
+            "source",
+            false,
+            Some(BindPropagation::Shared),
+        );
         assert_eq!(docker.mounts.to_vec(), vec![mount_1, mount_2]);
     }
 }
