@@ -143,15 +143,14 @@ impl Spawner for Object {
                     if let Err(error) = result {
                         error!("Unable to create docker/ folder | {error}");
                     }
-                    let local_path = compose.config.compose.clone().unwrap();
-                    if let Some(file_name) = Path::new(compose.config.compose.as_ref().unwrap())
+                    let local_path = compose.config.file.clone().unwrap();
+                    if let Some(file_name) = Path::new(compose.config.file.as_ref().unwrap())
                         .file_name()
                         .and_then(|name| name.to_str())
                     {
-                        compose.config.compose = Some(format!("docker/{file_name}"));
+                        compose.config.file = Some(format!("docker/{file_name}"));
                     }
-                    let result =
-                        ssh.upload_file(local_path, compose.config.compose.as_ref().unwrap());
+                    let result = ssh.upload_file(local_path, compose.config.file.as_ref().unwrap());
                     if let Err(error) = result {
                         panic!("Unable to upload compose file {error}");
                     }

@@ -1,8 +1,9 @@
-use serde::{Deserialize, Serialize};
-use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
-use crate::core::process::Process;
-use crate::shared::traits::ToInternal;
 use super::general::General;
+use crate::core::process::Process;
+use crate::core::process::process_types::{ProcessType, ProcessTypeConfig};
+use crate::interface::docker::ExtDocker;
+use crate::shared::traits::ToInternal;
+use serde::{Deserialize, Serialize};
 
 /// External representation of the internal [`Process`] object
 #[derive(Debug, Deserialize, Serialize)]
@@ -12,16 +13,15 @@ pub struct ExtProcess {
     #[serde(flatten)]
     pub config: Option<ProcessTypeConfig>,
     #[serde(flatten)]
-    pub general: General
+    pub general: General,
 }
 
 impl Default for ExtProcess {
     fn default() -> Self {
-        ExtProcess 
-        { 
-            process_type: None, 
-            config: None, 
-            general: General::default()
+        ExtProcess {
+            process_type: None,
+            config: None,
+            general: General::default(),
         }
     }
 }
@@ -45,16 +45,19 @@ impl ToInternal<Process> for ExtProcess {
             process.object.ansible = ansible;
         }
 
-        // If a process type is given prioritise this over additional docker config
-        if let Some(docker) = self.general.docker {
-            if docker.compose.is_some() {
-                process.object.docker_group_builder = Some(docker.to_internal());
-            }
-            else 
-            {
-                process.object.docker_container_builder = Some(docker.to_internal());
-            } 
-        } 
+        if let Some(docker) = self.general.docker.clone() {
+            match docker {
+                ExtDocker::Compose(compose) => {
+                    process.object.docker_group_builder = Some(compose.to_internal());
+                }
+                ExtDocker::Container(container) => {
+                    process.object.docker_container_builder = Some(container.to_internal());
+                }
+                ExtDocker::Dind(dind) => {
+                    process.object.docker_container_builder = Some(dind.to_internal());
+                }
+            };
+        }
 
         process.object.resources = self.general.resources.to_internal();
         let vec = self.general.executables.clone().to_internal();

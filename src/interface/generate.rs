@@ -1,6 +1,10 @@
+use crate::{
+    core::generate::{Generate, generate_types::GeneratorTypeConfig},
+    interface::docker::ExtDocker,
+    shared::traits::{ToInternal, ToInternalVec},
+};
 use log::debug;
 use serde::{Deserialize, Serialize};
-use crate::{core::generate::{generate_types::{GeneratorTypeConfig}, Generate}, shared::traits::{ToInternal, ToInternalVec}};
 
 use super::general::General;
 
@@ -14,7 +18,7 @@ pub struct ExtGenerate {
     #[serde(default = "default_amount")]
     pub amount: usize,
     #[serde(flatten)]
-    pub general: General
+    pub general: General,
 }
 
 pub fn default_amount() -> usize {
@@ -23,12 +27,11 @@ pub fn default_amount() -> usize {
 
 impl Default for ExtGenerate {
     fn default() -> Self {
-        ExtGenerate 
-        {
+        ExtGenerate {
             //generate_type: None,
             config: None,
             amount: default_amount(),
-            general: General::default()
+            general: General::default(),
         }
     }
 }
@@ -51,24 +54,28 @@ impl ToInternalVec<Generate> for ExtGenerate {
 
             if let Some(node) = self.general.node.clone() {
                 generate.object.node = Some(node.to_internal());
-            } 
+            }
 
             if let Some(ansible) = self.general.ansible.clone() {
                 generate.object.ansible = ansible;
             }
 
-            if let Some(mut docker) = self.general.docker.clone() {
-                if docker.compose.is_some() {
-                    generate.object.docker_group_builder = Some(docker.to_internal());
-                }
-                else 
-                {
-                    if let Some(name) = docker.name {
-                        docker.name = Some(format!("{name}-{i}")); 
+            if let Some(docker) = self.general.docker.clone() {
+                match docker {
+                    ExtDocker::Compose(compose) => {
+                        generate.object.docker_group_builder = Some(compose.to_internal());
                     }
-                    generate.object.docker_container_builder = Some(docker.to_internal());
-                } 
-            } 
+                    ExtDocker::Container(mut container) => {
+                        if let Some(name) = container.name {
+                            container.name = Some(format!("{name}-{i}"));
+                        }
+                        generate.object.docker_container_builder = Some(container.to_internal());
+                    }
+                    ExtDocker::Dind(dind) => {
+                        generate.object.docker_container_builder = Some(dind.to_internal());
+                    }
+                };
+            }
 
             generate.object.resources = self.general.resources.clone().to_internal();
             let vec = self.general.executables.clone().to_internal();

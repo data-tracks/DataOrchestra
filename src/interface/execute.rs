@@ -1,16 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::{adapters::TmuxBuilder, types::{DataTypes, Executables, Script, VolatileData}}, shared::ToInternal};
+use super::location::Location;
 use crate::core::types::DataTypes::{VolatileDockerData, VolatileNodeData};
 use crate::interface::data::{ExtData, ExtDataTypes, ExtVolatile};
-use super::location::Location;
+use crate::{
+    core::{
+        adapters::TmuxBuilder,
+        types::{DataTypes, Executables, Script, VolatileData},
+    },
+    shared::ToInternal,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-#[serde(rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum ExtExecutables {
     Script(ExtScript),
-    Tmux(ExtTmux)
+    Tmux(ExtTmux),
 }
 
 impl ExtExecutables {
@@ -25,28 +30,28 @@ impl ExtExecutables {
     pub fn get_script_ref(&self) -> &ExtScript {
         match self {
             ExtExecutables::Script(script) => script,
-            _ => panic!("Get script on non-script")
+            _ => panic!("Get script on non-script"),
         }
     }
 
     pub fn get_tmux_ref(&self) -> &ExtTmux {
         match self {
             ExtExecutables::Tmux(tmux) => tmux,
-            _ => panic!("Get tmux on non-tmux")
+            _ => panic!("Get tmux on non-tmux"),
         }
     }
 
     pub fn get_script_mut(&mut self) -> &mut ExtScript {
         match self {
             ExtExecutables::Script(script) => script,
-            _ => panic!("Get script on non-script")
+            _ => panic!("Get script on non-script"),
         }
     }
 
     pub fn get_tmux_mut(&mut self) -> &mut ExtTmux {
         match self {
             ExtExecutables::Tmux(tmux) => tmux,
-            _ => panic!("Get tmux on non-tmux")
+            _ => panic!("Get tmux on non-tmux"),
         }
     }
 }
@@ -58,18 +63,25 @@ pub struct ExtTmux {
     pub name: Option<String>,
     pub destination: String,
     #[serde(flatten)]
-    pub tmux: TmuxBuilder 
+    pub tmux: TmuxBuilder,
 }
 
 impl ToInternal<(Script, DataTypes)> for ExtTmux {
     fn to_internal(mut self) -> (Script, DataTypes) {
-        let script = Script { name: self.name.clone(), path: self.destination.clone() };
+        let script = Script {
+            name: self.name.clone(),
+            path: self.destination.clone(),
+        };
 
-        let data = VolatileData { name: self.name, content: self.tmux.build(), destination: self.destination.into()  };
+        let data = VolatileData {
+            name: self.name,
+            content: self.tmux.build(),
+            destination: self.destination.into(),
+        };
 
         let data_type = match self.location {
             Location::Node => VolatileNodeData(data),
-            Location::Container => VolatileDockerData(data)
+            Location::Container => VolatileDockerData(data),
         };
 
         (script, data_type)
@@ -81,19 +93,22 @@ impl ToInternal<(Script, DataTypes)> for ExtTmux {
 pub struct ExtScript {
     pub location: Location,
     pub name: Option<String>,
-    pub destination: String
+    pub destination: String,
 }
 
 impl ToInternal<Script> for ExtScript {
     fn to_internal(self) -> Script {
-        Script { name: self.name, path: self.destination }
+        Script {
+            name: self.name,
+            path: self.destination,
+        }
     }
 }
 
 impl ToInternal<(Executables, Option<DataTypes>)> for ExtExecutables {
     fn to_internal(self) -> (Executables, Option<DataTypes>) {
         match self {
-            ExtExecutables::Tmux(tmux) => { 
+            ExtExecutables::Tmux(tmux) => {
                 let (script, data) = tmux.to_internal();
                 (Executables::Script(script), Some(data))
             }
@@ -101,6 +116,6 @@ impl ToInternal<(Executables, Option<DataTypes>)> for ExtExecutables {
                 let script = script.to_internal();
                 (Executables::Script(script), None)
             }
-        } 
+        }
     }
 }

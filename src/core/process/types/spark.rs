@@ -7,11 +7,10 @@ pub struct Spark {}
 
 impl Spark {
     pub fn new() -> Self {
-        Spark { }
+        Spark {}
     }
 
     pub fn setup_container(&self, docker: &mut ComposeBuilder) {
-        docker.compose("images/compose-spark.yaml");
+        docker.file("images/compose-spark.yaml");
     }
 }
-

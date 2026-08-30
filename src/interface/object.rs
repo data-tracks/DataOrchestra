@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::core::object::Object;
+use crate::interface::docker::ExtDocker;
 use crate::shared::traits::ToInternal;
 
 use super::general::General;
@@ -9,14 +10,13 @@ use super::general::General;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ExtObject {
     #[serde(flatten)]
-    pub general: General
+    pub general: General,
 }
 
 impl Default for ExtObject {
     fn default() -> Self {
-        ExtObject 
-        { 
-            general: General::default() 
+        ExtObject {
+            general: General::default(),
         }
     }
 }
@@ -37,15 +37,18 @@ impl ToInternal<Object> for ExtObject {
             object.ansible = ansible;
         }
 
-        // Set Container(s) builder
-        if let Some(docker) = self.general.docker {
-            if docker.compose.is_some() {
-                object.docker_group_builder = Some(docker.to_internal());
-            }
-            else 
-            {
-                object.docker_container_builder = Some(docker.to_internal());
-            } 
+        if let Some(docker) = self.general.docker.clone() {
+            match docker {
+                ExtDocker::Compose(compose) => {
+                    object.docker_group_builder = Some(compose.to_internal());
+                }
+                ExtDocker::Container(container) => {
+                    object.docker_container_builder = Some(container.to_internal());
+                }
+                ExtDocker::Dind(dind) => {
+                    object.docker_container_builder = Some(dind.to_internal());
+                }
+            };
         }
 
         object.resources = self.general.resources.to_internal();
@@ -58,7 +61,5 @@ impl ToInternal<Object> for ExtObject {
         }
 
         object
-    } 
+    }
 }
-
-
