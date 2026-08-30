@@ -10,7 +10,6 @@ use data_orchestra::core::object::Object;
 use data_orchestra::core::traits::Spawner;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
-use data_orchestra::log_time;
 use data_orchestra::logger::init_logger;
 use data_orchestra::shared::arguments::Arguments;
 use data_orchestra::shared::repeat_on_err_mut;
@@ -120,7 +119,7 @@ fn main() {
     ////////////////////////////////////////////////////////
     // By here all components are set. No new ones are added.
     ////////////////////////////////////////////////////////
-  
+
     let mut api_state: Option<Arc<RwLock<APIState>>> = None;
     let mut api_thread: Option<JoinHandle<()>> = None;
     if args.api_usage.is_enabled() {
