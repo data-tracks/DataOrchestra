@@ -41,6 +41,8 @@ pub struct ExtContainer {
     pub publish: Amount<u16>,
     #[serde(default)]
     pub publish_map: Amount<String>,
+    #[serde(default)]
+    pub privileged: bool,
 }
 
 impl ToInternal<ContainerBuilder> for ExtContainer {
@@ -99,6 +101,7 @@ impl ToInternal<ContainerBuilder> for ExtContainer {
 
         builder.publish_all(self.publish_all);
         builder.restart(self.restart);
+        builder.privileged(self.privileged);
 
         builder
     }
@@ -134,7 +137,8 @@ impl ToInternal<ContainerBuilder> for Dind {
         let mut builder = ContainerBuilder::default();
         builder
             .image("docker:dind")
-            .environment("DOCKER_TLS_CERTDIR", "/certs");
+            .environment("DOCKER_TLS_CERTDIR", "/certs")
+            .privileged(true);
         builder
     }
 }

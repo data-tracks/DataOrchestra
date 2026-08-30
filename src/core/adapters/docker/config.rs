@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use derive_builder::Builder;
+use std::collections::HashMap;
 
 use super::{Container, Mount, PortMapping, RestartTypes};
 
 /// The container config object. Represents the possible configurations that can be made to a
-/// docker container with the run command 
+/// docker container with the run command
 #[derive(Debug, Builder)]
 #[builder(
     name = "ContainerBuilder",
@@ -21,7 +21,7 @@ pub struct ContainerConfig {
     /// Enviroment variables
     #[builder(setter(custom), default)]
     pub enviroment: HashMap<String, String>,
-    /// Mounted volumes 
+    /// Mounted volumes
     #[builder(setter(each(name = "volume", into)), default)]
     pub volumes: Vec<String>,
     #[builder(setter(each(name = "mount", into)), default)]
@@ -51,7 +51,9 @@ pub struct ContainerConfig {
     #[builder(setter(custom), default)]
     pub build_args: HashMap<String, String>,
     #[builder(default = "false")]
-    pub ignore_ssh: bool
+    pub ignore_ssh: bool,
+    #[builder(default = "false")]
+    pub privileged: bool,
 }
 
 impl ContainerBuilder {
@@ -97,8 +99,7 @@ pub fn default_network() -> String {
 
 impl Default for ContainerConfig {
     fn default() -> Self {
-        ContainerConfig
-        {
+        ContainerConfig {
             name: None,
             network: default_network(),
             enviroment: HashMap::new(),
@@ -109,10 +110,11 @@ impl Default for ContainerConfig {
             publish_all: false,
             expose: false,
             restart: RestartTypes::default(),
-            image: None, 
-            dockerfile: None, 
+            image: None,
+            dockerfile: None,
             build_args: HashMap::new(),
-            ignore_ssh: false
+            ignore_ssh: false,
+            privileged: false,
         }
     }
 }
@@ -134,15 +136,14 @@ impl ContainerConfig {
         if self.expose {
             command = format!("{command} --expose");
         }
-   
+
         // Parse ports
         if self.publish_all {
             command = format!("{command} -P");
-        }
-        else {
+        } else {
             // Parse published ports
             for port in self.publishes.iter() {
-           command = format!("{command} -p {port}");
+                command = format!("{command} -p {port}");
             }
             // Parse published mapped ports
             for map in self.publish_map.iter() {
@@ -177,7 +178,14 @@ impl ContainerConfig {
             RestartTypes::No => command = format!("{command} --restart=no"),
             RestartTypes::Always => command = format!("{command} --restart=always"),
             RestartTypes::UnlessStopped => command = format!("{command} --restart=unless-stopped"),
-            RestartTypes::OnFailure(max_retries) => command = format!("{command} --restart=on-failure:{max_retries}"),
+            RestartTypes::OnFailure(max_retries) => {
+                command = format!("{command} --restart=on-failure:{max_retries}")
+            }
+        }
+
+        // Parse privileged
+        if self.privileged {
+            command = format!("{command} --privileged")
         }
 
         command
@@ -186,14 +194,13 @@ impl ContainerConfig {
 
 impl ContainerBuilder {
     pub fn build(&self) -> Result<Container, String> {
-        let config = self.build_internal()
-            .expect("Unable to build container config"); 
+        let config = self
+            .build_internal()
+            .expect("Unable to build container config");
 
-        Ok(Container 
-            { 
-                config,
-                ..Container::default()
-            }
-        )
+        Ok(Container {
+            config,
+            ..Container::default()
+        })
     }
 }
