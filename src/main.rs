@@ -10,6 +10,7 @@ use data_orchestra::core::object::Object;
 use data_orchestra::core::traits::Spawner;
 use data_orchestra::core::types::Node;
 use data_orchestra::interface::config::ExtConfig;
+use data_orchestra::log_time;
 use data_orchestra::logger::init_logger;
 use data_orchestra::shared::arguments::Arguments;
 use data_orchestra::shared::repeat_on_err_mut;
@@ -19,6 +20,7 @@ use log::{debug, error, info, warn};
 use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
+use std::thread::JoinHandle;
 use std::time::Duration;
 use std::{env, fs, thread};
 use tokio::sync::RwLock;
@@ -118,19 +120,27 @@ fn main() {
     ////////////////////////////////////////////////////////
     // By here all components are set. No new ones are added.
     ////////////////////////////////////////////////////////
+  
+    let mut api_state: Option<Arc<RwLock<APIState>>> = None;
+    let mut api_thread: Option<JoinHandle<()>> = None;
+    if args.api_usage.is_enabled() {
+        let api_state_local = Arc::new(RwLock::new(APIState::default()));
+        let clone_api_state = api_state_local.clone();
+        api_state = Some(api_state_local);
+        let api_thread_local = thread::Builder::new()
+            .name("api".to_string())
+            .spawn(|| {
+                info!("Starting API");
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(start_api(clone_api_state));
+            })
+            .unwrap();
+        api_thread = Some(api_thread_local);
+    }
 
-    let api_state = Arc::new(RwLock::new(APIState::default()));
-    let clone_api_state = api_state.clone();
-    let api_thread = thread::Builder::new()
-        .name("api".to_string())
-        .spawn(|| {
-            info!("Starting API");
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(start_api(clone_api_state));
-        })
-        .unwrap();
-
-    configuration_pipeline(&mut config, &mut portainer, &args);
+    if !args.api_usage.is_isolate() {
+        configuration_pipeline(&mut config, &mut portainer, &args);
+    }
 
     info!("Closing DataOrchestra");
 
@@ -140,13 +150,18 @@ fn main() {
     println!("{amount_objects}");
 
     // Send config to API
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async {
-        let mut state = api_state.write().await;
-        state.set_config(config);
-    });
+    if args.api_usage.is_enabled()
+        && let Some(api_state) = api_state
+        && let Some(api_thread) = api_thread
+    {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let mut state = api_state.write().await;
+            state.set_config(config);
+        });
 
-    let _ = api_thread.join();
+        let _ = api_thread.join();
+    }
 }
 
 /// Main creation pipeline of the programm. Processes and executes all main steps of the objects

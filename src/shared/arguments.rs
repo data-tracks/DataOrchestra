@@ -1,7 +1,58 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+use serde::Deserialize;
 use tracing_subscriber::filter::LevelFilter;
 
+use crate::interface::api::API;
+
 use super::ObjectTypes;
+
+#[derive(Debug, Deserialize, Clone, Copy, ValueEnum)]
+pub enum APIUsage {
+    Isolate,
+    Enable,
+    Disable,
+}
+
+impl APIUsage {
+    pub fn is_isolate(&self) -> bool {
+        match self {
+            APIUsage::Isolate => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        match self {
+            APIUsage::Enable => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_disabled(&self) -> bool {
+        match self {
+            APIUsage::Disable => true,
+            _ => false,
+        }
+    }
+}
+
+impl Default for APIUsage {
+    fn default() -> Self {
+        APIUsage::Enable
+    }
+}
+
+impl ToString for APIUsage {
+    fn to_string(&self) -> String {
+        let s = match self {
+            APIUsage::Disable => "disable",
+            APIUsage::Enable => "enable",
+            APIUsage::Isolate => "isolate",
+        };
+
+        s.to_string()
+    }
+}
 
 /// CLI arguments for the Orchestrator
 #[derive(Parser, Debug, Clone)]
@@ -22,7 +73,7 @@ pub struct Arguments {
     #[arg(env = "REMOVE_ALL")]
     pub remove_all: bool,
 
-    /// Generate a valid config file 
+    /// Generate a valid config file
     #[arg(long = "generate_valid_json")]
     #[arg(env = "GENERATE_VALID_JSON")]
     pub generate_valid_json: Option<ObjectTypes>,
@@ -37,19 +88,27 @@ pub struct Arguments {
     #[arg(env = "SSH_KEY")]
     pub ssh_key: Option<String>,
 
-    /// Start api only (TODO)
-    #[arg(short, long, default_value_t = false)]
-    #[arg(env = "API_ONLY")]
-    pub api_only: bool,
+    #[arg(short, long, default_value_t = APIUsage::default())]
+    #[arg(env = "API_USAGE")]
+    pub api_usage: APIUsage,
 
     /// Start only subset if items provided by name from config
     #[arg(short, long)]
     #[arg(env = "ISOLATE")]
-    pub isolate: Option<Vec<String>>
+    pub isolate: Option<Vec<String>>,
 }
 
 impl Default for Arguments {
     fn default() -> Self {
-        Arguments { file: None, level: LevelFilter::INFO, remove_all: false, generate_valid_json: None, portainer: true, ssh_key: None, api_only: false, isolate: None }
+        Arguments {
+            file: None,
+            level: LevelFilter::INFO,
+            remove_all: false,
+            generate_valid_json: None,
+            portainer: true,
+            ssh_key: None,
+            api_usage: APIUsage::default(),
+            isolate: None,
+        }
     }
 }
