@@ -1,9 +1,6 @@
 pub mod traits;
 pub use traits::*;
 
-pub mod api;
-pub use api::*;
-
 mod compose;
 pub use compose::*;
 
@@ -21,3 +18,5 @@ pub use container_types::*;
 
 pub mod utils;
 pub use utils::*;
+
+pub mod docker_api;
